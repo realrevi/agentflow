@@ -139,6 +139,13 @@ export class TerminalController {
     this.scheduleFit();
   }
 
+  /** Types `text` at the cursor (bracketed if the program asked for it), without Enter. */
+  insertText(text: string): void {
+    if (this.status !== 'running' || this.disposed) return;
+    this.term.paste(text);
+    this.term.focus();
+  }
+
   /** Spawns the pty (no-op while starting or running). */
   async start(): Promise<void> {
     if (this.disposed || this.status === 'starting' || this.status === 'running') return;

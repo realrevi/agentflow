@@ -1,0 +1,205 @@
+/* Files panel (tree) and the quick open palette. */
+.af-files {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--af-sidebar-bg);
+  color: var(--af-sidebar-fg);
+}
+
+.af-files-header {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 2px;
+  height: 30px;
+  padding: 0 6px 0 12px;
+}
+
+.af-files-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.6px;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--af-sidebar-header-fg);
+}
+
+.af-files-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 40px 16px;
+  text-align: center;
+  color: var(--af-fg-muted);
+}
+
+.af-files-empty svg {
+  color: var(--af-accent);
+}
+
+.af-tree {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  outline: none;
+}
+
+.af-tree-content {
+  position: relative;
+  min-width: 100%;
+}
+
+.af-tree-row {
+  position: absolute;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 22px;
+  padding-right: 8px;
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+}
+
+.af-tree-row:hover {
+  background: var(--af-list-hover-bg);
+}
+
+.af-tree-row.selected {
+  background: var(--af-list-active-bg);
+  color: var(--af-list-active-fg);
+}
+
+.af-tree:focus-visible .af-tree-row.selected {
+  outline: 1px solid var(--af-focus);
+  outline-offset: -1px;
+}
+
+.af-tree-twisty {
+  display: inline-flex;
+  flex: none;
+  width: 12px;
+  overflow: hidden;
+  transition: transform 0.08s ease;
+}
+
+.af-tree-twisty.open {
+  transform: rotate(90deg);
+}
+
+.af-tree-icon {
+  flex: none;
+}
+
+.af-tree-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.af-tree-name.link {
+  font-style: italic;
+}
+
+.af-tree-input {
+  flex: 1;
+  min-width: 60px;
+  height: 20px;
+  padding: 0 4px;
+  border: 1px solid var(--af-focus);
+  border-radius: 2px;
+  background: var(--af-input-bg);
+  color: var(--af-input-fg);
+  font: inherit;
+  outline: none;
+}
+
+.af-quickopen-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1500;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding-top: 64px;
+}
+
+.af-quickopen {
+  width: min(600px, calc(100vw - 32px));
+  padding: 6px;
+  background: var(--af-widget-bg);
+  color: var(--af-widget-fg);
+  border: 1px solid var(--af-widget-border);
+  border-radius: 8px;
+  box-shadow: 0 12px 40px var(--af-shadow);
+}
+
+.af-quickopen-input {
+  width: 100%;
+}
+
+.af-quickopen-list {
+  max-height: min(420px, 60vh);
+  margin: 6px 0 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.af-quickopen-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.af-quickopen-item.active {
+  background: var(--af-list-active-bg);
+  color: var(--af-list-active-fg);
+}
+
+.af-quickopen-item mark {
+  background: none;
+  color: var(--af-accent);
+  font-weight: 700;
+}
+
+.af-quickopen-name {
+  flex: none;
+}
+
+.af-quickopen-folder {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 12px;
+  color: var(--af-fg-muted);
+}
+
+.af-quickopen-none,
+.af-quickopen-empty {
+  padding: 10px 8px;
+  color: var(--af-fg-muted);
+}
+
+.af-quickopen-empty {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.af-quickopen-empty p {
+  margin: 0;
+}
