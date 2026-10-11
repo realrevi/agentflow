@@ -13,8 +13,7 @@ import {
 } from '../../characters';
 import { t, type I18nKey } from '../../i18n';
 import { settings } from '../../settings/settingsStore';
-import type { CursorCell } from '../support';
-import { avatarAboveCursor, lerp, type Box } from './follow';
+import { avatarAboveCursor, lerp, type Box, type CursorCell } from './follow';
 import { HistoryPopover } from './HistoryPopover';
 import { SpeechBubble } from './SpeechBubble';
 

@@ -11,17 +11,10 @@ import { copySelection, pasteInto } from './clipboard';
 import type { TerminalConfig } from './config';
 import { OutputDecoder } from './decoder';
 import { terminalShortcut } from './keys';
-import { encodePrompt } from './prompt/encode';
+import type { CursorCell } from '../agentui';
+import { encodePrompt } from './encode';
 import { AckBatcher, InputQueue, LatestQueue } from './queues';
-import {
-  cursorCell,
-  FONT_FAMILY,
-  fontsReady,
-  isExit,
-  RESET_MODES,
-  watchCursor,
-  type CursorCell,
-} from './support';
+import { cursorCell, FONT_FAMILY, fontsReady, isExit, RESET_MODES, watchCursor } from './support';
 import type { ActivityHooks, TerminalStatus } from './types';
 import { WebglRenderer } from './webgl';
 

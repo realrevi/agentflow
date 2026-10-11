@@ -3,7 +3,8 @@ import { Avatar } from '../../features/characters';
 import { t } from '../../features/i18n';
 import { focusPanel, openPanel, openPanels, openTerminal } from '../../features/layout';
 import { settings } from '../../features/settings';
-import { agentState, newTerminalConfig, terminalStatus } from '../../features/terminal';
+import { agentState } from '../../features/agentui';
+import { newTerminalConfig, terminalStatus } from '../../features/terminal';
 
 export function AgentsView() {
   return (

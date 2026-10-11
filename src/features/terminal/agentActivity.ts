@@ -1,14 +1,7 @@
-// Agent state per panel, driven by terminal activity through the heuristic in
+// Drives a terminal panel's agent state through the heuristic in
 // characters/stateMachine.ts. One timer per panel at most (no per-chunk timer churn).
-import { createStore, produce } from 'solid-js/store';
+import { clearAgentState, setAgentState } from '../agentui/state';
 import { AgentStateTracker, type AgentState } from '../characters/stateMachine';
-
-const [states, setStates] = createStore<Record<string, AgentState>>({});
-
-/** Reactive. Panels without activity yet are idle. */
-export function agentState(panelId: string): AgentState {
-  return states[panelId] ?? 'idle';
-}
 
 export class AgentActivity {
   private readonly tracker = new AgentStateTracker();
@@ -43,15 +36,11 @@ export class AgentActivity {
   dispose(): void {
     window.clearTimeout(this.timer);
     this.timer = undefined;
-    setStates(
-      produce((all) => {
-        delete all[this.panelId];
-      }),
-    );
+    clearAgentState(this.panelId);
   }
 
   private apply(state: AgentState): void {
-    if (states[this.panelId] !== state) setStates(this.panelId, state);
+    setAgentState(this.panelId, state);
     this.arm();
   }
 
