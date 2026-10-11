@@ -123,6 +123,10 @@ export default function ChatPanel(props: ChatPanelProps) {
 
   onMount(() => {
     void session.load();
+    // The panel loads lazily: its parameters (e.g. the assigned character) may have changed
+    // before it mounted.
+    const current = parseChatConfig(props.api.getParameters<{ config?: unknown }>().config);
+    if (current) setConfig(current);
     const subscriptions = [
       props.api.onDidParametersChange((params) => {
         const next = parseChatConfig((params as { config?: unknown }).config);

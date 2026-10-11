@@ -119,6 +119,10 @@ export default function TerminalPanel(props: TerminalPanelProps) {
         if (next) setConfig(next);
       }),
     ];
+    // The panel loads lazily: its parameters (e.g. the assigned character) may have changed
+    // before it mounted.
+    const current = parseTerminalConfig(props.api.getParameters<{ config?: unknown }>().config);
+    if (current) setConfig(current);
     if (props.autoStart) void controller.start();
     onCleanup(() => {
       for (const subscription of subscriptions) subscription.dispose();

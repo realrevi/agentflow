@@ -93,7 +93,8 @@
   position: absolute;
   inset: 0;
   overflow-y: auto;
-  padding: 14px 16px 10px;
+  /* Room on the right for the corner character. */
+  padding: 14px 80px 10px 16px;
   user-select: text;
 }
 

@@ -114,10 +114,12 @@ export function ChatList() {
               { id: 'delete', label: t('chat.delete') },
             ]}
             onSelect={(choice) => {
-              const chat = find(current().id);
+              const open = current();
+              const chat = find(open.id);
               if (!chat) return;
+              // The menu closes right after this; the rename prompt opens once it has.
               if (choice === 'delete') void remove(chat);
-              else queueMicrotask(() => setAction({ ...current(), kind: 'rename' }));
+              else queueMicrotask(() => setAction({ ...open, kind: 'rename' }));
             }}
             onClose={() => setAction((open) => (open?.kind === 'menu' ? null : open))}
           />

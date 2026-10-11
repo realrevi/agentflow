@@ -63,7 +63,11 @@ export function attachLayout(dock: DockviewApi): () => void {
   );
   persist = persistLayout;
   const subscriptions = [
-    dock.onDidLayoutChange(persistLayout),
+    // Also catches retitled panels (a chat names itself after its first prompt).
+    dock.onDidLayoutChange(() => {
+      persistLayout();
+      syncOpenPanels();
+    }),
     dock.onDidAddPanel((panel) => {
       ensureRole(panel.group);
       syncOpenPanels();
@@ -137,7 +141,25 @@ export function syncOpenPanels(): void {
     const title = panelTitle(params);
     return [{ id: panel.id, title, kind: params.kind, active: panel.id === activeId, character }];
   });
-  setOpenPanels(panels);
+  if (!samePanels(openPanels(), panels)) setOpenPanels(panels);
+}
+
+/** Layout changes fire often (e.g. while dragging a sash): only real changes re-render. */
+function samePanels(a: readonly OpenPanel[], b: readonly OpenPanel[]): boolean {
+  return (
+    a.length === b.length &&
+    a.every((panel, i) => {
+      const other = b[i];
+      return (
+        other !== undefined &&
+        panel.id === other.id &&
+        panel.title === other.title &&
+        panel.active === other.active &&
+        panel.character?.id === other.character?.id &&
+        panel.character?.palette === other.character?.palette
+      );
+    })
+  );
 }
 
 /** Gives agent panels without one a character (sprites load on first use). */
