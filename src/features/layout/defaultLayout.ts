@@ -1,21 +1,22 @@
 import type { DockviewApi } from 'dockview-core';
+import { newTerminalConfig } from '../terminal';
 import { panelOptions } from './panels';
 
 const WORKSPACE_HEIGHT_RATIO = 0.38;
 
-/** Agent 1 | Agent 2 on top, Workspace across the bottom. */
+/** Two shell terminals side by side on top, Workspace across the bottom. */
 export function buildDefaultLayout(dock: DockviewApi): void {
-  const agent1 = panelOptions({ kind: 'agent', index: 1 });
-  dock.addPanel(agent1);
+  const first = panelOptions({ kind: 'terminal', index: 1, config: newTerminalConfig('shell') });
+  dock.addPanel(first);
   dock.addPanel({
-    ...panelOptions({ kind: 'agent', index: 2 }),
-    position: { referencePanel: agent1.id, direction: 'right' },
+    ...panelOptions({ kind: 'terminal', index: 2, config: newTerminalConfig('shell') }),
+    position: { referencePanel: first.id, direction: 'right' },
   });
   const height = Math.round(dock.height * WORKSPACE_HEIGHT_RATIO);
   dock.addPanel({
-    ...panelOptions({ kind: 'workspace', index: 1 }),
+    ...panelOptions({ kind: 'workspace' }),
     position: { direction: 'below' },
     ...(height > 0 ? { initialHeight: height } : {}),
   });
-  dock.getPanel(agent1.id)?.api.setActive();
+  dock.getPanel(first.id)?.api.setActive();
 }

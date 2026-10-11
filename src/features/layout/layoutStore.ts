@@ -7,6 +7,7 @@ import { showToast } from '../../shared/toast';
 import type { SerializedLayout } from '../../shared/types';
 import { locale, reportError, t } from '../i18n';
 import { saveLayout, savedLayout } from '../settings/settingsStore';
+import type { TerminalConfig } from '../terminal';
 import { buildDefaultLayout } from './defaultLayout';
 import { panelOptions, panelTitle, parsePanelParams, type PanelKind } from './panels';
 
@@ -21,6 +22,8 @@ const PERSIST_DELAY_MS = 400;
 
 let api: DockviewApi | undefined;
 let persist: Debounced | undefined;
+/** Panels created in this session (vs. restored from the saved layout). */
+const freshPanels = new Set<string>();
 const [openPanels, setOpenPanels] = createSignal<readonly OpenPanel[]>([]);
 
 export { openPanels };
@@ -97,28 +100,39 @@ function retitlePanels(): void {
   syncOpenPanels();
 }
 
-function nextAgentIndex(dock: DockviewApi): number {
+function nextTerminalIndex(dock: DockviewApi): number {
   let index = 1;
-  while (dock.getPanel(`agent-${index}`)) index++;
+  while (dock.getPanel(`terminal-${index}`)) index++;
   return index;
 }
 
-/** Opens a panel (or focuses an existing singleton) in the given or active group. */
-export function openPanel(kind: PanelKind, groupId?: string): void {
+/** True once for panels opened in this session; restored panels return false. */
+export function consumeFreshPanel(id: string): boolean {
+  return freshPanels.delete(id);
+}
+
+function referencePosition(dock: DockviewApi, groupId?: string) {
+  const referenceGroup = groupId ?? dock.activeGroup?.id;
+  return referenceGroup ? { position: { referenceGroup } } : {};
+}
+
+/** Opens (or focuses) the Workspace or Settings panel in the given or active group. */
+export function openPanel(kind: Exclude<PanelKind, 'terminal'>, groupId?: string): void {
   if (!api) return;
-  if (kind !== 'agent') {
-    const existing = api.getPanel(kind);
-    if (existing) {
-      existing.api.setActive();
-      return;
-    }
+  const existing = api.getPanel(kind);
+  if (existing) {
+    existing.api.setActive();
+    return;
   }
-  const index = kind === 'agent' ? nextAgentIndex(api) : 1;
-  const referenceGroup = groupId ?? api.activeGroup?.id;
-  api.addPanel({
-    ...panelOptions({ kind, index }),
-    ...(referenceGroup ? { position: { referenceGroup } } : {}),
-  });
+  api.addPanel({ ...panelOptions({ kind }), ...referencePosition(api, groupId) });
+}
+
+/** Opens a new terminal panel; it starts right away. */
+export function openTerminal(config: TerminalConfig, groupId?: string): void {
+  if (!api) return;
+  const options = panelOptions({ kind: 'terminal', index: nextTerminalIndex(api), config });
+  freshPanels.add(options.id);
+  api.addPanel({ ...options, ...referencePosition(api, groupId) });
 }
 
 export function focusPanel(id: string): void {
@@ -128,7 +142,7 @@ export function focusPanel(id: string): void {
 /** Restores the default panels and keeps Settings open, since that is where reset lives. */
 export function resetLayout(): void {
   if (!api) return;
-  api.clear();
+  api.clear(); // disposes every panel, which kills its terminal session
   buildDefaultLayout(api);
   openPanel('settings');
   showToast({ kind: 'success', title: t('settings.layout.resetDone') });

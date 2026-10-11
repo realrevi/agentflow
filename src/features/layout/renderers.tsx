@@ -2,30 +2,57 @@
 import type {
   CreateComponentOptions,
   DockviewGroupPanel,
+  DockviewPanelApi,
   IContentRenderer,
   IHeaderActionsRenderer,
+  ITabRenderer,
   IWatermarkRenderer,
 } from 'dockview-core';
-import { lazy, Match, Suspense, Switch } from 'solid-js';
+import { lazy, Match, Suspense, Switch, type JSX } from 'solid-js';
 import { t } from '../i18n';
+import { settings } from '../settings/settingsStore';
 import { AddPanelButton } from './AddPanelButton';
-import { isPanelKind, parsePanelParams, type PanelParams } from './panels';
+import { consumeFreshPanel } from './layoutStore';
+import { parsePanelParams, TERMINAL_TAB, type PanelParams } from './panels';
 import { PlaceholderPanel } from './PlaceholderPanel';
 import { createSolidPart } from './solidPart';
+import { createTerminalTab } from './TerminalTab';
 import { Watermark } from './Watermark';
 
-// Lazy: the settings UI is only downloaded and parsed when its panel is first opened.
+// Lazy: settings UI and xterm.js are only downloaded and parsed when first needed.
 const SettingsPanel = lazy(() => import('../settings/SettingsPanel'));
+const TerminalPanel = lazy(() => import('../terminal/TerminalPanel'));
 
-function PanelView(props: { params: PanelParams }) {
+function Loading(): JSX.Element {
+  return <div class="af-panel-loading">{t('panel.loading')}</div>;
+}
+
+function PanelView(props: { id: string; params: PanelParams; api: DockviewPanelApi }) {
+  const params = props.params;
+  // New panels start right away; restored shells only if the setting says so, and
+  // restored agent CLIs never (they cost tokens).
+  const autoStart =
+    params.kind === 'terminal' &&
+    (consumeFreshPanel(props.id) ||
+      (params.config.kind === 'shell' && settings.terminal.autoStartShells));
   return (
-    <Switch fallback={<PlaceholderPanel params={props.params} />}>
-      <Match when={props.params.kind === 'settings'}>
-        <Suspense fallback={<div class="af-panel-loading">{t('panel.loading')}</div>}>
+    <Suspense fallback={<Loading />}>
+      <Switch fallback={<PlaceholderPanel />}>
+        <Match when={params.kind === 'settings'}>
           <SettingsPanel />
-        </Suspense>
-      </Match>
-    </Switch>
+        </Match>
+        <Match when={params.kind === 'terminal' && params}>
+          {(terminal) => (
+            <TerminalPanel
+              panelId={props.id}
+              config={terminal().config}
+              api={props.api}
+              autoStart={autoStart}
+            />
+          )}
+        </Match>
+      </Switch>
+    </Suspense>
   );
 }
 
@@ -34,12 +61,19 @@ export function createContentRenderer(options: CreateComponentOptions): IContent
   return {
     element: part.element,
     init(init) {
-      const fallbackKind = isPanelKind(options.name) ? options.name : 'agent';
-      const params = parsePanelParams(init.params) ?? { kind: fallbackKind, index: 1 };
-      part.mount(() => <PanelView params={params} />);
+      const params = parsePanelParams(init.params);
+      if (!params) {
+        console.warn(`[agentflow] unknown panel "${options.id}" (${options.name})`);
+        return;
+      }
+      part.mount(() => <PanelView id={options.id} params={params} api={init.api} />);
     },
     dispose: part.dispose,
   };
+}
+
+export function createTabRenderer(options: CreateComponentOptions): ITabRenderer | undefined {
+  return options.name === TERMINAL_TAB ? createTerminalTab() : undefined;
 }
 
 export function createHeaderActions(group: DockviewGroupPanel): IHeaderActionsRenderer {

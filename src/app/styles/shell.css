@@ -177,8 +177,12 @@
   background: var(--af-fg-muted);
 }
 
-.af-dot-agent {
-  background: var(--af-bold-color);
+.af-dot-terminal {
+  background: var(--af-fg-muted);
+}
+
+.af-dot-terminal.running {
+  background: var(--af-success);
 }
 
 .af-dot-workspace {
