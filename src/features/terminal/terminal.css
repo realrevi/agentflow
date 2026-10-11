@@ -1,8 +1,17 @@
 .af-terminal {
   position: relative;
+  display: flex;
+  flex-direction: column;
   height: 100%;
   overflow: hidden;
   background: var(--af-terminal-bg);
+}
+
+.af-terminal-body {
+  position: relative;
+  z-index: 0; /* contains xterm's own z-indexes, so the prompt bar's walker stays on top */
+  flex: 1;
+  min-height: 0;
 }
 
 /* Inset instead of padding: FitAddon measures the host's inner box. */

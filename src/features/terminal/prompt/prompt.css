@@ -1,0 +1,80 @@
+/* The prompt bar under agent terminals, its walking character and the send animation. */
+.af-prompt {
+  position: relative;
+  z-index: 1;
+  flex: none;
+  padding: 6px 10px 8px;
+  border-top: 1px solid var(--af-border);
+  background: var(--af-terminal-bg);
+}
+
+.af-prompt-walker {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  will-change: transform;
+}
+
+.af-prompt-walker.flip .af-avatar {
+  transform: scaleX(-1);
+}
+
+/* Explicit metrics: the walker's caret math assumes a monospace grid that wraps anywhere. */
+.af-prompt-input {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  margin: 0;
+  padding: 6px 8px;
+  resize: none;
+  overflow-y: auto;
+  border: 1px solid var(--af-input-border);
+  border-radius: 4px;
+  background: var(--af-input-bg);
+  color: var(--af-input-fg);
+  font-family: var(--af-font-mono);
+  font-size: inherit;
+  line-height: 1.4;
+  tab-size: 4;
+  white-space: pre-wrap;
+  word-break: break-all;
+  overflow-wrap: anywhere;
+}
+
+.af-prompt-input:focus {
+  outline: 1px solid var(--af-focus);
+  outline-offset: -1px;
+}
+
+.af-prompt-input:disabled {
+  opacity: 0.6;
+}
+
+.af-prompt-input::placeholder {
+  color: var(--af-fg-muted);
+}
+
+.af-packet-text {
+  position: absolute;
+  z-index: 6;
+  box-sizing: border-box;
+  margin: 0;
+  overflow: hidden;
+  border: 1px solid transparent;
+  pointer-events: none;
+}
+
+.af-packet {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 6;
+  width: 8px;
+  height: 8px;
+  background: var(--af-bold-color);
+  box-shadow:
+    0 0 0 2px var(--af-accent),
+    0 0 8px var(--af-bold-color);
+  pointer-events: none;
+}

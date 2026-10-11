@@ -1,6 +1,8 @@
 // What a terminal panel runs. Persisted in the layout (never its output), so it is
 // parsed defensively when a saved layout is restored.
 import type { PtyKind } from '../../shared/types';
+import { isCharacterRef } from '../characters/catalog';
+import type { CharacterRef } from '../characters/types';
 import { t, type I18nKey } from '../i18n';
 
 export interface TerminalConfig {
@@ -10,6 +12,10 @@ export interface TerminalConfig {
   args: string[];
   /** Folder to start in; `null` = home directory. */
   cwd: string | null;
+  /** The panel's pixel character (agent panels; shells only when enabled in settings). */
+  character: CharacterRef | null;
+  /** Stable key of this panel's prompt history (agent panels). */
+  historyKey: string | null;
 }
 
 export const AGENT_KINDS = ['claude', 'codex', 'gemini'] as const satisfies readonly PtyKind[];
@@ -34,6 +40,32 @@ export function isAgentKind(kind: PtyKind): kind is AgentKind {
   return (AGENT_KINDS as readonly string[]).includes(kind);
 }
 
+/** Agent panels (the CLIs and custom commands) get a character and a prompt bar. */
+export function hasAgentUi(kind: PtyKind): boolean {
+  return kind !== 'shell';
+}
+
+/** The character to show for a panel, if any (settings can hide it or enable it on shells). */
+export function avatarFor(
+  config: TerminalConfig,
+  options: { enabled: boolean; onShells: boolean },
+): CharacterRef | null {
+  if (!options.enabled || !config.character) return null;
+  return hasAgentUi(config.kind) || options.onShells ? config.character : null;
+}
+
+/** Whether a panel should have a character assigned at all. */
+export function wantsCharacter(config: TerminalConfig, onShells: boolean): boolean {
+  return hasAgentUi(config.kind) || onShells;
+}
+
+const HISTORY_KEY = /^[A-Za-z0-9_-]{1,64}$/;
+
+/** A fresh prompt-history key for a new agent panel. */
+export function newHistoryKey(): string {
+  return crypto.randomUUID();
+}
+
 export function kindLabel(kind: PtyKind): string {
   return t(LABELS[kind]);
 }
@@ -53,6 +85,14 @@ export function parseTerminalConfig(raw: unknown): TerminalConfig | null {
   const parsedArgs = Array.isArray(args)
     ? args.filter((arg): arg is string => typeof arg === 'string')
     : [];
-  const config = { kind, command: text(command), args: parsedArgs, cwd: text(cwd) };
+  const { character, historyKey } = raw as Record<string, unknown>;
+  const config: TerminalConfig = {
+    kind,
+    command: text(command),
+    args: parsedArgs,
+    cwd: text(cwd),
+    character: isCharacterRef(character) ? { id: character.id, palette: character.palette } : null,
+    historyKey: typeof historyKey === 'string' && HISTORY_KEY.test(historyKey) ? historyKey : null,
+  };
   return kind === 'custom' && !config.command ? null : config;
 }
