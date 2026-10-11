@@ -349,7 +349,7 @@ fn model_lists_are_fetched_and_cleaned() {
 
     let server = MockServer::start(vec![Reply::json(
         200,
-        r#"{"object":"list","data":[{"id":"models/gemini-x"},{"id":"models/gemini-a"},{"id":"models/gemini-a"}]}"#,
+        r#"{"object":"list","data":[{"id":"models/gemini-x"},{"id":"models/gemini-a"},{"id":"models/gemini-a"},{"id":"models/gemini-old","active":false}]}"#,
     )]);
     let gemini = provider(
         &entry(
@@ -364,7 +364,7 @@ fn model_lists_are_fetched_and_cleaned() {
     assert_eq!(
         ids,
         ["gemini-a", "gemini-x"],
-        "prefix stripped, sorted, unique"
+        "prefix stripped, sorted, unique, inactive ones skipped"
     );
     assert_eq!(server.requests()[0].path, "/v1beta/openai/models");
 }

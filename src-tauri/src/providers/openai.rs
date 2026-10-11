@@ -192,6 +192,8 @@ pub fn parse_models(list: &Value, preset: Preset) -> Vec<ModelInfo> {
         .as_array()
         .into_iter()
         .flatten()
+        // Groq marks retired or unavailable models with `active: false`.
+        .filter(|model| model["active"].as_bool() != Some(false))
         .filter_map(|model| {
             let raw = model["id"].as_str()?;
             let id = preset

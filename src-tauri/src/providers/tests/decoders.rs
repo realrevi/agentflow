@@ -168,6 +168,13 @@ fn openrouter_mid_stream_error_uses_its_status_code() {
     assert_eq!(err.kind, ErrorKind::RateLimit);
     assert_eq!(err.message, "Rate limit exceeded");
     assert_eq!(sink.text, "Partial answer");
+
+    // The streaming page's variant has a string code and no metadata.
+    let string_code = "data: {\"id\":\"cmpl-abc123\",\"provider\":\"openai\",\"error\":{\"code\":\"server_error\",\"message\":\"Provider disconnected unexpectedly\"},\"choices\":[{\"index\":0,\"delta\":{\"content\":\"\"},\"finish_reason\":\"error\"}]}\n\n";
+    let (_, end) = decode(&mut OpenAiDecoder::default(), string_code);
+    let err = end.expect_err("string code");
+    assert_eq!(err.kind, ErrorKind::Server);
+    assert_eq!(err.message, "Provider disconnected unexpectedly");
 }
 
 #[test]
