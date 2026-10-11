@@ -51,6 +51,15 @@
   box-shadow: inset 0 2px 0 var(--af-tab-active-border);
 }
 
+/*
+ * dockview's split-view cells default to overflow:auto. The grid always fits its cells, but
+ * WebKit's sub-pixel rounding can overflow by ~1px and show stray scrollbars. Panel content
+ * handles its own scrolling, so clipping here is safe.
+ */
+.af-dock .dv-split-view-container .dv-view {
+  overflow: hidden;
+}
+
 .af-dockview .dv-tab:not(.dv-active-tab):hover {
   background-color: var(--af-tab-hover-bg);
 }
