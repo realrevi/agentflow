@@ -131,21 +131,26 @@ impl WatchState {
                 self.filter.reload();
                 self.index.invalidate();
                 self.debouncer.rescan(now);
+                if PER_FOLDER_WATCHES {
+                    watch_tree(&mut self.watcher, &self.root, self.show_hidden);
+                }
             }
             let Some(rel) = self.filter.visible(path) else {
                 continue;
             };
             if structural {
                 self.index.invalidate();
-                if PER_FOLDER_WATCHES && matches!(event.kind, EventKind::Create(_)) {
-                    self.watch_new_folder(path);
+                if PER_FOLDER_WATCHES {
+                    self.watch_folder(path);
                 }
             }
             self.debouncer.add(rel, structural, now);
         }
     }
 
-    fn watch_new_folder(&mut self, path: &Path) {
+    /// (Re)watches a folder that was created or moved here. Re-adding a moved folder also
+    /// updates the path inotify reports for it, which would otherwise stay the old one.
+    fn watch_folder(&mut self, path: &Path) {
         let is_folder = std::fs::symlink_metadata(path).is_ok_and(|meta| meta.is_dir());
         if is_folder {
             watch_tree(&mut self.watcher, path, self.show_hidden);
@@ -218,6 +223,26 @@ mod tests {
             .recv_timeout(Duration::from_secs(5))
             .expect("second batch");
         assert!(later.paths.iter().any(|p| p == "src/new/c.rs"), "{later:?}");
+
+        // A renamed folder reports its new path afterwards.
+        std::thread::sleep(Duration::from_millis(100));
+        fs::rename(root.join("src/new"), root.join("src/moved")).expect("rename");
+        let renamed = batches
+            .recv_timeout(Duration::from_secs(5))
+            .expect("rename");
+        assert!(
+            renamed.structural.iter().any(|p| p == "src/moved"),
+            "{renamed:?}"
+        );
+        std::thread::sleep(Duration::from_millis(100));
+        fs::write(root.join("src/moved/c.rs"), "changed").expect("write");
+        let inside = batches
+            .recv_timeout(Duration::from_secs(5))
+            .expect("inside");
+        assert!(
+            inside.paths.iter().any(|p| p == "src/moved/c.rs"),
+            "{inside:?}"
+        );
         drop(handle);
     }
 }
