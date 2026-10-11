@@ -7,15 +7,18 @@ import type { ThemeData, ThemeSummary } from '../../shared/types';
 import { reportError, t } from '../i18n';
 import { settings, updateSettings } from '../settings/settingsStore';
 import { applyThemeVars } from './engine';
+import type { CssVars } from './mapping';
 import { computeThemeVars } from './overrides';
 
 export const DEFAULT_THEME_ID = 'agentflow-dark';
 
 const [themes, setThemes] = createSignal<readonly ThemeSummary[]>([]);
 const [activeTheme, setActiveTheme] = createSignal<ThemeData | null>(null);
+/** The resolved `--af-*` variables currently applied (theme + user overrides). */
+const [themeVars, setThemeVars] = createSignal<CssVars>({});
 const cache = new Map<string, ThemeData>();
 
-export { themes, activeTheme };
+export { themes, activeTheme, themeVars };
 
 export async function refreshThemes(): Promise<void> {
   try {
@@ -74,7 +77,10 @@ export function startThemeEngine(): Promise<void> {
     );
     createEffect(() => {
       const theme = activeTheme();
-      if (theme) applyThemeVars(computeThemeVars(theme, settings.appearance), theme.kind);
+      if (!theme) return;
+      const vars = computeThemeVars(theme, settings.appearance);
+      applyThemeVars(vars, theme.kind);
+      setThemeVars(vars);
     });
     return Promise.all([refreshThemes(), activate(settings.appearance.themeId)]).then(() => {});
   });

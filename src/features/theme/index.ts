@@ -1,3 +1,10 @@
-export { activeTheme, importThemeFile, selectTheme, startThemeEngine, themes } from './themeStore';
+export {
+  activeTheme,
+  importThemeFile,
+  selectTheme,
+  startThemeEngine,
+  themes,
+  themeVars,
+} from './themeStore';
 export { DEFAULT_BOLD_COLOR } from './overrides';
-export { cssVar, mapThemeColors } from './mapping';
+export { cssVar, mapThemeColors, type CssVars } from './mapping';

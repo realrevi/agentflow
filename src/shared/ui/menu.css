@@ -40,6 +40,15 @@
   outline: none;
 }
 
+.af-menu-item[aria-disabled='true'] {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.af-menu-item[aria-disabled='true']:hover {
+  background: none;
+}
+
 .af-menu-item[aria-checked='true'] {
   color: var(--af-list-active-fg);
 }
@@ -48,4 +57,16 @@
   display: inline-flex;
   width: 16px;
   color: var(--af-accent);
+}
+
+.af-prompt {
+  display: flex;
+  gap: 6px;
+  min-width: 300px;
+  padding: 6px;
+}
+
+.af-prompt .af-input {
+  flex: 1;
+  font-family: var(--af-font-mono);
 }

@@ -1,6 +1,14 @@
 import type { AppErrorKind } from './types';
 
-const KINDS: readonly AppErrorKind[] = ['io', 'json', 'invalidTheme', 'notFound', 'internal'];
+const KINDS: readonly AppErrorKind[] = [
+  'io',
+  'json',
+  'invalidTheme',
+  'notFound',
+  'invalidInput',
+  'pty',
+  'internal',
+];
 
 /** Error thrown by every IPC wrapper. Mirrors `AppError` in src-tauri/src/error.rs. */
 export class AppError extends Error {
