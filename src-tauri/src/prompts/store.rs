@@ -15,6 +15,8 @@ pub const MAX_ENTRIES: usize = 200;
 /// Per workspace, the panels used least recently are dropped beyond this.
 pub const MAX_PANELS: usize = 64;
 const MAX_PANEL_KEY: usize = 64;
+/// Longer prompts (pasted logs) are stored cut to this many bytes, so the file stays small.
+pub const MAX_TEXT_BYTES: usize = 8 * 1024;
 
 #[derive(Clone)]
 pub struct PromptHistory {
@@ -51,7 +53,7 @@ impl PromptHistory {
         history.version = FORMAT_VERSION;
         history.workspace = workspace.map(str::to_owned);
         let entry = PromptEntry {
-            text: text.to_owned(),
+            text: truncate(text, MAX_TEXT_BYTES).to_owned(),
             at: now_ms(),
         };
         let entries = history.panels.entry(panel.to_owned()).or_default();
@@ -132,6 +134,18 @@ fn fnv1a(bytes: &[u8]) -> u64 {
     bytes.iter().fold(0xcbf2_9ce4_8422_2325, |hash, byte| {
         (hash ^ u64::from(*byte)).wrapping_mul(0x0000_0100_0000_01b3)
     })
+}
+
+/// The longest prefix of `text` within `max` bytes, cut on a char boundary.
+fn truncate(text: &str, max: usize) -> &str {
+    if text.len() <= max {
+        return text;
+    }
+    let end = (0..=max)
+        .rev()
+        .find(|&i| text.is_char_boundary(i))
+        .unwrap_or(0);
+    &text[..end]
 }
 
 fn check_panel(panel: &str) -> AppResult<()> {
@@ -218,6 +232,17 @@ mod tests {
         assert!(history.add(WS, "p1", "   ").is_err());
         assert!(history.add(WS, "../etc", "x").is_err());
         assert!(history.list(WS, "").is_err());
+    }
+
+    #[test]
+    fn long_prompts_are_cut_on_a_char_boundary() {
+        let dir = TestDir::new("prompts");
+        let history = PromptHistory::new(dir.path().to_path_buf());
+        let long = "ü".repeat(MAX_TEXT_BYTES); // 2 bytes each
+        let stored = history.add(WS, "p1", &long).expect("add");
+        assert_eq!(stored.text.len(), MAX_TEXT_BYTES);
+        assert_eq!(truncate("aü", 2), "a");
+        assert_eq!(truncate("short", MAX_TEXT_BYTES), "short");
     }
 
     #[test]

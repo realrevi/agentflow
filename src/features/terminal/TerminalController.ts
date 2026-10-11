@@ -13,8 +13,16 @@ import { OutputDecoder } from './decoder';
 import { terminalShortcut } from './keys';
 import { encodePrompt } from './prompt/encode';
 import { AckBatcher, InputQueue, LatestQueue } from './queues';
-import { FONT_FAMILY, fontsReady, isExit, RESET_MODES, type CursorCell } from './support';
-import type { TerminalStatus } from './types';
+import {
+  cursorCell,
+  FONT_FAMILY,
+  fontsReady,
+  isExit,
+  RESET_MODES,
+  watchCursor,
+  type CursorCell,
+} from './support';
+import type { ActivityHooks, TerminalStatus } from './types';
 import { WebglRenderer } from './webgl';
 
 const FIT_DEBOUNCE_MS = 50;
@@ -33,17 +41,6 @@ interface Launch {
   exited: boolean;
   sessionId: number | undefined;
   acks: AckBatcher;
-}
-
-/** Activity signals for the agent state heuristic (agentActivity.ts). */
-export interface ActivityHooks {
-  start(): void;
-  output(): void;
-  /** Enter typed directly into the terminal. */
-  enter(): void;
-  /** Any other keys typed into the terminal (their echo is not work). */
-  typed(): void;
-  exit(code: number | null): void;
 }
 
 export interface ControllerOptions {
@@ -147,22 +144,13 @@ export class TerminalController {
     return true;
   }
 
-  /** The cursor in visible-screen cells (public xterm API only). */
+  /** The cursor in visible-screen cells, once the terminal is open. */
   cursor(): CursorCell | null {
-    if (!this.opened) return null;
-    const buffer = this.term.buffer.active;
-    const row = buffer.cursorY + buffer.baseY - buffer.viewportY;
-    return { col: buffer.cursorX, row, cols: this.term.cols, rows: this.term.rows };
+    return this.opened ? cursorCell(this.term) : null;
   }
 
-  /** Calls `listener` when the cursor moves, the view scrolls or the size changes. */
   onCursorChange(listener: () => void): IDisposable {
-    const subscriptions = [
-      this.term.onCursorMove(listener),
-      this.term.onScroll(listener),
-      this.term.onResize(listener),
-    ];
-    return { dispose: () => subscriptions.forEach((subscription) => subscription.dispose()) };
+    return watchCursor(this.term, listener);
   }
 
   /** Spawns the pty (no-op while starting or running). */

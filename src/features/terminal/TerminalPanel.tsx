@@ -10,9 +10,9 @@ import { themeVars } from '../theme/themeStore';
 import { AgentActivity, agentState } from './agentActivity';
 import { AgentOverlay, type AgentOverlayHandle } from './agent/AgentOverlay';
 import {
+  agentName,
   avatarFor,
   hasAgentUi,
-  kindLabel,
   parseTerminalConfig,
   type TerminalConfig,
 } from './config';
@@ -138,11 +138,7 @@ export default function TerminalPanel(props: TerminalPanelProps) {
             <AgentOverlay
               ref={(handle) => (overlay = handle)}
               character={ref()}
-              aiName={
-                config().kind === 'custom'
-                  ? ((config().command ?? '').split(' ')[0] ?? '')
-                  : kindLabel(config().kind)
-              }
+              aiName={agentName(config())}
               state={agentState(props.panelId)}
               lastPrompt={lastPrompt()}
               history={history?.entries() ?? []}

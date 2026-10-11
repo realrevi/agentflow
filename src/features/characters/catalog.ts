@@ -20,7 +20,7 @@ export function characterById(id: string): SpriteSheet | undefined {
   return sheets().find((sheet) => sheet.id === id);
 }
 
-/** A character nobody uses yet (the first free one, then a random repeat). */
+/** A random character nobody uses yet (any of them once all are taken). */
 export function pickCharacter(
   all: readonly SpriteSheet[],
   used: readonly string[],

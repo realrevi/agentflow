@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { hasAgentUi, parseTerminalConfig, terminalTitle, type TerminalConfig } from './config';
+import {
+  agentName,
+  hasAgentUi,
+  parseTerminalConfig,
+  terminalTitle,
+  type TerminalConfig,
+} from './config';
 
 const base = { character: null, historyKey: null };
 
@@ -75,5 +81,17 @@ describe('terminalTitle', () => {
     expect(title.length).toBeLessThanOrEqual(32);
     expect(title.endsWith('…')).toBe(true);
     expect(terminalTitle(custom('htop'))).toBe('htop');
+  });
+
+  it('names the agent after the program a custom command runs', () => {
+    const custom = (command: string): TerminalConfig => ({
+      kind: 'custom',
+      command,
+      args: [],
+      cwd: null,
+      ...base,
+    });
+    expect(agentName(custom('/usr/local/bin/aider --model x'))).toBe('aider');
+    expect(agentName(custom('C:\\tools\\agent.exe'))).toBe('agent.exe');
   });
 });

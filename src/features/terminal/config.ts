@@ -70,6 +70,13 @@ export function kindLabel(kind: PtyKind): string {
   return t(LABELS[kind]);
 }
 
+/** The agent's name for its badge: the CLI, or the program a custom command runs. */
+export function agentName(config: TerminalConfig): string {
+  if (config.kind !== 'custom' || !config.command) return kindLabel(config.kind);
+  const program = config.command.trim().split(/\s+/)[0] ?? '';
+  return program.split(/[\\/]/).pop() || program;
+}
+
 /** Tab title: the kind's name, or the command itself for custom terminals. */
 export function terminalTitle(config: TerminalConfig): string {
   if (config.kind !== 'custom' || !config.command) return kindLabel(config.kind);

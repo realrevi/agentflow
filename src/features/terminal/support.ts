@@ -1,4 +1,5 @@
-// Small helpers for TerminalController: fonts, exit messages, mode resets.
+// Small helpers for TerminalController: fonts, exit messages, mode resets, the cursor.
+import type { IDisposable, Terminal } from '@xterm/xterm';
 import type { PtyExitMessage } from '../../shared/types';
 
 export const FONT_FAMILY = "'JetBrains Mono', ui-monospace, Menlo, Consolas, monospace";
@@ -31,4 +32,21 @@ export interface CursorCell {
   row: number;
   cols: number;
   rows: number;
+}
+
+/** The cursor of an opened terminal (public xterm API only). */
+export function cursorCell(term: Terminal): CursorCell {
+  const buffer = term.buffer.active;
+  const row = buffer.cursorY + buffer.baseY - buffer.viewportY;
+  return { col: buffer.cursorX, row, cols: term.cols, rows: term.rows };
+}
+
+/** Calls `listener` when the cursor moves, the view scrolls or the size changes. */
+export function watchCursor(term: Terminal, listener: () => void): IDisposable {
+  const subscriptions = [
+    term.onCursorMove(listener),
+    term.onScroll(listener),
+    term.onResize(listener),
+  ];
+  return { dispose: () => subscriptions.forEach((subscription) => subscription.dispose()) };
 }
