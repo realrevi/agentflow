@@ -1,34 +1,46 @@
 // Panel kinds shown in the dock. Panel params are persisted inside the layout JSON
-// (terminal config only, never output), so they are parsed defensively on restore.
+// (terminal config and editor file paths, never output or file contents), so they are
+// parsed defensively on restore.
 import { parseTerminalConfig, terminalTitle, type TerminalConfig } from '../terminal';
 import { t } from '../i18n';
+import { baseName } from '../workspace';
 
-export type PanelKind = 'terminal' | 'workspace' | 'settings';
+export type PanelKind = 'terminal' | 'editor' | 'files' | 'settings';
 
 export type PanelParams =
   | { kind: 'terminal'; index: number; config: TerminalConfig }
-  | { kind: 'workspace' }
+  /** `root` is the workspace folder the file belongs to; `path` is relative to it. */
+  | { kind: 'editor'; index: number; root: string; path: string }
+  | { kind: 'files' }
   | { kind: 'settings' };
 
-const KINDS: readonly PanelKind[] = ['terminal', 'workspace', 'settings'];
+export type SingletonKind = 'files' | 'settings';
 
-export function isPanelKind(value: unknown): value is PanelKind {
-  return typeof value === 'string' && (KINDS as readonly string[]).includes(value);
+function isIndex(value: unknown): value is number {
+  return typeof value === 'number' && Number.isInteger(value) && value > 0;
+}
+
+function isText(value: unknown): value is string {
+  return typeof value === 'string' && value.length > 0;
 }
 
 export function parsePanelParams(raw: unknown): PanelParams | null {
   if (typeof raw !== 'object' || raw === null) return null;
-  const { kind, index, config } = raw as Record<string, unknown>;
-  if (kind === 'workspace' || kind === 'settings') return { kind };
+  const { kind, index, config, root, path } = raw as Record<string, unknown>;
+  if (kind === 'files' || kind === 'settings') return { kind };
+  if (kind === 'editor') {
+    return isIndex(index) && isText(root) && isText(path) ? { kind, index, root, path } : null;
+  }
   if (kind !== 'terminal') return null;
   const parsed = parseTerminalConfig(config);
-  const validIndex = typeof index === 'number' && Number.isInteger(index) && index > 0;
-  return parsed && validIndex ? { kind, index, config: parsed } : null;
+  return parsed && isIndex(index) ? { kind, index, config: parsed } : null;
 }
 
-/** Singletons (workspace, settings) use their kind as id; terminals are `terminal-<n>`. */
+/** Singletons use their kind as id; terminals are `terminal-<n>`, editors `editor-<n>`. */
 export function panelId(params: PanelParams): string {
-  return params.kind === 'terminal' ? `terminal-${params.index}` : params.kind;
+  return params.kind === 'terminal' || params.kind === 'editor'
+    ? `${params.kind}-${params.index}`
+    : params.kind;
 }
 
 /** Translated tab title; recomputed when the language changes. */
@@ -36,8 +48,10 @@ export function panelTitle(params: PanelParams): string {
   switch (params.kind) {
     case 'terminal':
       return terminalTitle(params.config);
-    case 'workspace':
-      return t('panel.workspace.title');
+    case 'editor':
+      return baseName(params.path);
+    case 'files':
+      return t('panel.files.title');
     case 'settings':
       return t('panel.settings.title');
   }
@@ -49,18 +63,18 @@ export interface PanelOptions {
   component: PanelKind;
   title: string;
   params: PanelParams;
-  tabComponent?: string;
+  tabComponent: string;
 }
 
-export const TERMINAL_TAB = 'terminal';
+/** One tab renderer for every panel (status dot, dirty dot, guarded close). */
+export const PANEL_TAB = 'panel';
 
 export function panelOptions(params: PanelParams): PanelOptions {
-  const options: PanelOptions = {
+  return {
     id: panelId(params),
     component: params.kind,
     title: panelTitle(params),
     params,
+    tabComponent: PANEL_TAB,
   };
-  if (params.kind === 'terminal') options.tabComponent = TERMINAL_TAB;
-  return options;
 }

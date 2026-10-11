@@ -6,8 +6,14 @@ import { open as openDialog } from '@tauri-apps/plugin-dialog';
 import { toAppError } from './errors';
 import type {
   CliStatus,
+  EntryKind,
+  FileContent,
+  FileStat,
+  FsChanges,
+  FsEntry,
   PtyMessage,
   PtySpawnRequest,
+  QuickOpenMatch,
   SessionInfo,
   Settings,
   ThemeData,
@@ -27,6 +33,21 @@ interface Commands {
   pty_kill: { args: { id: number }; result: boolean };
   pty_list: { args: Record<string, never>; result: SessionInfo[] };
   cli_detect: { args: { refresh: boolean }; result: CliStatus[] };
+  fs_open_workspace: {
+    args: { root: string; showHidden: boolean; onEvent: Channel<FsChanges> };
+    result: null;
+  };
+  fs_close_workspace: { args: Record<string, never>; result: null };
+  fs_list: { args: { dir: string }; result: FsEntry[] };
+  fs_read: { args: { path: string }; result: FileContent };
+  fs_write: {
+    args: { path: string; content: string; expectedMtime: number | null };
+    result: FileStat;
+  };
+  fs_create: { args: { path: string; kind: EntryKind }; result: FsEntry };
+  fs_rename: { args: { from: string; to: string }; result: FsEntry };
+  fs_delete: { args: { path: string }; result: null };
+  fs_quick_open: { args: { query: string }; result: QuickOpenMatch[] };
 }
 
 async function call<K extends keyof Commands>(
@@ -67,6 +88,28 @@ async function ptySpawn(
   }
 }
 
+/**
+ * Opens the workspace in the backend and starts its watcher. Change batches arrive on
+ * `onChanges` until `detach()` or the next open (Rust then drops the old channel).
+ */
+async function fsOpenWorkspace(
+  root: string,
+  showHidden: boolean,
+  onChanges: (changes: FsChanges) => void,
+): Promise<{ detach(): void }> {
+  const channel = new Channel<FsChanges>(onChanges);
+  const detach = () => {
+    channel.onmessage = () => {};
+  };
+  try {
+    await call('fs_open_workspace', { root, showHidden, onEvent: channel });
+    return { detach };
+  } catch (err) {
+    detach();
+    throw err;
+  }
+}
+
 /** Native folder picker (tauri-plugin-dialog). Resolves `null` if cancelled. */
 async function pickFolder(title: string): Promise<string | null> {
   try {
@@ -99,6 +142,17 @@ export const ipc = {
   ptyKill: (id: number) => call('pty_kill', { id }),
   ptyList: () => call('pty_list', {}),
   cliDetect: (refresh: boolean) => call('cli_detect', { refresh }),
+  fsOpenWorkspace,
+  fsCloseWorkspace: () => call('fs_close_workspace', {}),
+  fsList: (dir: string) => call('fs_list', { dir }),
+  fsRead: (path: string) => call('fs_read', { path }),
+  /** `expectedMtime: null` overwrites unconditionally (e.g. "keep mine" after a delete). */
+  fsWrite: (path: string, content: string, expectedMtime: number | null) =>
+    call('fs_write', { path, content, expectedMtime }),
+  fsCreate: (path: string, kind: EntryKind) => call('fs_create', { path, kind }),
+  fsRename: (from: string, to: string) => call('fs_rename', { from, to }),
+  fsDelete: (path: string) => call('fs_delete', { path }),
+  fsQuickOpen: (query: string) => call('fs_quick_open', { query }),
   pickFolder,
   readClipboard: () => clipboard(readText),
   writeClipboard: (text: string) => clipboard(() => writeText(text)),

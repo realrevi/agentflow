@@ -2,6 +2,7 @@ export { DockviewHost } from './DockviewHost';
 export {
   flushLayout,
   focusPanel,
+  openEditor,
   openPanel,
   openPanels,
   openTerminal,

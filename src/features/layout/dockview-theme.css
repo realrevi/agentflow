@@ -75,11 +75,40 @@
   height: 100%;
 }
 
-/* Terminal tabs: status dot before the title. */
-.af-terminal-tab {
+/* Tabs: terminal status dot before the title, editor dirty dot in the close button spot. */
+.af-tab {
   display: flex;
   align-items: center;
   gap: 6px;
+}
+
+.af-tab-action .af-dirty-dot {
+  display: none;
+  width: 8px;
+  height: 8px;
+  margin: auto;
+  background: var(--af-fg);
+}
+
+/* Beats dockview's "hide the close button on inactive tabs" rule. */
+.af-dockview .dv-tab .dv-default-tab .af-tab-action.dirty {
+  visibility: visible;
+}
+
+.af-tab-action.dirty .af-dirty-dot {
+  display: block;
+}
+
+.af-tab-action.dirty > :not(.af-dirty-dot) {
+  display: none;
+}
+
+.af-tab-action.dirty:hover .af-dirty-dot {
+  display: none;
+}
+
+.af-tab-action.dirty:hover > :not(.af-dirty-dot) {
+  display: block;
 }
 
 .af-status-dot {

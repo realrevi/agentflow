@@ -71,3 +71,9 @@
   margin: 0;
   font-size: 12px;
 }
+
+/* A file from the tree is being dragged over a running terminal. */
+.af-terminal.dropping {
+  outline: 2px dashed var(--af-accent);
+  outline-offset: -4px;
+}

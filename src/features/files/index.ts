@@ -1,2 +1,4 @@
-// Workspace file tree and CodeMirror 6 viewer/editor (phase 3).
-export {};
+// Workspace file tree and quick open (phase 3).
+export { FilesPanel } from './FilesPanel';
+export { QuickOpen } from './QuickOpen';
+export { closeQuickOpen, installQuickOpenShortcut, openQuickOpen } from './quickOpenStore';

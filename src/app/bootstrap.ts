@@ -5,6 +5,7 @@ import { reportError, setLocale } from '../features/i18n';
 import { flushLayout } from '../features/layout';
 import { flushSettings, loadSettings, settings } from '../features/settings';
 import { startThemeEngine } from '../features/theme';
+import { startWorkspaceFs } from '../features/workspace';
 
 async function applyLocale(code: typeof settings.language): Promise<void> {
   try {
@@ -28,6 +29,8 @@ export async function bootstrap(): Promise<void> {
     );
     return startThemeEngine();
   });
+  // Opens the workspace folder in the backend and keeps its watcher in sync.
+  startWorkspaceFs();
 
   window.addEventListener('beforeunload', () => {
     flushLayout();

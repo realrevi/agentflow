@@ -3,12 +3,15 @@ import '@xterm/xterm/css/xterm.css';
 import './terminal.css';
 import type { DockviewPanelApi } from 'dockview-core';
 import { createEffect, createSignal, onCleanup, onMount, Show, untrack } from 'solid-js';
+import { FILE_PATH_MIME } from '../../shared/dnd';
+import { isWindows } from '../../shared/platform';
 import { agentsIcon } from '../../shared/ui/icons';
 import { PixelIcon } from '../../shared/ui/PixelIcon';
 import { t } from '../i18n';
 import { settings } from '../settings/settingsStore';
 import { themeVars } from '../theme/themeStore';
 import { isAgentKind, terminalTitle, type TerminalConfig } from './config';
+import { quotePath } from './quotePath';
 import { clearTerminalStatus, setTerminalStatus } from './statusStore';
 import { TerminalController } from './TerminalController';
 import type { TerminalStatus } from './types';
@@ -25,6 +28,7 @@ export interface TerminalPanelProps {
 export default function TerminalPanel(props: TerminalPanelProps) {
   const [status, setStatus] = createSignal<TerminalStatus>('stopped');
   const [error, setError] = createSignal<string | null>(null);
+  const [dropping, setDropping] = createSignal(false);
   let host: HTMLDivElement | undefined;
 
   const controller = new TerminalController({
@@ -58,11 +62,34 @@ export default function TerminalPanel(props: TerminalPanelProps) {
     });
   });
 
+  // A file dragged from the tree types its quoted relative path at the cursor.
+  const acceptsDrop = (event: DragEvent) =>
+    status() === 'running' && (event.dataTransfer?.types.includes(FILE_PATH_MIME) ?? false);
+  const onDragOver = (event: DragEvent) => {
+    if (!acceptsDrop(event)) return;
+    event.preventDefault();
+    if (event.dataTransfer) event.dataTransfer.dropEffect = 'copy';
+    setDropping(true);
+  };
+  const onDrop = (event: DragEvent) => {
+    setDropping(false);
+    const path = event.dataTransfer?.getData(FILE_PATH_MIME);
+    if (!acceptsDrop(event) || !path) return;
+    event.preventDefault();
+    controller.insertText(quotePath(path, isWindows()));
+  };
+
   const commandLine = () =>
     props.config.kind === 'custom' ? [props.config.command, ...props.config.args].join(' ') : '';
 
   return (
-    <div class="af-terminal">
+    <div
+      class="af-terminal"
+      classList={{ dropping: dropping() }}
+      onDragOver={onDragOver}
+      onDragLeave={() => setDropping(false)}
+      onDrop={onDrop}
+    >
       <div ref={host} class="af-terminal-host" />
       <Show when={status() === 'stopped'}>
         <div class="af-terminal-overlay">

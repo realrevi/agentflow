@@ -7,6 +7,7 @@ use std::path::{Path, PathBuf};
 use super::builtin::{self, BUILTIN_THEMES};
 use super::model::{ThemeData, ThemeSummary};
 use super::parse::{parse_theme, ParsedTheme};
+use super::syntax::syntax_colors;
 use crate::error::{AppError, AppResult};
 use crate::util::write_atomic;
 
@@ -110,10 +111,10 @@ fn summary(id: String, theme: &ParsedTheme, builtin: bool) -> ThemeSummary {
 }
 
 fn data(id: String, theme: ParsedTheme, builtin: bool) -> ThemeData {
-    ThemeData {
-        summary: summary(id, &theme, builtin),
-        colors: theme.colors,
-    }
+    let summary = summary(id, &theme, builtin);
+    let mut colors = theme.colors;
+    colors.extend(syntax_colors(theme.document.get("tokenColors")));
+    ThemeData { summary, colors }
 }
 
 fn file_stem(file_name: &str) -> &str {

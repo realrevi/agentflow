@@ -7,17 +7,22 @@ const KINDS: readonly AppErrorKind[] = [
   'notFound',
   'invalidInput',
   'pty',
+  'conflict',
+  'tooLarge',
   'internal',
 ];
 
 /** Error thrown by every IPC wrapper. Mirrors `AppError` in src-tauri/src/error.rs. */
 export class AppError extends Error {
   readonly kind: AppErrorKind;
+  /** File size in bytes, for `tooLarge` errors. */
+  readonly size: number | undefined;
 
-  constructor(kind: AppErrorKind, message: string) {
+  constructor(kind: AppErrorKind, message: string, size?: number) {
     super(message);
     this.name = 'AppError';
     this.kind = kind;
+    this.size = size;
   }
 }
 
@@ -33,7 +38,7 @@ function isKind(value: unknown): value is AppErrorKind {
 export function toAppError(err: unknown): AppError {
   if (err instanceof AppError) return err;
   if (isRecord(err) && isKind(err.kind) && typeof err.message === 'string') {
-    return new AppError(err.kind, err.message);
+    return new AppError(err.kind, err.message, typeof err.size === 'number' ? err.size : undefined);
   }
   if (err instanceof Error) return new AppError('internal', err.message);
   return new AppError('internal', String(err));

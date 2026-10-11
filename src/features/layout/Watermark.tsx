@@ -1,11 +1,49 @@
-import { logoIcon } from '../../shared/ui/icons';
+// Shown by dockview in empty groups and when the whole dock is empty. The center (agent
+// area) offers the agent CLIs; they never start by themselves.
+import { For, onMount, Show } from 'solid-js';
+import { shortcutLabel } from '../../shared/platform';
+import type { PtyKind } from '../../shared/types';
+import { agentsIcon, logoIcon } from '../../shared/ui/icons';
 import { PixelIcon } from '../../shared/ui/PixelIcon';
 import { t } from '../i18n';
-import { newTerminalConfig } from '../terminal';
+import { AGENT_KINDS, cliFor, kindLabel, loadCliStatus, newTerminalConfig } from '../terminal';
 import { openPanel, openTerminal } from './layoutStore';
+import { groupRole } from './roles';
 
-/** Shown by dockview when every panel is closed. */
-export function Watermark() {
+function AgentArea(props: { groupId: string }) {
+  onMount(() => void loadCliStatus());
+  const start = (kind: PtyKind) => openTerminal(newTerminalConfig(kind), props.groupId);
+  return (
+    <div class="af-watermark">
+      <PixelIcon art={agentsIcon} scale={5} />
+      <h2 class="af-pixel-title">{t('agents.area.title')}</h2>
+      <p>{t('agents.area.hint')}</p>
+      <div class="af-button-row">
+        <For each={AGENT_KINDS}>
+          {(kind) => {
+            const missing = () => cliFor(kind)?.found === false;
+            return (
+              <button
+                type="button"
+                class="af-button"
+                disabled={missing()}
+                title={missing() ? t('terminal.notFound') : undefined}
+                onClick={() => start(kind)}
+              >
+                {kindLabel(kind)}
+              </button>
+            );
+          }}
+        </For>
+      </div>
+      <p class="af-watermark-hint">
+        {t('agents.area.quickOpen', { shortcut: shortcutLabel('P') })}
+      </p>
+    </div>
+  );
+}
+
+function EmptyDock() {
   return (
     <div class="af-watermark">
       <PixelIcon art={logoIcon} scale={6} />
@@ -19,10 +57,20 @@ export function Watermark() {
         >
           {t('sidebar.agents.newShell')}
         </button>
-        <button type="button" class="af-button secondary" onClick={() => openPanel('workspace')}>
-          {t('panel.add.workspace')}
+        <button type="button" class="af-button secondary" onClick={() => openPanel('files')}>
+          {t('sidebar.agents.showFiles')}
         </button>
       </div>
     </div>
+  );
+}
+
+export function Watermark(props: { groupId?: string }) {
+  const center = () =>
+    props.groupId && groupRole(props.groupId) === 'agents' ? props.groupId : null;
+  return (
+    <Show when={center()} fallback={<EmptyDock />}>
+      {(groupId) => <AgentArea groupId={groupId()} />}
+    </Show>
   );
 }

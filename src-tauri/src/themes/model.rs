@@ -20,7 +20,8 @@ pub struct ThemeSummary {
     pub builtin: bool,
 }
 
-/// A theme ready to apply. `tokenColors` stay on disk and are not sent (unused until phase 3).
+/// A theme ready to apply. `tokenColors` are not sent; the editor syntax colors derived
+/// from them arrive in `colors` as `agentflow.syntax.*`.
 #[derive(Debug, Clone, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ThemeData {

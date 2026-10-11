@@ -1,20 +1,35 @@
 //! Crash-safe file writes: write a sibling temp file, fsync, then rename over the target.
 
 use std::ffi::OsString;
-use std::fs::{self, File};
+use std::fs::{self, File, Permissions};
 use std::io::{self, Write};
 use std::path::{Path, PathBuf};
 
 /// Atomically replaces `path` with `bytes`, creating parent directories as needed.
 /// Readers never observe a half-written file.
 pub fn write_atomic(path: &Path, bytes: &[u8]) -> io::Result<()> {
+    write_atomic_with(path, bytes, None)
+}
+
+/// Like `write_atomic`, giving the new file `permissions` (e.g. the replaced file's, so an
+/// executable script stays executable).
+pub fn write_atomic_with(
+    path: &Path,
+    bytes: &[u8],
+    permissions: Option<Permissions>,
+) -> io::Result<()> {
     let dir = path
         .parent()
         .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidInput, "path has no parent"))?;
     fs::create_dir_all(dir)?;
     let tmp = temp_path(path)?;
 
-    let written = write_and_sync(&tmp, bytes).and_then(|()| fs::rename(&tmp, path));
+    let written = write_and_sync(&tmp, bytes)
+        .and_then(|()| match permissions {
+            Some(permissions) => fs::set_permissions(&tmp, permissions),
+            None => Ok(()),
+        })
+        .and_then(|()| fs::rename(&tmp, path));
     if written.is_err() {
         // Best effort cleanup; the original error is what matters.
         let _ = fs::remove_file(&tmp);

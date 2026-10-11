@@ -86,7 +86,7 @@ fn is_valid_theme_id(id: &str) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::settings::{AgentBold, Appearance, UiState};
+    use crate::settings::{AgentBold, Appearance, FilesSettings, UiState};
     use serde_json::json;
 
     #[test]
@@ -111,6 +111,7 @@ mod tests {
             current_workspace: None,
             recent_workspaces: Vec::new(),
             terminal: TerminalSettings::default(),
+            files: FilesSettings::default(),
             layout: Some(json!([1, 2, 3])),
         };
 

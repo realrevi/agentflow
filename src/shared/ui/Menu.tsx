@@ -16,9 +16,11 @@ export interface MenuItem {
 }
 
 export type MenuPlacement = 'below-end' | 'above-start' | 'above-end';
+/** A trigger element, or a point (context menus open at the mouse). */
+export type MenuAnchor = HTMLElement | { x: number; y: number };
 
 interface MenuProps {
-  anchor: HTMLElement;
+  anchor: MenuAnchor;
   items: readonly MenuItem[];
   placement: MenuPlacement;
   onSelect: (id: string) => void;
@@ -26,7 +28,8 @@ interface MenuProps {
 }
 
 /** Fixed-position style that places a popover next to `anchor`. */
-export function anchorPosition(anchor: HTMLElement, placement: MenuPlacement): JSX.CSSProperties {
+export function anchorPosition(anchor: MenuAnchor, placement: MenuPlacement): JSX.CSSProperties {
+  if (!(anchor instanceof HTMLElement)) return pointPosition(anchor.x, anchor.y);
   const rect = anchor.getBoundingClientRect();
   const gap = 4;
   if (placement === 'below-end') {
@@ -38,12 +41,25 @@ export function anchorPosition(anchor: HTMLElement, placement: MenuPlacement): J
     : { bottom, right: `${window.innerWidth - rect.right}px` };
 }
 
+/** Opens down-right of the point, flipping near the bottom and right edges. */
+function pointPosition(x: number, y: number): JSX.CSSProperties {
+  const vertical =
+    y > window.innerHeight * 0.6 ? { bottom: `${window.innerHeight - y}px` } : { top: `${y}px` };
+  const horizontal =
+    x > window.innerWidth - 220 ? { right: `${window.innerWidth - x}px` } : { left: `${x}px` };
+  return { ...vertical, ...horizontal };
+}
+
+function isInside(anchor: MenuAnchor, target: Node): boolean {
+  return anchor instanceof HTMLElement && anchor.contains(target);
+}
+
 export function Menu(props: MenuProps): JSX.Element {
   let menu: HTMLDivElement | undefined;
 
   const onPointerDown = (event: PointerEvent) => {
     const target = event.target as Node;
-    if (!menu?.contains(target) && !props.anchor.contains(target)) props.onClose();
+    if (!menu?.contains(target) && !isInside(props.anchor, target)) props.onClose();
   };
   const onKeyDown = (event: KeyboardEvent) => {
     if (event.key === 'Escape') props.onClose();

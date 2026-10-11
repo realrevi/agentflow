@@ -36,6 +36,11 @@ export interface TerminalSettings {
   autoStartShells: boolean;
 }
 
+export interface FilesSettings {
+  /** Show dotfiles in the file tree and quick open (`.git` always stays hidden). */
+  showHidden: boolean;
+}
+
 export interface Settings {
   version: number;
   language: Locale;
@@ -46,6 +51,7 @@ export interface Settings {
   /** Most recent first, at most 10. */
   recentWorkspaces: string[];
   terminal: TerminalSettings;
+  files: FilesSettings;
   layout: SerializedLayout | null;
 }
 
@@ -101,5 +107,56 @@ export interface CliStatus {
   path: string | null;
 }
 
+// Workspace file system (src-tauri/src/fs). Paths are relative to the workspace root
+// and always use `/`.
+
+export interface FsEntry {
+  name: string;
+  path: string;
+  isDir: boolean;
+  isSymlink: boolean;
+}
+
+export interface FileContent {
+  /** `null` for binary files. */
+  content: string | null;
+  binary: boolean;
+  /** Not valid UTF-8: invalid bytes were replaced with U+FFFD. */
+  lossy: boolean;
+  size: number;
+  /** Modification time (ms since the epoch); pass it back to `fs_write`. */
+  mtime: number;
+}
+
+export interface FileStat {
+  size: number;
+  mtime: number;
+}
+
+export type EntryKind = 'file' | 'dir';
+
+export interface QuickOpenMatch {
+  path: string;
+  /** Matched character (code point) indices, for highlighting. */
+  positions: number[];
+}
+
+/** One debounced batch of watcher events. */
+export interface FsChanges {
+  paths: string[];
+  /** Created, removed or renamed: their parent folder needs a re-list. */
+  structural: string[];
+  /** Ignore rules changed or events were lost: re-list everything. */
+  rescan: boolean;
+}
+
 export type AppErrorKind =
-  'io' | 'json' | 'invalidTheme' | 'notFound' | 'invalidInput' | 'pty' | 'internal';
+  | 'io'
+  | 'json'
+  | 'invalidTheme'
+  | 'notFound'
+  | 'invalidInput'
+  | 'pty'
+  | 'conflict'
+  | 'tooLarge'
+  | 'internal';

@@ -10,7 +10,7 @@ import { openPanel, openTerminal } from './layoutStore';
 
 type Mode = 'closed' | 'menu' | 'custom';
 
-/** The "+" in every group header: new terminals, plus (re)opening Workspace / Settings. */
+/** The "+" in every group header: new terminals, plus (re)opening Files / Settings. */
 export function AddPanelButton(props: { groupId: string }) {
   const [mode, setMode] = createSignal<Mode>('closed');
   let button: HTMLButtonElement | undefined;
@@ -30,13 +30,13 @@ export function AddPanelButton(props: { groupId: string }) {
     { id: 'shell', label: kindLabel('shell'), heading: t('panel.add.terminals') },
     ...AGENT_KINDS.map(agentItem),
     { id: 'custom', label: t('terminal.add.custom') },
-    { id: 'workspace', label: t('panel.add.workspace'), heading: t('panel.add.panels') },
+    { id: 'files', label: t('panel.add.files'), heading: t('panel.add.panels') },
     { id: 'settings', label: t('panel.add.settings') },
   ];
 
   const select = (id: string) => {
     if (id === 'custom') setMode('custom');
-    else if (id === 'workspace' || id === 'settings') openPanel(id, props.groupId);
+    else if (id === 'files' || id === 'settings') openPanel(id, props.groupId);
     else if (id === 'shell' || (AGENT_KINDS as readonly string[]).includes(id)) {
       openTerminal(newTerminalConfig(id as PtyKind), props.groupId);
     }

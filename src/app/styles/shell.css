@@ -185,8 +185,26 @@
   background: var(--af-success);
 }
 
-.af-dot-workspace {
+.af-dot-files,
+.af-dot-editor {
   background: var(--af-accent);
+}
+
+.af-view-folder {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 4px;
+  overflow-wrap: anywhere;
+}
+
+.af-view-folder span {
+  font-size: 12px;
+  color: var(--af-fg-muted);
+}
+
+.af-view-gap {
+  margin-top: 20px;
 }
 
 .af-coming-soon {

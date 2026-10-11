@@ -16,6 +16,7 @@ use std::path::Path;
 use tauri::webview::PageLoadEvent;
 use tauri::{Manager, RunEvent};
 
+use crate::fs::FsState;
 use crate::pty::{CliDetector, PtyManager};
 use crate::settings::SettingsStore;
 use crate::themes::ThemeStore;
@@ -57,6 +58,15 @@ pub fn run() {
             commands::pty::pty_kill,
             commands::pty::pty_list,
             commands::pty::cli_detect,
+            commands::fs::fs_open_workspace,
+            commands::fs::fs_close_workspace,
+            commands::fs::fs_list,
+            commands::fs::fs_read,
+            commands::fs::fs_write,
+            commands::fs::fs_create,
+            commands::fs::fs_rename,
+            commands::fs::fs_delete,
+            commands::fs::fs_quick_open,
         ])
         .build(tauri::generate_context!());
 
@@ -68,8 +78,11 @@ pub fn run() {
         }
     };
     app.run(|handle, event| {
-        // Never leave terminal processes behind when the app quits.
+        // Never leave terminal processes or the file watcher behind when the app quits.
         if let RunEvent::Exit = event {
+            if let Some(fs) = handle.try_state::<FsState>() {
+                fs.close();
+            }
             if let Some(manager) = handle.try_state::<PtyManager>() {
                 manager.shutdown();
             }
@@ -83,6 +96,7 @@ fn manage_stores(app: &tauri::App, config_dir: &Path) {
     app.manage(ThemeStore::new(config_dir.join(THEMES_DIR)));
     app.manage(PtyManager::new());
     app.manage(CliDetector::new());
+    app.manage(FsState::new());
 }
 
 fn init_tracing() {
