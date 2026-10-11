@@ -108,6 +108,7 @@ fn a_reply_streams_and_is_stored_with_usage() {
     let setup = setup(&server.base, "anthropic", "anthropic");
     let (started, rx) = setup.send(Some("Hello there"));
     let started = started.expect("started");
+    assert_eq!(started.title, "Hello there");
     assert_eq!(started.user_message.expect("user").content, "Hello there");
     let events = collect(&rx);
     assert_eq!(text_of(&events), "Hi there! How can I help?");

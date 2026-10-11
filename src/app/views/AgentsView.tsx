@@ -1,4 +1,5 @@
 import { For, Show } from 'solid-js';
+import { ChatList } from './ChatList';
 import { Avatar } from '../../features/characters';
 import { t } from '../../features/i18n';
 import { focusPanel, openPanel, openPanels, openTerminal } from '../../features/layout';
@@ -50,6 +51,7 @@ export function AgentsView() {
           </For>
         </ul>
       </Show>
+      <ChatList />
       <div class="af-button-column">
         <button
           type="button"

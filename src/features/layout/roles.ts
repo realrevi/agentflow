@@ -12,7 +12,7 @@ export function isGroupRole(value: unknown): value is GroupRole {
   return typeof value === 'string' && (ROLES as readonly string[]).includes(value);
 }
 
-/** Where a panel opens by default. */
+/** Where a panel opens by default (API chats are agents too). */
 export function roleForPanel(params: PanelParams): GroupRole {
   if (params.kind === 'files') return 'files';
   if (params.kind === 'terminal' && params.config.kind === 'shell') return 'terminal';

@@ -1,14 +1,17 @@
 // Panel kinds shown in the dock. Panel params are persisted inside the layout JSON
 // (terminal config and editor file paths, never output or file contents), so they are
 // parsed defensively on restore.
+import { chatTitle, parseChatConfig, type ChatConfig } from '../chat/config';
 import { parseTerminalConfig, terminalTitle, type TerminalConfig } from '../terminal';
 import { t } from '../i18n';
 import { baseName } from '../workspace';
 
-export type PanelKind = 'terminal' | 'editor' | 'files' | 'settings';
+export type PanelKind = 'terminal' | 'chat' | 'editor' | 'files' | 'settings';
 
 export type PanelParams =
   | { kind: 'terminal'; index: number; config: TerminalConfig }
+  /** An API chat: one stored conversation. */
+  | { kind: 'chat'; index: number; config: ChatConfig }
   /** `root` is the workspace folder the file belongs to; `path` is relative to it. */
   | { kind: 'editor'; index: number; root: string; path: string }
   | { kind: 'files' }
@@ -31,16 +34,18 @@ export function parsePanelParams(raw: unknown): PanelParams | null {
   if (kind === 'editor') {
     return isIndex(index) && isText(root) && isText(path) ? { kind, index, root, path } : null;
   }
+  if (kind === 'chat') {
+    const chat = parseChatConfig(config);
+    return chat && isIndex(index) ? { kind, index, config: chat } : null;
+  }
   if (kind !== 'terminal') return null;
   const parsed = parseTerminalConfig(config);
   return parsed && isIndex(index) ? { kind, index, config: parsed } : null;
 }
 
-/** Singletons use their kind as id; terminals are `terminal-<n>`, editors `editor-<n>`. */
+/** Singletons use their kind as id; the others are `<kind>-<n>` (e.g. `chat-2`). */
 export function panelId(params: PanelParams): string {
-  return params.kind === 'terminal' || params.kind === 'editor'
-    ? `${params.kind}-${params.index}`
-    : params.kind;
+  return 'index' in params ? `${params.kind}-${params.index}` : params.kind;
 }
 
 /** Translated tab title; recomputed when the language changes. */
@@ -48,6 +53,8 @@ export function panelTitle(params: PanelParams): string {
   switch (params.kind) {
     case 'terminal':
       return terminalTitle(params.config);
+    case 'chat':
+      return chatTitle(params.config);
     case 'editor':
       return baseName(params.path);
     case 'files':

@@ -35,6 +35,8 @@ interface PromptBarProps {
   onSend: (text: string) => boolean;
   onSent: (sent: SentPrompt) => void;
   ref: (handle: PromptBarHandle) => void;
+  /** Shown while the bar is disabled (default: "start the agent"). */
+  disabledPlaceholder?: string;
 }
 
 export function PromptBar(props: PromptBarProps) {
@@ -226,7 +228,11 @@ export function PromptBar(props: PromptBarProps) {
         spellcheck={false}
         autocomplete="off"
         disabled={!props.enabled()}
-        placeholder={props.enabled() ? t('prompt.placeholder') : t('prompt.notRunning')}
+        placeholder={
+          props.enabled()
+            ? t('prompt.placeholder')
+            : (props.disabledPlaceholder ?? t('prompt.notRunning'))
+        }
         aria-label={t('prompt.label')}
         onInput={() => {
           recall = recall.index === null ? recall : { ...recall, index: null };

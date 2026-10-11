@@ -1,9 +1,10 @@
 export { focusedAgent } from './characters';
+export { closeChatPanels, openChat, reopenChat, startChat } from './chatPanels';
+export { openEditor, renameEditors } from './editorPanels';
 export { DockviewHost } from './DockviewHost';
 export {
   flushLayout,
   focusPanel,
-  openEditor,
   openPanel,
   openPanels,
   openTerminal,

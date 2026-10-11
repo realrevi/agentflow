@@ -1,0 +1,29 @@
+/* The "API agent…" popover (loaded with the layout, before any chat panel). */
+.af-new-chat {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 260px;
+}
+
+.af-new-chat p {
+  margin: 0;
+}
+
+.af-new-chat label {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 12px;
+  color: var(--af-fg-muted);
+}
+
+.af-new-chat-title {
+  font-family: var(--af-font-pixel);
+  color: var(--af-bold-color);
+}
+
+.af-new-chat-error {
+  font-size: 12px;
+  color: var(--af-error);
+}

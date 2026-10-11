@@ -1,18 +1,22 @@
 // Shown by dockview in empty groups and when the whole dock is empty. The center (agent
 // area) offers the agent CLIs; they never start by themselves.
-import { For, onMount, Show } from 'solid-js';
+import { createSignal, For, onMount, Show } from 'solid-js';
 import { shortcutLabel } from '../../shared/platform';
 import type { PtyKind } from '../../shared/types';
 import { agentsIcon, logoIcon } from '../../shared/ui/icons';
 import { PixelIcon } from '../../shared/ui/PixelIcon';
+import { NewChatPrompt } from '../chat';
 import { t } from '../i18n';
 import { AGENT_KINDS, cliFor, kindLabel, loadCliStatus, newTerminalConfig } from '../terminal';
+import { startChat } from './chatPanels';
 import { openPanel, openTerminal } from './layoutStore';
 import { groupRole } from './roles';
 
 function AgentArea(props: { groupId: string }) {
   onMount(() => void loadCliStatus());
   const start = (kind: PtyKind) => openTerminal(newTerminalConfig(kind), props.groupId);
+  const [asking, setAsking] = createSignal(false);
+  let apiButton: HTMLButtonElement | undefined;
   return (
     <div class="af-watermark">
       <PixelIcon art={agentsIcon} scale={5} />
@@ -35,7 +39,28 @@ function AgentArea(props: { groupId: string }) {
             );
           }}
         </For>
+        <button
+          ref={apiButton}
+          type="button"
+          class="af-button secondary"
+          aria-haspopup="dialog"
+          aria-expanded={asking()}
+          onClick={() => setAsking((open) => !open)}
+        >
+          {t('panel.add.api')}
+        </button>
       </div>
+      <Show when={asking() && apiButton}>
+        {(anchor) => (
+          <NewChatPrompt
+            anchor={anchor()}
+            placement="below-start"
+            onStart={(providerId, model) => void startChat(providerId, model, props.groupId)}
+            onOpenSettings={() => openPanel('settings')}
+            onClose={() => setAsking(false)}
+          />
+        )}
+      </Show>
       <p class="af-watermark-hint">
         {t('agents.area.quickOpen', { shortcut: shortcutLabel('P') })}
       </p>

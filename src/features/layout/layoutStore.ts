@@ -1,6 +1,6 @@
 // Owns the live dockview instance: restore/persist the layout (with group roles), open
 // panels in the right group, guard closing, reset, and keep tab titles translated.
-import type { DockviewApi, DockviewGroupPanel, IDockviewPanel } from 'dockview-core';
+import type { DockviewApi, DockviewGroupPanel } from 'dockview-core';
 import { createEffect, createRoot, createSignal, on } from 'solid-js';
 import { askChoice } from '../../shared/dialog';
 import { debounce, type Debounced } from '../../shared/debounce';
@@ -9,9 +9,8 @@ import type { CharacterRef } from '../characters';
 import { confirmEditorClose, dirtyEditorCount } from '../editor';
 import { locale, reportError, t } from '../i18n';
 import { saveLayout, savedLayout, settings } from '../settings/settingsStore';
-import { avatarFor, type TerminalConfig } from '../terminal';
-import { currentWorkspace, renamedPath } from '../workspace';
-import { ensureCharacters, setCharacter, trackFocusedAgent } from './characters';
+import type { TerminalConfig } from '../terminal';
+import { characterOf, ensureCharacters, setCharacter, trackFocusedAgent } from './characters';
 import { buildDefaultLayout } from './defaultLayout';
 import {
   panelOptions,
@@ -38,7 +37,7 @@ export interface OpenPanel {
   title: string;
   kind: PanelKind;
   active: boolean;
-  /** The pixel character shown for it (terminals only; respects the avatar settings). */
+  /** The pixel character shown for it (agent panels; respects the avatar settings). */
   character: CharacterRef | null;
 }
 
@@ -129,13 +128,12 @@ function ensureRole(group: DockviewGroupPanel | undefined): void {
   setGroupRole(group.id, params ? roleForPanel(params) : 'agents');
 }
 
-function syncOpenPanels(): void {
+export function syncOpenPanels(): void {
   const activeId = api?.activePanel?.id;
   const panels = (api?.panels ?? []).flatMap((panel): OpenPanel[] => {
     const params = parsePanelParams(panel.params);
     if (!params) return [];
-    const character =
-      params.kind === 'terminal' ? avatarFor(params.config, settings.characters) : null;
+    const character = characterOf(params);
     const title = panelTitle(params);
     return [{ id: panel.id, title, kind: params.kind, active: panel.id === activeId, character }];
   });
@@ -143,7 +141,7 @@ function syncOpenPanels(): void {
 }
 
 /** Gives agent panels without one a character (sprites load on first use). */
-function assignCharacters(): void {
+export function assignCharacters(): void {
   const dock = api;
   if (!dock) return;
   ensureCharacters(dock)
@@ -155,7 +153,7 @@ function assignCharacters(): void {
     .catch((err: unknown) => reportError('error.characters', err));
 }
 
-/** Changes a terminal panel's character (persists with the layout). */
+/** Changes an agent panel's character (persists with the layout). */
 export function setPanelCharacter(id: string, character: CharacterRef): void {
   if (api && setCharacter(api, id, character)) syncOpenPanels();
 }
@@ -168,7 +166,12 @@ function retitlePanels(): void {
   syncOpenPanels();
 }
 
-function nextIndex(dock: DockviewApi, kind: 'terminal' | 'editor'): number {
+/** The live dock (for the panel helpers in editorPanels.ts and chatPanels.ts). */
+export function currentDock(): DockviewApi | undefined {
+  return api;
+}
+
+export function nextIndex(dock: DockviewApi, kind: 'terminal' | 'chat' | 'editor'): number {
   let index = 1;
   while (dock.getPanel(`${kind}-${index}`)) index++;
   return index;
@@ -180,7 +183,7 @@ export function consumeFreshPanel(id: string): boolean {
 }
 
 /** Adds a panel to `groupId` (the "+" it was picked from) or the group of its role. */
-function addPanel(dock: DockviewApi, params: PanelParams, groupId?: string): void {
+export function addPanel(dock: DockviewApi, params: PanelParams, groupId?: string): void {
   const target =
     (groupId ? dock.getGroup(groupId) : undefined) ?? groupForRole(dock, roleForPanel(params));
   dock.addPanel({ ...panelOptions(params), position: { referenceGroup: target.id } });
@@ -201,37 +204,6 @@ export function openTerminal(config: TerminalConfig, groupId?: string): void {
   freshPanels.add(`terminal-${index}`);
   addPanel(api, { kind: 'terminal', index, config }, groupId);
   assignCharacters();
-}
-
-function editorPanels(dock: DockviewApi): { panel: IDockviewPanel; root: string; path: string }[] {
-  return dock.panels.flatMap((panel) => {
-    const params = parsePanelParams(panel.params);
-    return params?.kind === 'editor' ? [{ panel, root: params.root, path: params.path }] : [];
-  });
-}
-
-/** Opens a workspace file in an editor tab in the center (or focuses its tab). */
-export function openEditor(path: string): void {
-  const root = currentWorkspace();
-  if (!api || !root) return;
-  const existing = editorPanels(api).find((editor) => editor.root === root && editor.path === path);
-  if (existing) existing.panel.api.setActive();
-  else addPanel(api, { kind: 'editor', index: nextIndex(api, 'editor'), root, path });
-}
-
-/** Keeps editor tabs pointing at files that were renamed or moved in the file tree. */
-export function renameEditors(from: string, to: string): void {
-  const root = currentWorkspace();
-  if (!api || !root) return;
-  for (const editor of editorPanels(api)) {
-    const path = editor.root === root ? renamedPath(editor.path, from, to) : null;
-    if (!path) continue;
-    const params = parsePanelParams(editor.panel.params);
-    if (params?.kind !== 'editor') continue;
-    editor.panel.api.updateParameters({ ...params, path });
-    editor.panel.api.setTitle(panelTitle({ ...params, path }));
-  }
-  syncOpenPanels();
 }
 
 export function focusPanel(id: string): void {

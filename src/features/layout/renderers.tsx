@@ -13,15 +13,18 @@ import { FilesPanel } from '../files';
 import { t } from '../i18n';
 import { settings } from '../settings/settingsStore';
 import { AddPanelButton } from './AddPanelButton';
-import { consumeFreshPanel, openEditor, renameEditors } from './layoutStore';
+import { openEditor, renameEditors } from './editorPanels';
+import { consumeFreshPanel } from './layoutStore';
 import { createPanelTab } from './PanelTab';
 import { PANEL_TAB, parsePanelParams, type PanelParams } from './panels';
 import { createSolidPart } from './solidPart';
 import { Watermark } from './Watermark';
 
-// Lazy: settings UI, xterm.js and CodeMirror are only downloaded when first needed.
+// Lazy: settings UI, xterm.js, CodeMirror and the chat (markdown, DOMPurify) are only
+// downloaded when first needed.
 const SettingsPanel = lazy(() => import('../settings/SettingsPanel'));
 const TerminalPanel = lazy(() => import('../terminal/TerminalPanel'));
+const ChatPanel = lazy(() => import('../chat/ChatPanel'));
 const EditorPanel = lazy(() => import('../editor/EditorPanel'));
 
 function Loading(): JSX.Element {
@@ -67,6 +70,9 @@ function PanelView(props: { id: string; params: PanelParams; api: DockviewPanelA
               />
             </WhenVisible>
           )}
+        </Match>
+        <Match when={params.kind === 'chat' && params}>
+          {(chat) => <ChatPanel panelId={props.id} config={chat().config} api={props.api} />}
         </Match>
         <Match when={params.kind === 'terminal' && params}>
           {(terminal) => (

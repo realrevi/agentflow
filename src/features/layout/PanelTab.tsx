@@ -9,7 +9,8 @@ import { editorDirty } from '../editor';
 import { t, type I18nKey } from '../i18n';
 import { settings } from '../settings/settingsStore';
 import { agentState } from '../agentui';
-import { avatarFor, terminalStatus, type TerminalStatus } from '../terminal';
+import { terminalStatus, type TerminalStatus } from '../terminal';
+import { characterOf } from './characters';
 import { closePanel, setPanelCharacter } from './layoutStore';
 import { parsePanelParams, type PanelParams } from './panels';
 import { createSolidPart } from './solidPart';
@@ -36,10 +37,7 @@ function PanelTab(props: { api: DockviewPanelApi; title: string; params: PanelPa
     const current = params();
     return current?.kind === 'editor' ? current.path : undefined;
   };
-  const character = () => {
-    const current = params();
-    return current?.kind === 'terminal' ? avatarFor(current.config, settings.characters) : null;
-  };
+  const character = () => characterOf(params());
   const [picking, setPicking] = createSignal(false);
   let avatarButton: HTMLButtonElement | undefined;
 

@@ -33,6 +33,8 @@ pub struct ChatSendRequest {
 pub struct ChatStarted {
     pub request_id: u64,
     pub user_message: Option<ChatMessage>,
+    /// The conversation's title (the first prompt names a new chat).
+    pub title: String,
 }
 
 /// Everything a reply needs from the app's managed state.
@@ -104,6 +106,7 @@ where
             return Err(err);
         }
     };
+    let title = conversation.title.clone();
     let chat = match build_request(&conversation, &entry) {
         Ok(chat) => chat,
         Err(err) => {
@@ -127,6 +130,7 @@ where
     Ok(ChatStarted {
         request_id,
         user_message,
+        title,
     })
 }
 
