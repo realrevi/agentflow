@@ -57,7 +57,9 @@ export function ProvidersSection() {
     try {
       await removeKey(id);
     } catch (err) {
+      // Keep the entry so its key is not left orphaned in the keychain; the user can retry.
       reportError('error.providerKey', err);
+      return;
     }
     forgetModels(id);
     updateSettings((s) => (s.providers = s.providers.filter((p) => p.id !== id)));

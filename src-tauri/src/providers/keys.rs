@@ -7,6 +7,7 @@ use std::sync::{Arc, Mutex};
 
 use serde::Serialize;
 
+use super::error::redact;
 use crate::error::{AppError, AppResult};
 use crate::settings::is_valid_provider_id;
 use crate::util::lock;
@@ -153,7 +154,7 @@ impl KeyVault {
         }
         self.store
             .set(&account, key)
-            .map_err(|err| keychain_error("save the key", &err))?;
+            .map_err(|err| keychain_error("save the key", &redact(&err, Some(key))))?;
         let key = ApiKey(key.to_owned());
         let status = KeyStatus::of(Some(&key));
         lock(&self.cache).insert(account, Some(key));
@@ -194,7 +195,7 @@ fn account(provider_id: &str) -> AppResult<String> {
     Ok(format!("provider:{provider_id}"))
 }
 
-/// Keychain errors never contain the secret, only the store's own message.
+/// Keychain errors carry only the store's own message (redacted on save, just in case).
 fn keychain_error(action: &str, detail: &str) -> AppError {
     AppError::Internal(format!("could not {action} in the OS keychain: {detail}"))
 }

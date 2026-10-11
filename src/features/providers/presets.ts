@@ -110,7 +110,6 @@ export function baseUrlProblem(raw: string): 'empty' | 'invalid' | 'insecure' | 
   if (url.protocol === 'https:') return url.hostname ? null : 'invalid';
   if (url.protocol !== 'http:') return 'invalid';
   const host = url.hostname.replace(/^\[|\]$/g, '').toLowerCase();
-  const local =
-    host === 'localhost' || host.endsWith('.localhost') || host === '::1' || /^127\./.test(host);
+  const local = host === 'localhost' || host === '::1' || /^127\./.test(host);
   return local ? null : 'insecure';
 }

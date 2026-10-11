@@ -79,7 +79,7 @@ where
         run_blocking(move || vault.get(&provider_id)).await?
     };
     let secret = key.as_ref().map(|k| k.expose().to_owned());
-    let provider = build_provider(&entry, key).map_err(|err| AppError::Provider(err.message))?;
+    let provider = build_provider(&entry, key)?;
     let http = manager.http()?;
 
     let qualified = format!("{}|{id}", workspace.as_deref().unwrap_or(""));
@@ -217,8 +217,10 @@ pub fn tiny_request(model: &str) -> ChatRequest {
     }
 }
 
+/// For errors raised before a request has a key at hand (config checks). Key-shaped text
+/// is still masked, in case one ever ends up in such a message.
 impl From<ProviderError> for AppError {
     fn from(err: ProviderError) -> Self {
-        AppError::Provider(err.message)
+        AppError::Provider(err.redacted(None).message)
     }
 }

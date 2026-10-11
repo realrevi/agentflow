@@ -1,5 +1,6 @@
 //! Base URL rules: HTTPS only, except plain HTTP to this machine (Ollama and other local
-//! servers). No credentials in the URL. Endpoints are appended to the base path.
+//! servers: `localhost` or a loopback IP, never a name that DNS could send elsewhere).
+//! No credentials in the URL. Endpoints are appended to the base path.
 
 use reqwest::Url;
 
@@ -41,10 +42,7 @@ fn is_local(url: &Url) -> bool {
     let host = host.trim_start_matches('[').trim_end_matches(']');
     match host.parse::<std::net::IpAddr>() {
         Ok(ip) => ip.is_loopback(),
-        Err(_) => {
-            let name = host.to_ascii_lowercase();
-            name == "localhost" || name.ends_with(".localhost")
-        }
+        Err(_) => host.eq_ignore_ascii_case("localhost"),
     }
 }
 
@@ -72,7 +70,6 @@ mod tests {
             "http://localhost:11434/v1",
             "http://127.0.0.1:1234/v1",
             "http://[::1]:8080",
-            "http://ollama.localhost/v1",
             "http://LOCALHOST:11434",
         ] {
             assert!(parse_base_url(local).is_ok(), "{local}");
@@ -81,6 +78,7 @@ mod tests {
             "http://api.openai.com/v1",
             "http://192.168.1.20:11434/v1",
             "http://localhost.evil.com/v1",
+            "http://ollama.localhost/v1",
             "ftp://example.com",
             "file:///etc/passwd",
             "https://user:pass@example.com",
