@@ -6,16 +6,16 @@ side in a VS Code-style dockable layout, watched over by cute pixel-art agent ch
 AgentFlow is a lightweight desktop app (Tauri 2 + Rust + SolidJS) for Windows, macOS and Linux.
 The goals are low RAM, a fast UI, a clean codebase, and a fun look.
 
-> **Status:** early development. Phases 1–4 of 9 are done: app shell, themes, languages,
-> dockable layout, real terminal panels, the workspace file tree, a code editor, and pixel
-> characters with a prompt bar. See the [roadmap](#roadmap).
+> **Status:** early development. Phases 1–5 of 9 are done: app shell, themes, languages,
+> dockable layout, real terminal panels, the workspace file tree, a code editor, pixel
+> characters with a prompt bar, and API chat agents. See the [roadmap](#roadmap).
 
 ![AgentFlow screenshot](docs/screenshot.png)
-<!-- Phase 4: an agent panel with its character, speech bubble and prompt bar; the Characters view on the left. -->
+<!-- Phase 5: an API chat panel with its character and prompt bar; open panels and saved chats in the Agents view. -->
 
 ## Features
 
-Available now (phases 1–4):
+Available now (phases 1–5):
 
 - VS Code-style shell: activity bar, resizable and collapsible sidebar, dock area, status bar
 - Dockable panels (split, tab, drag, close, re-open from **+**), and the layout persists across restarts
@@ -43,14 +43,21 @@ Available now (phases 1–4):
   Up recalls; your character walks along as you type and catches the prompt as a pixel packet.
   Prompt history per panel and workspace (click the character)
 - Animations cost nothing while agents rest, stop when hidden and follow reduced motion
+- API agents (chat only for now): Anthropic, OpenAI, DeepSeek, Gemini, OpenRouter, Groq, a local
+  Ollama or any OpenAI-compatible server, each chat in its own panel with a character. Models
+  come from the provider (or type one in); add providers in Settings › Providers and test them
+- Replies stream in smoothly as Markdown, with copyable code blocks; Stop at any time, Retry
+  after an error. Drag files from the tree onto the prompt bar to send them as context
+- Chats are saved per workspace and listed in the Agents view: reopen, rename or delete them.
+  Token usage is recorded with every reply
+- API keys live only in your OS keychain, never in settings files or logs; the app only ever
+  shows their last 4 characters
 
 ![The 15 characters](docs/characters.png)
 
 Planned:
 
-- AI providers: Claude Code, Codex and Gemini CLIs, plus Anthropic, OpenAI, Gemini, DeepSeek and
-  OpenAI-compatible APIs (keys stored in the OS keyring)
-- Token and cost tracking
+- Token and cost tracking (a dashboard over the recorded usage)
 - Agent installer wizard and a community agent library
 
 ## Roadmap
@@ -61,7 +68,7 @@ Planned:
 | 2     | PTY + multiple terminal panels (xterm.js WebGL, portable-pty)          | Done   |
 | 3     | Workspace file tree (notify + ignore) + CodeMirror 6 viewer/editor     | Done   |
 | 4     | Pixel character system (15 characters, 16x16 JSON sprites, speech bar) | Done   |
-| 5     | AI providers (CLI agents + HTTP APIs, keys in the OS keyring)          |        |
+| 5     | AI provider APIs + API chat panels (keys in the OS keychain)           | Done   |
 | 6     | Token and cost tracking                                                |        |
 | 7     | Agent installer wizard (per-AI formats and paths)                      |        |
 | 8     | Community agent library from GitHub                                    |        |
@@ -125,7 +132,8 @@ sudo pacman -S --needed webkit2gtk-4.1 libsoup3 base-devel curl wget file openss
   appmenu-gtk-module libappindicator-gtk3 librsvg xdotool
 ```
 
-Then install Rust with [rustup](https://rustup.rs), Node.js and pnpm.
+Then install Rust with [rustup](https://rustup.rs), Node.js and pnpm. API keys are stored through
+the Secret Service, so a keyring daemon (GNOME Keyring, KWallet...) must be running.
 
 ### Run
 
