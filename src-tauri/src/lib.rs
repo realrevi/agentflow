@@ -1,12 +1,13 @@
 //! AgentFlow backend: wires the Tauri app, managed state and IPC commands.
 
 mod agents;
+pub mod chat;
 mod commands;
 pub mod conversations;
 pub mod error;
 mod fs;
 pub mod prompts;
-mod providers;
+pub mod providers;
 pub mod pty;
 pub mod settings;
 pub mod themes;
@@ -18,9 +19,11 @@ use std::path::Path;
 use tauri::webview::PageLoadEvent;
 use tauri::{Manager, RunEvent};
 
+use crate::chat::ChatManager;
 use crate::conversations::ConversationStore;
 use crate::fs::FsState;
 use crate::prompts::PromptHistory;
+use crate::providers::{KeyVault, OsKeychain};
 use crate::pty::{CliDetector, PtyManager};
 use crate::settings::SettingsStore;
 use crate::themes::ThemeStore;
@@ -43,6 +46,9 @@ pub fn run() {
             if payload.event() == PageLoadEvent::Started {
                 if let Some(manager) = webview.try_state::<PtyManager>() {
                     manager.kill_all();
+                }
+                if let Some(chats) = webview.try_state::<ChatManager>() {
+                    chats.cancel_all();
                 }
             }
         })
@@ -81,6 +87,13 @@ pub fn run() {
             commands::conversations::conversation_create,
             commands::conversations::conversation_update,
             commands::conversations::conversation_delete,
+            commands::chat::chat_send,
+            commands::chat::chat_cancel,
+            commands::providers::provider_key_status,
+            commands::providers::provider_set_key,
+            commands::providers::provider_delete_key,
+            commands::providers::provider_models,
+            commands::providers::provider_test,
         ])
         .build(tauri::generate_context!());
 
@@ -100,6 +113,9 @@ pub fn run() {
             if let Some(manager) = handle.try_state::<PtyManager>() {
                 manager.shutdown();
             }
+            if let Some(chats) = handle.try_state::<ChatManager>() {
+                chats.cancel_all();
+            }
         }
     });
 }
@@ -113,6 +129,8 @@ fn manage_stores(app: &tauri::App, config_dir: &Path, data_dir: &Path) {
     app.manage(FsState::new());
     app.manage(PromptHistory::new(data_dir.join(PROMPT_HISTORY_DIR)));
     app.manage(ConversationStore::new(data_dir.join(CONVERSATIONS_DIR)));
+    app.manage(KeyVault::new(std::sync::Arc::new(OsKeychain)));
+    app.manage(ChatManager::new());
 }
 
 fn init_tracing() {

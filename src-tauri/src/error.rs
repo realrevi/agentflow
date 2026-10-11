@@ -24,6 +24,9 @@ pub enum AppError {
     Conflict(String),
     #[error("file is too large to open ({size} bytes, limit {limit} bytes)")]
     TooLarge { size: u64, limit: u64 },
+    /// A provider request failed or is not set up; the message is redacted and readable.
+    #[error("{0}")]
+    Provider(String),
     #[error("internal error: {0}")]
     Internal(String),
 }
@@ -40,6 +43,7 @@ impl AppError {
             Self::Pty(_) => "pty",
             Self::Conflict(_) => "conflict",
             Self::TooLarge { .. } => "tooLarge",
+            Self::Provider(_) => "provider",
             Self::Internal(_) => "internal",
         }
     }
