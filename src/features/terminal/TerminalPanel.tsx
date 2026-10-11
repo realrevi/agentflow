@@ -56,6 +56,7 @@ export default function TerminalPanel(props: TerminalPanelProps) {
       start: () => activity.start(),
       output: () => activity.output(),
       enter: () => activity.prompt(),
+      typed: () => activity.typed(),
       exit: (code) => activity.exit(code),
     },
     defaultCwd: () => settings.currentWorkspace,
@@ -80,8 +81,9 @@ export default function TerminalPanel(props: TerminalPanelProps) {
   createEffect(() => controller.applySettings({ ...settings.terminal }));
 
   const send = (text: string) => {
+    if (status() !== 'running') return false;
+    activity.prompt(); // before the write, so its echo is not taken for work
     if (!controller.sendPrompt(text)) return false;
-    activity.prompt();
     history?.add(text);
     setLastPrompt({ text, at: Date.now() });
     return true;

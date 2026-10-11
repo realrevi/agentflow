@@ -25,6 +25,10 @@ export class AgentActivity {
     this.apply(this.tracker.prompt(performance.now()));
   }
 
+  typed(): void {
+    this.tracker.typed(performance.now());
+  }
+
   output(): void {
     const before = this.tracker.state;
     const state = this.tracker.output(performance.now());

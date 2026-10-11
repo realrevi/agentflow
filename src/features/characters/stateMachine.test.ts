@@ -27,6 +27,15 @@ describe('agent state heuristic', () => {
     expect(agent.output(4000)).toBe('work');
   });
 
+  it('the echo of keys typed into the terminal is not work', () => {
+    const agent = new AgentStateTracker();
+    agent.typed(1000);
+    expect(agent.output(1000 + ECHO_MS - 1)).toBe('idle');
+    expect(agent.output(1000 + ECHO_MS)).toBe('work');
+    agent.typed(1500); // typing while it works does not stop the work
+    expect(agent.output(1600)).toBe('work');
+  });
+
   it('thinking does not time out without output', () => {
     const agent = new AgentStateTracker();
     agent.prompt(0);

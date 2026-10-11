@@ -41,6 +41,8 @@ export interface ActivityHooks {
   output(): void;
   /** Enter typed directly into the terminal. */
   enter(): void;
+  /** Any other keys typed into the terminal (their echo is not work). */
+  typed(): void;
   exit(code: number | null): void;
 }
 
@@ -269,8 +271,10 @@ export class TerminalController {
 
   private onInput(data: string): void {
     if (this.status === 'running') {
-      this.session?.input.push(data);
+      // Noted before writing, so the echo is recognized even if it comes back at once.
       if (data.includes('\r')) this.options.activity?.enter();
+      else this.options.activity?.typed();
+      this.session?.input.push(data);
     } else if (this.status === 'exited' && data === '\r') void this.start();
   }
 
