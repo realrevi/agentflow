@@ -15,6 +15,10 @@ pub enum AppError {
     InvalidTheme(String),
     #[error("not found: {0}")]
     NotFound(String),
+    #[error("invalid input: {0}")]
+    InvalidInput(String),
+    #[error("terminal error: {0}")]
+    Pty(String),
     #[error("internal error: {0}")]
     Internal(String),
 }
@@ -27,6 +31,8 @@ impl AppError {
             Self::Json(_) => "json",
             Self::InvalidTheme(_) => "invalidTheme",
             Self::NotFound(_) => "notFound",
+            Self::InvalidInput(_) => "invalidInput",
+            Self::Pty(_) => "pty",
             Self::Internal(_) => "internal",
         }
     }

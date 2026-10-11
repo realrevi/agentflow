@@ -5,7 +5,7 @@ mod commands;
 pub mod error;
 mod fs;
 mod providers;
-mod pty;
+pub mod pty;
 pub mod settings;
 pub mod themes;
 mod tokens;
@@ -13,8 +13,9 @@ mod util;
 
 use std::path::Path;
 
-use tauri::Manager;
+use tauri::{Manager, RunEvent};
 
+use crate::pty::{CliDetector, PtyManager};
 use crate::settings::SettingsStore;
 use crate::themes::ThemeStore;
 
@@ -25,7 +26,7 @@ const THEMES_DIR: &str = "themes";
 pub fn run() {
     init_tracing();
 
-    let result = tauri::Builder::default()
+    let app = tauri::Builder::default()
         .setup(|app| {
             let config_dir = app.path().app_config_dir()?;
             manage_stores(app, &config_dir);
@@ -37,19 +38,38 @@ pub fn run() {
             commands::themes::list_themes,
             commands::themes::get_theme,
             commands::themes::import_theme,
+            commands::pty::pty_spawn,
+            commands::pty::pty_write,
+            commands::pty::pty_resize,
+            commands::pty::pty_kill,
+            commands::pty::pty_list,
+            commands::pty::cli_detect,
         ])
-        .run(tauri::generate_context!());
+        .build(tauri::generate_context!());
 
-    if let Err(err) = result {
-        tracing::error!("AgentFlow stopped with an error: {err}");
-        std::process::exit(1);
-    }
+    let app = match app {
+        Ok(app) => app,
+        Err(err) => {
+            tracing::error!("AgentFlow failed to start: {err}");
+            std::process::exit(1);
+        }
+    };
+    app.run(|handle, event| {
+        // Never leave terminal processes behind when the app quits.
+        if let RunEvent::Exit = event {
+            if let Some(manager) = handle.try_state::<PtyManager>() {
+                manager.shutdown();
+            }
+        }
+    });
 }
 
 fn manage_stores(app: &tauri::App, config_dir: &Path) {
     tracing::info!("using config dir {}", config_dir.display());
     app.manage(SettingsStore::load(config_dir.join(SETTINGS_FILE)));
     app.manage(ThemeStore::new(config_dir.join(THEMES_DIR)));
+    app.manage(PtyManager::new());
+    app.manage(CliDetector::new());
 }
 
 fn init_tracing() {
