@@ -98,5 +98,9 @@
   "error.folderPick": "Klasör seçici açılamadı",
   "error.terminalStart": "Terminal başlatılamadı",
   "error.cliDetect": "Ajan CLI'ları aranamadı",
-  "error.clipboard": "Panoya erişilemedi"
+  "error.clipboard": "Panoya erişilemedi",
+  "settings.files": "Dosyalar",
+  "settings.files.showHidden": "Gizli dosyaları göster",
+  "settings.files.showHiddenHint": "Nokta ile başlayan dosyalar dosya ağacında ve hızlı açmada görünür. .git her zaman gizli kalır.",
+  "error.workspaceOpen": "Çalışma alanı klasörü açılamadı"
 }

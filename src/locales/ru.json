@@ -98,5 +98,9 @@
   "error.folderPick": "Не удалось открыть выбор папки",
   "error.terminalStart": "Не удалось запустить терминал",
   "error.cliDetect": "Не удалось найти CLI агентов",
-  "error.clipboard": "Не удалось получить доступ к буферу обмена"
+  "error.clipboard": "Не удалось получить доступ к буферу обмена",
+  "settings.files": "Файлы",
+  "settings.files.showHidden": "Показывать скрытые файлы",
+  "settings.files.showHiddenHint": "Файлы, начинающиеся с точки, видны в дереве файлов и быстром открытии. Папка .git всегда скрыта.",
+  "error.workspaceOpen": "Не удалось открыть папку рабочей области"
 }

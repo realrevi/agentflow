@@ -98,5 +98,9 @@
   "error.folderPick": "Die Ordnerauswahl konnte nicht geöffnet werden",
   "error.terminalStart": "Das Terminal konnte nicht gestartet werden",
   "error.cliDetect": "Agenten-CLIs konnten nicht gesucht werden",
-  "error.clipboard": "Zugriff auf die Zwischenablage fehlgeschlagen"
+  "error.clipboard": "Zugriff auf die Zwischenablage fehlgeschlagen",
+  "settings.files": "Dateien",
+  "settings.files.showHidden": "Versteckte Dateien anzeigen",
+  "settings.files.showHiddenHint": "Dotfiles erscheinen im Dateibaum und in der Schnellsuche. .git bleibt immer verborgen.",
+  "error.workspaceOpen": "Der Arbeitsbereichsordner konnte nicht geöffnet werden"
 }

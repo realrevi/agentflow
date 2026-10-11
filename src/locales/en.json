@@ -98,5 +98,9 @@
   "error.folderPick": "Could not open the folder picker",
   "error.terminalStart": "Could not start the terminal",
   "error.cliDetect": "Could not look for agent CLIs",
-  "error.clipboard": "Clipboard access failed"
+  "error.clipboard": "Clipboard access failed",
+  "settings.files": "Files",
+  "settings.files.showHidden": "Show hidden files",
+  "settings.files.showHiddenHint": "Dotfiles appear in the file tree and quick open. .git always stays hidden.",
+  "error.workspaceOpen": "Could not open the workspace folder"
 }

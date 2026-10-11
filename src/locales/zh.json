@@ -98,5 +98,9 @@
   "error.folderPick": "无法打开文件夹选择器",
   "error.terminalStart": "无法启动终端",
   "error.cliDetect": "无法查找智能体 CLI",
-  "error.clipboard": "无法访问剪贴板"
+  "error.clipboard": "无法访问剪贴板",
+  "settings.files": "文件",
+  "settings.files.showHidden": "显示隐藏文件",
+  "settings.files.showHiddenHint": "以点开头的文件会显示在文件树和快速打开中。.git 始终隐藏。",
+  "error.workspaceOpen": "无法打开工作区文件夹"
 }
