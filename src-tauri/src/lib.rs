@@ -27,6 +27,7 @@ pub fn run() {
     init_tracing();
 
     let app = tauri::Builder::default()
+        .plugin(tauri_plugin_dialog::init())
         .setup(|app| {
             let config_dir = app.path().app_config_dir()?;
             manage_stores(app, &config_dir);
