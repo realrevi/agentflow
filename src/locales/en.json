@@ -153,5 +153,8 @@
   "agents.area.quickOpen": "Quick open a file: {shortcut}",
   "layout.resetDirty.title": "Reset the layout and discard unsaved changes?",
   "layout.resetDirty.body": "Editors with unsaved changes: {count}.",
-  "layout.resetDirty.discard": "Discard and reset"
+  "layout.resetDirty.discard": "Discard and reset",
+  "app.quit.title": "Save changes before closing?",
+  "app.quit.body": "Editors with unsaved changes: {count}.",
+  "app.quit.saveAll": "Save all"
 }

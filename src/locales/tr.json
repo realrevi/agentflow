@@ -153,5 +153,8 @@
   "agents.area.quickOpen": "Hızlıca dosya aç: {shortcut}",
   "layout.resetDirty.title": "Düzen sıfırlansın ve kaydedilmemiş değişiklikler atılsın mı?",
   "layout.resetDirty.body": "Kaydedilmemiş değişikliği olan düzenleyiciler: {count}.",
-  "layout.resetDirty.discard": "At ve sıfırla"
+  "layout.resetDirty.discard": "At ve sıfırla",
+  "app.quit.title": "Kapatmadan önce değişiklikler kaydedilsin mi?",
+  "app.quit.body": "Kaydedilmemiş değişikliği olan düzenleyiciler: {count}.",
+  "app.quit.saveAll": "Tümünü kaydet"
 }

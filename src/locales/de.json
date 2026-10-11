@@ -153,5 +153,8 @@
   "agents.area.quickOpen": "Datei schnell öffnen: {shortcut}",
   "layout.resetDirty.title": "Layout zurücksetzen und ungespeicherte Änderungen verwerfen?",
   "layout.resetDirty.body": "Editoren mit ungespeicherten Änderungen: {count}.",
-  "layout.resetDirty.discard": "Verwerfen und zurücksetzen"
+  "layout.resetDirty.discard": "Verwerfen und zurücksetzen",
+  "app.quit.title": "Änderungen vor dem Schließen speichern?",
+  "app.quit.body": "Editoren mit ungespeicherten Änderungen: {count}.",
+  "app.quit.saveAll": "Alle speichern"
 }

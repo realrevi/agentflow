@@ -1,5 +1,6 @@
 import { onCleanup, onMount } from 'solid-js';
 import { AppShell } from './app/AppShell';
+import { installQuitGuard } from './app/quitGuard';
 import { Dialogs } from './app/Dialogs';
 import { Toasts } from './app/Toasts';
 import { installQuickOpenShortcut, QuickOpen } from './features/files';
@@ -11,6 +12,7 @@ export default function App() {
     const uninstall = [
       installNewShellShortcut(() => openTerminal(newTerminalConfig('shell'))),
       installQuickOpenShortcut(),
+      installQuitGuard(),
     ];
     onCleanup(() => uninstall.forEach((fn) => fn()));
   });

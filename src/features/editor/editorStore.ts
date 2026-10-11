@@ -39,6 +39,13 @@ export function registerEditor(panelId: string, handle: EditorHandle): () => voi
   };
 }
 
+/** Saves every dirty editor. Resolves `true` only if all of them were saved. */
+export async function saveAllEditors(): Promise<boolean> {
+  const dirtyHandles = [...handles].filter(([panelId]) => editorDirty(panelId));
+  const results = await Promise.all(dirtyHandles.map(([, handle]) => handle.save()));
+  return results.every(Boolean);
+}
+
 /** Save / Don't save / Cancel for a dirty editor. Resolves `true` when it may close. */
 export async function confirmEditorClose(panelId: string): Promise<boolean> {
   const handle = handles.get(panelId);

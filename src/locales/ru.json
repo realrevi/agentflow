@@ -153,5 +153,8 @@
   "agents.area.quickOpen": "Быстро открыть файл: {shortcut}",
   "layout.resetDirty.title": "Сбросить раскладку и отменить несохранённые изменения?",
   "layout.resetDirty.body": "Редакторов с несохранёнными изменениями: {count}.",
-  "layout.resetDirty.discard": "Отменить и сбросить"
+  "layout.resetDirty.discard": "Отменить и сбросить",
+  "app.quit.title": "Сохранить изменения перед закрытием?",
+  "app.quit.body": "Редакторов с несохранёнными изменениями: {count}.",
+  "app.quit.saveAll": "Сохранить все"
 }

@@ -153,5 +153,8 @@
   "agents.area.quickOpen": "快速打开文件：{shortcut}",
   "layout.resetDirty.title": "重置布局并放弃未保存的更改？",
   "layout.resetDirty.body": "有未保存更改的编辑器：{count} 个。",
-  "layout.resetDirty.discard": "放弃并重置"
+  "layout.resetDirty.discard": "放弃并重置",
+  "app.quit.title": "关闭前保存更改？",
+  "app.quit.body": "有未保存更改的编辑器：{count} 个。",
+  "app.quit.saveAll": "全部保存"
 }
