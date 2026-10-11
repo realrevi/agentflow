@@ -4,6 +4,7 @@ mod agents;
 mod commands;
 pub mod error;
 mod fs;
+pub mod prompts;
 mod providers;
 pub mod pty;
 pub mod settings;
@@ -17,12 +18,14 @@ use tauri::webview::PageLoadEvent;
 use tauri::{Manager, RunEvent};
 
 use crate::fs::FsState;
+use crate::prompts::PromptHistory;
 use crate::pty::{CliDetector, PtyManager};
 use crate::settings::SettingsStore;
 use crate::themes::ThemeStore;
 
 const SETTINGS_FILE: &str = "settings.json";
 const THEMES_DIR: &str = "themes";
+const PROMPT_HISTORY_DIR: &str = "prompt-history";
 
 /// Starts the desktop app. Called from `main.rs`.
 pub fn run() {
@@ -42,7 +45,8 @@ pub fn run() {
         })
         .setup(|app| {
             let config_dir = app.path().app_config_dir()?;
-            manage_stores(app, &config_dir);
+            let data_dir = app.path().app_data_dir()?;
+            manage_stores(app, &config_dir, &data_dir);
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -67,6 +71,8 @@ pub fn run() {
             commands::fs::fs_rename,
             commands::fs::fs_delete,
             commands::fs::fs_quick_open,
+            commands::prompts::prompts_list,
+            commands::prompts::prompts_add,
         ])
         .build(tauri::generate_context!());
 
@@ -90,13 +96,14 @@ pub fn run() {
     });
 }
 
-fn manage_stores(app: &tauri::App, config_dir: &Path) {
+fn manage_stores(app: &tauri::App, config_dir: &Path, data_dir: &Path) {
     tracing::info!("using config dir {}", config_dir.display());
     app.manage(SettingsStore::load(config_dir.join(SETTINGS_FILE)));
     app.manage(ThemeStore::new(config_dir.join(THEMES_DIR)));
     app.manage(PtyManager::new());
     app.manage(CliDetector::new());
     app.manage(FsState::new());
+    app.manage(PromptHistory::new(data_dir.join(PROMPT_HISTORY_DIR)));
 }
 
 fn init_tracing() {

@@ -12,6 +12,7 @@ import type {
   FileStat,
   FsChanges,
   FsEntry,
+  PromptEntry,
   PtyMessage,
   PtySpawnRequest,
   QuickOpenMatch,
@@ -49,6 +50,11 @@ interface Commands {
   fs_rename: { args: { from: string; to: string }; result: FsEntry };
   fs_delete: { args: { path: string }; result: null };
   fs_quick_open: { args: { query: string }; result: QuickOpenMatch[] };
+  prompts_list: { args: { workspace: string | null; panel: string }; result: PromptEntry[] };
+  prompts_add: {
+    args: { workspace: string | null; panel: string; text: string };
+    result: PromptEntry;
+  };
 }
 
 async function call<K extends keyof Commands>(
@@ -170,6 +176,10 @@ export const ipc = {
   fsRename: (from: string, to: string) => call('fs_rename', { from, to }),
   fsDelete: (path: string) => call('fs_delete', { path }),
   fsQuickOpen: (query: string) => call('fs_quick_open', { query }),
+  promptsList: (workspace: string | null, panel: string) =>
+    call('prompts_list', { workspace, panel }),
+  promptsAdd: (workspace: string | null, panel: string, text: string) =>
+    call('prompts_add', { workspace, panel, text }),
   onWindowClose,
   pickFolder,
   readClipboard: () => clipboard(readText),
