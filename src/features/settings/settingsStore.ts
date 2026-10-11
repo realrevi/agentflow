@@ -43,12 +43,16 @@ export function saveLayout(next: SerializedLayout | null): void {
   persist();
 }
 
-/** Writes any pending change right away (used when the window is closing). */
-export function flushSettings(): void {
+/** Writes any pending change right away; resolves once the last save finished. */
+export function flushSettings(): Promise<void> {
   persist.flush();
+  return lastSave;
 }
 
-const persist = debounce(() => void save(), SAVE_DELAY_MS);
+let lastSave: Promise<void> = Promise.resolve();
+const persist = debounce(() => {
+  lastSave = save();
+}, SAVE_DELAY_MS);
 
 async function save(): Promise<void> {
   try {

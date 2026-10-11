@@ -7,6 +7,8 @@ export {
   updateSettings,
 } from './settingsStore';
 export {
+  ANIMATION_SPEED,
+  AVATAR_SCALES,
   DEFAULT_SETTINGS,
   MAX_RECENT_WORKSPACES,
   SIDEBAR_MAX_WIDTH,

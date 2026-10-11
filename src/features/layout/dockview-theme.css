@@ -132,3 +132,18 @@
 .af-status-dot.exited {
   background: var(--af-fg-muted);
 }
+
+.af-tab-avatar {
+  display: flex;
+  flex: none;
+  padding: 1px;
+  border: none;
+  border-radius: 3px;
+  background: none;
+  cursor: pointer;
+}
+
+.af-tab-avatar:hover,
+.af-tab-avatar[aria-expanded='true'] {
+  background: var(--af-list-hover-bg);
+}

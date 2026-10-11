@@ -7,7 +7,7 @@ use crate::error::AppResult;
 
 /// `STEPS[n]` upgrades a document from version `n` to `n + 1`.
 const STEPS: [fn(&mut Map<String, Value>); CURRENT_VERSION as usize] =
-    [v0_to_v1, v1_to_v2, v2_to_v3];
+    [v0_to_v1, v1_to_v2, v2_to_v3, v3_to_v4];
 
 /// Migrates and deserializes a raw settings document. Missing fields get defaults,
 /// unknown fields are dropped, and invalid values are repaired by `normalized()`.
@@ -53,6 +53,11 @@ fn v1_to_v2(doc: &mut Map<String, Value>) {
 /// frontend versions its own layout format and replaces older layouts itself.
 fn v2_to_v3(doc: &mut Map<String, Value>) {
     doc.insert("version".into(), Value::from(3));
+}
+
+/// v4 adds character settings (defaults fill in on load).
+fn v3_to_v4(doc: &mut Map<String, Value>) {
+    doc.insert("version".into(), Value::from(4));
 }
 
 #[cfg(test)]
@@ -130,13 +135,24 @@ mod tests {
         let raw =
             json!({ "version": 2, "layout": { "version": 1 }, "terminal": { "fontSize": 15 } });
         let settings = migrate(raw).expect("migrate");
-        assert_eq!(settings.version, 3);
+        assert_eq!(settings.version, CURRENT_VERSION);
         assert!(!settings.files.show_hidden);
         assert_eq!(settings.terminal.font_size, 15);
         assert!(
             settings.layout.is_some(),
             "the frontend migrates its own layout"
         );
+    }
+
+    #[test]
+    fn v3_document_gains_character_settings() {
+        let raw = json!({ "version": 3, "files": { "showHidden": true } });
+        let settings = migrate(raw).expect("migrate");
+        assert_eq!(settings.version, 4);
+        assert!(settings.files.show_hidden);
+        assert!(settings.characters.enabled);
+        assert_eq!(settings.characters.scale, 3);
+        assert!(!settings.characters.on_shells);
     }
 
     #[test]

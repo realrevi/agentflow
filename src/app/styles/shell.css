@@ -206,13 +206,3 @@
 .af-view-gap {
   margin-top: 20px;
 }
-
-.af-coming-soon {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-  padding-top: 32px;
-  text-align: center;
-  color: var(--af-fg-muted);
-}

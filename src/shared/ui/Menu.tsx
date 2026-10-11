@@ -15,7 +15,7 @@ export interface MenuItem {
   heading?: string;
 }
 
-export type MenuPlacement = 'below-end' | 'above-start' | 'above-end';
+export type MenuPlacement = 'below-start' | 'below-end' | 'above-start' | 'above-end';
 /** A trigger element, or a point (context menus open at the mouse). */
 export type MenuAnchor = HTMLElement | { x: number; y: number };
 
@@ -32,6 +32,7 @@ export function anchorPosition(anchor: MenuAnchor, placement: MenuPlacement): JS
   if (!(anchor instanceof HTMLElement)) return pointPosition(anchor.x, anchor.y);
   const rect = anchor.getBoundingClientRect();
   const gap = 4;
+  if (placement === 'below-start') return { top: `${rect.bottom + gap}px`, left: `${rect.left}px` };
   if (placement === 'below-end') {
     return { top: `${rect.bottom + gap}px`, right: `${window.innerWidth - rect.right}px` };
   }

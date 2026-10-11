@@ -106,7 +106,14 @@ describe('default layout', () => {
   });
 
   it('opens shells at the bottom and everything else in the center', () => {
-    const shell = { kind: 'shell' as const, command: null, args: [], cwd: null };
+    const shell = {
+      kind: 'shell' as const,
+      command: null,
+      args: [],
+      cwd: null,
+      character: null,
+      historyKey: null,
+    };
     expect(roleForPanel({ kind: 'terminal', index: 1, config: shell })).toBe('terminal');
     expect(roleForPanel({ kind: 'terminal', index: 2, config: { ...shell, kind: 'claude' } })).toBe(
       'agents',

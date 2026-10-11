@@ -5,11 +5,13 @@ import { createEffect, createRoot, createSignal, on } from 'solid-js';
 import { askChoice } from '../../shared/dialog';
 import { debounce, type Debounced } from '../../shared/debounce';
 import { showToast } from '../../shared/toast';
+import type { CharacterRef } from '../characters';
 import { confirmEditorClose, dirtyEditorCount } from '../editor';
 import { locale, reportError, t } from '../i18n';
-import { saveLayout, savedLayout } from '../settings/settingsStore';
-import type { TerminalConfig } from '../terminal';
+import { saveLayout, savedLayout, settings } from '../settings/settingsStore';
+import { avatarFor, type TerminalConfig } from '../terminal';
 import { currentWorkspace, renamedPath } from '../workspace';
+import { ensureCharacters, setCharacter, trackFocusedAgent } from './characters';
 import { buildDefaultLayout } from './defaultLayout';
 import {
   panelOptions,
@@ -36,6 +38,8 @@ export interface OpenPanel {
   title: string;
   kind: PanelKind;
   active: boolean;
+  /** The pixel character shown for it (terminals only; respects the avatar settings). */
+  character: CharacterRef | null;
 }
 
 const PERSIST_DELAY_MS = 400;
@@ -52,6 +56,7 @@ export { openPanels };
 export function attachLayout(dock: DockviewApi): () => void {
   api = dock;
   restore(dock);
+  assignCharacters();
 
   const persistLayout = debounce(
     () => saveLayout(serializeLayout(dock.toJSON(), snapshotRoles())),
@@ -64,8 +69,14 @@ export function attachLayout(dock: DockviewApi): () => void {
       ensureRole(panel.group);
       syncOpenPanels();
     }),
-    dock.onDidRemovePanel(syncOpenPanels),
-    dock.onDidActivePanelChange(syncOpenPanels),
+    dock.onDidRemovePanel(() => {
+      trackFocusedAgent(dock);
+      syncOpenPanels();
+    }),
+    dock.onDidActivePanelChange(() => {
+      trackFocusedAgent(dock);
+      syncOpenPanels();
+    }),
     dock.onDidActiveGroupChange((group) => group && noteGroupFocus(group.id)),
     // A group made by dragging a panel to an edge takes the role of that panel.
     dock.onDidAddGroup((group) => queueMicrotask(() => ensureRole(group))),
@@ -74,6 +85,8 @@ export function attachLayout(dock: DockviewApi): () => void {
   ];
   const disposeEffects = createRoot((dispose) => {
     createEffect(on(locale, retitlePanels, { defer: true }));
+    const avatars = () => [settings.characters.enabled, settings.characters.onShells];
+    createEffect(on(avatars, assignCharacters, { defer: true }));
     return dispose;
   });
   syncOpenPanels();
@@ -121,11 +134,30 @@ function syncOpenPanels(): void {
   const panels = (api?.panels ?? []).flatMap((panel): OpenPanel[] => {
     const params = parsePanelParams(panel.params);
     if (!params) return [];
-    return [
-      { id: panel.id, title: panelTitle(params), kind: params.kind, active: panel.id === activeId },
-    ];
+    const character =
+      params.kind === 'terminal' ? avatarFor(params.config, settings.characters) : null;
+    const title = panelTitle(params);
+    return [{ id: panel.id, title, kind: params.kind, active: panel.id === activeId, character }];
   });
   setOpenPanels(panels);
+}
+
+/** Gives agent panels without one a character (sprites load on first use). */
+function assignCharacters(): void {
+  const dock = api;
+  if (!dock) return;
+  ensureCharacters(dock)
+    .then(() => {
+      if (api !== dock) return;
+      trackFocusedAgent(dock);
+      syncOpenPanels();
+    })
+    .catch((err: unknown) => reportError('error.characters', err));
+}
+
+/** Changes a terminal panel's character (persists with the layout). */
+export function setPanelCharacter(id: string, character: CharacterRef): void {
+  if (api && setCharacter(api, id, character)) syncOpenPanels();
 }
 
 function retitlePanels(): void {
@@ -168,6 +200,7 @@ export function openTerminal(config: TerminalConfig, groupId?: string): void {
   const index = nextIndex(api, 'terminal');
   freshPanels.add(`terminal-${index}`);
   addPanel(api, { kind: 'terminal', index, config }, groupId);
+  assignCharacters();
 }
 
 function editorPanels(dock: DockviewApi): { panel: IDockviewPanel; root: string; path: string }[] {
@@ -240,6 +273,7 @@ export async function resetLayout(): Promise<void> {
   api.clear(); // disposes every panel, which kills its terminal session
   replaceRoles({});
   buildDefaultLayout(api);
+  assignCharacters();
   openPanel('settings');
   showToast({ kind: 'success', title: t('settings.layout.resetDone') });
 }

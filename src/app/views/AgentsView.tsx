@@ -1,7 +1,9 @@
 import { For, Show } from 'solid-js';
+import { Avatar } from '../../features/characters';
 import { t } from '../../features/i18n';
 import { focusPanel, openPanel, openPanels, openTerminal } from '../../features/layout';
-import { newTerminalConfig, terminalStatus } from '../../features/terminal';
+import { settings } from '../../features/settings';
+import { agentState, newTerminalConfig, terminalStatus } from '../../features/terminal';
 
 export function AgentsView() {
   return (
@@ -21,11 +23,25 @@ export function AgentsView() {
                   classList={{ active: panel.active }}
                   onClick={() => focusPanel(panel.id)}
                 >
-                  <span
-                    class={`af-dot af-dot-${panel.kind}`}
-                    classList={{ running: terminalStatus(panel.id) === 'running' }}
-                    aria-hidden="true"
-                  />
+                  <Show
+                    when={panel.character}
+                    fallback={
+                      <span
+                        class={`af-dot af-dot-${panel.kind}`}
+                        classList={{ running: terminalStatus(panel.id) === 'running' }}
+                        aria-hidden="true"
+                      />
+                    }
+                  >
+                    {(character) => (
+                      <Avatar
+                        character={character()}
+                        state={agentState(panel.id)}
+                        scale={1}
+                        speed={settings.characters.speed}
+                      />
+                    )}
+                  </Show>
                   {panel.title}
                 </button>
               </li>

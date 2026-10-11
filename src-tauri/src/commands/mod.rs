@@ -2,6 +2,7 @@
 //! Every command has a typed wrapper in `src/shared/ipc.ts`.
 
 pub mod fs;
+pub mod prompts;
 pub mod pty;
 pub mod settings;
 pub mod themes;

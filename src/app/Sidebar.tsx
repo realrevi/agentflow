@@ -1,11 +1,11 @@
 import { Match, Switch } from 'solid-js';
 import { t, type I18nKey } from '../features/i18n';
 import { settings, updateSettings } from '../features/settings';
-import { charactersIcon, chevronLeftIcon } from '../shared/ui/icons';
+import { chevronLeftIcon } from '../shared/ui/icons';
 import { PixelIcon } from '../shared/ui/PixelIcon';
 import { SidebarSash } from './SidebarSash';
 import { AgentsView } from './views/AgentsView';
-import { ComingSoonView } from './views/ComingSoonView';
+import { CharactersView } from './views/CharactersView';
 import { ExplorerView } from './views/ExplorerView';
 
 const TITLES: Record<string, I18nKey> = {
@@ -35,7 +35,7 @@ export function Sidebar() {
             <ExplorerView />
           </Match>
           <Match when={settings.ui.activeView === 'characters'}>
-            <ComingSoonView icon={charactersIcon} text={t('sidebar.characters.soon')} />
+            <CharactersView />
           </Match>
         </Switch>
       </div>

@@ -41,6 +41,23 @@ export interface FilesSettings {
   showHidden: boolean;
 }
 
+export type AvatarScale = 2 | 3 | 4;
+
+/** Pixel characters on agent panels. */
+export interface CharacterSettings {
+  enabled: boolean;
+  /** The corner avatar rides above the terminal cursor while output streams. */
+  cursorFollow: boolean;
+  /** Sent prompts fly to the avatar as a pixel packet. */
+  packet: boolean;
+  bubble: boolean;
+  typewriter: boolean;
+  /** Animation speed multiplier, 0.5–2. */
+  speed: number;
+  scale: AvatarScale;
+  onShells: boolean;
+}
+
 export interface Settings {
   version: number;
   language: Locale;
@@ -52,6 +69,7 @@ export interface Settings {
   recentWorkspaces: string[];
   terminal: TerminalSettings;
   files: FilesSettings;
+  characters: CharacterSettings;
   layout: SerializedLayout | null;
 }
 
@@ -148,6 +166,13 @@ export interface FsChanges {
   structural: string[];
   /** Ignore rules changed or events were lost: re-list everything. */
   rescan: boolean;
+}
+
+/** One sent prompt (prompt history, per panel and workspace). */
+export interface PromptEntry {
+  text: string;
+  /** ms since the epoch */
+  at: number;
 }
 
 export type AppErrorKind =

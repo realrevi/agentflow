@@ -2,6 +2,7 @@
 // never `invoke` directly. Each entry mirrors a #[tauri::command] in src-tauri/src/commands.
 import { Channel, invoke } from '@tauri-apps/api/core';
 import { readText, writeText } from '@tauri-apps/plugin-clipboard-manager';
+import { getCurrentWindow } from '@tauri-apps/api/window';
 import { open as openDialog } from '@tauri-apps/plugin-dialog';
 import { toAppError } from './errors';
 import type {
@@ -11,6 +12,7 @@ import type {
   FileStat,
   FsChanges,
   FsEntry,
+  PromptEntry,
   PtyMessage,
   PtySpawnRequest,
   QuickOpenMatch,
@@ -48,6 +50,11 @@ interface Commands {
   fs_rename: { args: { from: string; to: string }; result: FsEntry };
   fs_delete: { args: { path: string }; result: null };
   fs_quick_open: { args: { query: string }; result: QuickOpenMatch[] };
+  prompts_list: { args: { workspace: string | null; panel: string }; result: PromptEntry[] };
+  prompts_add: {
+    args: { workspace: string | null; panel: string; text: string };
+    result: PromptEntry;
+  };
 }
 
 async function call<K extends keyof Commands>(
@@ -110,6 +117,22 @@ async function fsOpenWorkspace(
   }
 }
 
+/**
+ * Asks `guard` before the window closes; it resolves `false` to keep the window open. A guard
+ * that throws lets the window close, so a bug can never trap the user. Returns an unlisten fn.
+ */
+async function onWindowClose(guard: () => Promise<boolean>): Promise<() => void> {
+  return getCurrentWindow().onCloseRequested(async (event) => {
+    let close = true;
+    try {
+      close = await guard();
+    } catch (err) {
+      console.error('[agentflow] close guard failed:', err);
+    }
+    if (!close) event.preventDefault();
+  });
+}
+
 /** Native folder picker (tauri-plugin-dialog). Resolves `null` if cancelled. */
 async function pickFolder(title: string): Promise<string | null> {
   try {
@@ -153,6 +176,11 @@ export const ipc = {
   fsRename: (from: string, to: string) => call('fs_rename', { from, to }),
   fsDelete: (path: string) => call('fs_delete', { path }),
   fsQuickOpen: (query: string) => call('fs_quick_open', { query }),
+  promptsList: (workspace: string | null, panel: string) =>
+    call('prompts_list', { workspace, panel }),
+  promptsAdd: (workspace: string | null, panel: string, text: string) =>
+    call('prompts_add', { workspace, panel, text }),
+  onWindowClose,
   pickFolder,
   readClipboard: () => clipboard(readText),
   writeClipboard: (text: string) => clipboard(() => writeText(text)),

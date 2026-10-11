@@ -34,6 +34,6 @@ export async function bootstrap(): Promise<void> {
 
   window.addEventListener('beforeunload', () => {
     flushLayout();
-    flushSettings();
+    void flushSettings();
   });
 }

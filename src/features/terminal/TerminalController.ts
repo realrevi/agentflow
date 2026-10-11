@@ -5,20 +5,29 @@ import { Unicode11Addon } from '@xterm/addon-unicode11';
 import { Terminal, type IDisposable, type ITheme } from '@xterm/xterm';
 import { toAppError } from '../../shared/errors';
 import { ipc, type PtyHandle } from '../../shared/ipc';
-import type { PtyExitMessage, PtyMessage, TerminalSettings } from '../../shared/types';
+import type { PtyMessage, TerminalSettings } from '../../shared/types';
 import { reportError, t } from '../i18n';
 import { copySelection, pasteInto } from './clipboard';
 import type { TerminalConfig } from './config';
 import { OutputDecoder } from './decoder';
 import { terminalShortcut } from './keys';
+import { encodePrompt } from './prompt/encode';
 import { AckBatcher, InputQueue, LatestQueue } from './queues';
-import type { TerminalStatus } from './types';
+import {
+  cursorCell,
+  FONT_FAMILY,
+  fontsReady,
+  isExit,
+  RESET_MODES,
+  watchCursor,
+  type CursorCell,
+} from './support';
+import type { ActivityHooks, TerminalStatus } from './types';
 import { WebglRenderer } from './webgl';
 
 const FIT_DEBOUNCE_MS = 50;
 /** Acknowledge processed output in 64 KB steps (backend pauses at 512 KB unacknowledged). */
 const ACK_CHUNK = 64 * 1024;
-const FONT_FAMILY = "'JetBrains Mono', ui-monospace, Menlo, Consolas, monospace";
 
 interface Session {
   id: number;
@@ -36,6 +45,7 @@ interface Launch {
 
 export interface ControllerOptions {
   config: TerminalConfig;
+  activity?: ActivityHooks;
   /** Used when the config has no folder: the current workspace (null = home). */
   defaultCwd: () => string | null;
   settings: TerminalSettings;
@@ -43,29 +53,7 @@ export interface ControllerOptions {
   onStatus: (status: TerminalStatus, error: string | null) => void;
 }
 
-let fonts: Promise<unknown> | undefined;
-/** xterm measures glyphs on open, so the bundled font must be loaded first. */
-function fontsReady(): Promise<unknown> {
-  fonts ??= document.fonts.load('13px "JetBrains Mono"').catch(() => undefined);
-  return fonts;
-}
-
-function isExit(message: unknown): message is PtyExitMessage {
-  return (
-    typeof message === 'object' && message !== null && 'type' in message && message.type === 'exit'
-  );
-}
-
 const quiet = (err: unknown) => console.debug('[agentflow] terminal IPC:', err);
-
-/**
- * After a process exits, undo modes it may have left on (it could have crashed): leave the
- * alternate screen, disable mouse tracking and bracketed paste, show the cursor, normal cursor
- * keys, reset colors.
- */
-const RESET_MODES =
-  '\x1b[?1049l\x1b[?1000l\x1b[?1002l\x1b[?1003l\x1b[?1006l\x1b[?1015l' +
-  '\x1b[?2004l\x1b[?25h\x1b[?1l\x1b>\x1b[0m';
 
 export class TerminalController {
   private readonly term: Terminal;
@@ -146,6 +134,25 @@ export class TerminalController {
     this.term.focus();
   }
 
+  /**
+   * Sends a prompt as if typed: multiline text inside bracketed paste when the program
+   * enabled it, then Enter. Written to the pty immediately. Returns false when not running.
+   */
+  sendPrompt(text: string): boolean {
+    if (this.status !== 'running' || !this.session) return false;
+    this.session.input.push(encodePrompt(text, this.term.modes.bracketedPasteMode));
+    return true;
+  }
+
+  /** The cursor in visible-screen cells, once the terminal is open. */
+  cursor(): CursorCell | null {
+    return this.opened ? cursorCell(this.term) : null;
+  }
+
+  onCursorChange(listener: () => void): IDisposable {
+    return watchCursor(this.term, listener);
+  }
+
   /** Spawns the pty (no-op while starting or running). */
   async start(): Promise<void> {
     if (this.disposed || this.status === 'starting' || this.status === 'running') return;
@@ -185,6 +192,7 @@ export class TerminalController {
       };
       this.session.resize.push({ cols: this.term.cols, rows: this.term.rows });
       this.setStatus('running', null);
+      this.options.activity?.start();
     } catch (err) {
       if (this.disposed) return;
       this.setStatus('stopped', toAppError(err).message);
@@ -219,6 +227,7 @@ export class TerminalController {
     // Closed while starting: the channel is still attached until spawn returns.
     if (this.disposed) return;
     if (message instanceof ArrayBuffer) {
+      this.options.activity?.output();
       const bytes = message.byteLength;
       this.term.write(decoder.decode(new Uint8Array(message)), () =>
         this.acknowledge(launch, bytes),
@@ -238,6 +247,7 @@ export class TerminalController {
         : t('terminal.exited', { code: message.code });
     this.term.write(`\r\n\x1b[2m${line}\x1b[22m\r\n`);
     this.setStatus('exited', null);
+    this.options.activity?.exit(message.code);
   }
 
   /** Reports output xterm has finished processing, so the backend keeps reading. */
@@ -248,8 +258,12 @@ export class TerminalController {
   }
 
   private onInput(data: string): void {
-    if (this.status === 'running') this.session?.input.push(data);
-    else if (this.status === 'exited' && data === '\r') void this.start();
+    if (this.status === 'running') {
+      // Noted before writing, so the echo is recognized even if it comes back at once.
+      if (data.includes('\r')) this.options.activity?.enter();
+      else this.options.activity?.typed();
+      this.session?.input.push(data);
+    } else if (this.status === 'exited' && data === '\r') void this.start();
   }
 
   /** Returns false for keys AgentFlow handles itself, so xterm ignores them. */
