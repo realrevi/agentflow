@@ -156,3 +156,14 @@
   color: var(--af-fg-muted);
   font-style: italic;
 }
+
+.af-range {
+  width: 160px;
+  accent-color: var(--af-accent);
+}
+
+.af-range-value {
+  min-width: 3em;
+  font-variant-numeric: tabular-nums;
+  color: var(--af-fg-muted);
+}

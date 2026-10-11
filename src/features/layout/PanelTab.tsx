@@ -1,11 +1,15 @@
-// The tab of every panel: dockview's default look, plus a status dot for terminals, a
-// dirty dot for editors (it turns into the close button on hover) and a guarded close.
+// The tab of every panel: dockview's default look, plus a status dot for terminals (and
+// their character, which opens the character picker), a dirty dot for editors (it turns
+// into the close button on hover) and a guarded close.
 import { createCloseButton, type DockviewPanelApi, type ITabRenderer } from 'dockview-core';
 import { createSignal, onCleanup, Show } from 'solid-js';
+import { Popover } from '../../shared/ui/Popover';
+import { Avatar, CharacterPicker } from '../characters';
 import { editorDirty } from '../editor';
 import { t, type I18nKey } from '../i18n';
-import { terminalStatus, type TerminalStatus } from '../terminal';
-import { closePanel } from './layoutStore';
+import { settings } from '../settings/settingsStore';
+import { agentState, avatarFor, terminalStatus, type TerminalStatus } from '../terminal';
+import { closePanel, setPanelCharacter } from './layoutStore';
 import { parsePanelParams, type PanelParams } from './panels';
 import { createSolidPart } from './solidPart';
 
@@ -31,10 +35,39 @@ function PanelTab(props: { api: DockviewPanelApi; title: string; params: PanelPa
     const current = params();
     return current?.kind === 'editor' ? current.path : undefined;
   };
+  const character = () => {
+    const current = params();
+    return current?.kind === 'terminal' ? avatarFor(current.config, settings.characters) : null;
+  };
+  const [picking, setPicking] = createSignal(false);
+  let avatarButton: HTMLButtonElement | undefined;
 
   return (
     <>
       <div class="dv-default-tab-content af-tab" title={tooltip()}>
+        <Show when={character()}>
+          {(current) => (
+            <button
+              ref={avatarButton}
+              type="button"
+              class="af-tab-avatar"
+              title={t('characters.change')}
+              aria-label={t('characters.change')}
+              aria-expanded={picking()}
+              onClick={(event) => {
+                event.stopPropagation();
+                setPicking((open) => !open);
+              }}
+            >
+              <Avatar
+                character={current()}
+                state={agentState(props.api.id)}
+                scale={1}
+                speed={settings.characters.speed}
+              />
+            </button>
+          )}
+        </Show>
         <Show when={params()?.kind === 'terminal'}>
           <span
             class={`af-status-dot ${status()}`}
@@ -45,6 +78,21 @@ function PanelTab(props: { api: DockviewPanelApi; title: string; params: PanelPa
         </Show>
         {title()}
       </div>
+      <Show when={picking() && avatarButton}>
+        {(anchor) => (
+          <Popover
+            anchor={anchor()}
+            placement="below-start"
+            label={t('characters.picker.title')}
+            onClose={() => setPicking(false)}
+          >
+            <CharacterPicker
+              current={character()}
+              onPick={(next) => setPanelCharacter(props.api.id, next)}
+            />
+          </Popover>
+        )}
+      </Show>
       <div
         class="dv-default-tab-action af-tab-action"
         classList={{ dirty: dirty() }}
