@@ -5,6 +5,7 @@ use super::model::{
     CURRENT_VERSION, CURSOR_STYLES, DEFAULT_BOLD_COLOR, DEFAULT_LANGUAGE, DEFAULT_THEME_ID,
     MAX_RECENT_WORKSPACES, SIDEBAR_VIEWS, SUPPORTED_LANGUAGES,
 };
+use super::providers::normalize_providers;
 use crate::util::is_hex_color;
 
 const SIDEBAR_MIN_WIDTH: u32 = 180;
@@ -44,6 +45,7 @@ impl Settings {
         self.recent_workspaces = normalize_recent(std::mem::take(&mut self.recent_workspaces));
         normalize_terminal(&mut self.terminal);
         normalize_characters(&mut self.characters);
+        self.providers = normalize_providers(std::mem::take(&mut self.providers));
 
         if !self
             .layout
@@ -100,7 +102,10 @@ fn is_valid_theme_id(id: &str) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::settings::{AgentBold, Appearance, CharacterSettings, FilesSettings, UiState};
+    use crate::settings::{
+        AgentBold, Appearance, CharacterSettings, ChatSettings, FilesSettings, ProviderEntry,
+        UiState,
+    };
     use serde_json::json;
 
     #[test]
@@ -127,6 +132,11 @@ mod tests {
             terminal: TerminalSettings::default(),
             files: FilesSettings::default(),
             characters: CharacterSettings::default(),
+            providers: vec![ProviderEntry {
+                id: "bad id".into(),
+                ..ProviderEntry::default()
+            }],
+            chat: ChatSettings::default(),
             layout: Some(json!([1, 2, 3])),
         };
 

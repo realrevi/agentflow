@@ -7,7 +7,7 @@ use crate::error::AppResult;
 
 /// `STEPS[n]` upgrades a document from version `n` to `n + 1`.
 const STEPS: [fn(&mut Map<String, Value>); CURRENT_VERSION as usize] =
-    [v0_to_v1, v1_to_v2, v2_to_v3, v3_to_v4];
+    [v0_to_v1, v1_to_v2, v2_to_v3, v3_to_v4, v4_to_v5];
 
 /// Migrates and deserializes a raw settings document. Missing fields get defaults,
 /// unknown fields are dropped, and invalid values are repaired by `normalized()`.
@@ -58,6 +58,13 @@ fn v2_to_v3(doc: &mut Map<String, Value>) {
 /// v4 adds character settings (defaults fill in on load).
 fn v3_to_v4(doc: &mut Map<String, Value>) {
     doc.insert("version".into(), Value::from(4));
+}
+
+/// v5 adds AI provider entries (none yet) and chat options (defaults fill in on load).
+fn v4_to_v5(doc: &mut Map<String, Value>) {
+    doc.insert("version".into(), Value::from(5));
+    doc.entry("providers")
+        .or_insert_with(|| Value::Array(Vec::new()));
 }
 
 #[cfg(test)]
@@ -148,11 +155,42 @@ mod tests {
     fn v3_document_gains_character_settings() {
         let raw = json!({ "version": 3, "files": { "showHidden": true } });
         let settings = migrate(raw).expect("migrate");
-        assert_eq!(settings.version, 4);
+        assert_eq!(settings.version, CURRENT_VERSION);
         assert!(settings.files.show_hidden);
         assert!(settings.characters.enabled);
         assert_eq!(settings.characters.scale, 3);
         assert!(!settings.characters.on_shells);
+    }
+
+    #[test]
+    fn v4_document_gains_providers_and_chat_settings() {
+        let raw = json!({ "version": 4, "characters": { "scale": 4 }, "layout": { "version": 2 } });
+        let settings = migrate(raw).expect("migrate");
+        assert_eq!(settings.version, 5);
+        assert_eq!(settings.characters.scale, 4);
+        assert!(settings.providers.is_empty());
+        assert!(settings.chat.smooth_reveal);
+        assert!(settings.layout.is_some());
+    }
+
+    #[test]
+    fn v5_providers_round_trip() {
+        let raw = json!({
+            "version": 5,
+            "providers": [{
+                "id": "p1", "kind": "openai", "preset": "deepseek", "name": "DS",
+                "baseUrl": "https://api.deepseek.com", "defaultModel": "deepseek-chat",
+                "maxTokens": 2048, "temperature": 0.5
+            }],
+            "chat": { "smoothReveal": false }
+        });
+        let settings = migrate(raw).expect("migrate");
+        assert_eq!(settings.providers.len(), 1);
+        assert_eq!(settings.providers[0].preset, "deepseek");
+        assert_eq!(settings.providers[0].temperature, Some(0.5));
+        assert!(!settings.chat.smooth_reveal);
+        let again = migrate(serde_json::to_value(&settings).expect("json")).expect("migrate");
+        assert_eq!(again, settings);
     }
 
     #[test]
