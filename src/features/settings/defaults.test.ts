@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import modelRs from '../../../src-tauri/src/settings/model.rs?raw';
 import providersRs from '../../../src-tauri/src/settings/providers.rs?raw';
+import { PRESETS } from '../providers/presets';
 import { DEFAULT_SETTINGS } from './defaults';
 
 // Rust owns settings.json and its migrations (src-tauri/src/settings/migrate.rs, tested
@@ -22,14 +23,10 @@ describe('settings defaults mirror the Rust schema', () => {
   it('knows every provider preset the backend accepts', () => {
     const presets = /OPENAI_PRESETS: \[&str; \d+\] = \[([^\]]+)\]/s.exec(rust('providers.rs'))?.[1];
     const names = [...(presets ?? '').matchAll(/"([a-z]+)"/g)].map((m) => m[1]);
-    expect(names).toEqual([
-      'openai',
-      'deepseek',
-      'gemini',
-      'openrouter',
-      'groq',
-      'ollama',
-      'custom',
+    const openai = PRESETS.filter((preset) => preset.kind === 'openai').map((preset) => preset.id);
+    expect(openai).toEqual(names);
+    expect(PRESETS.filter((preset) => preset.kind === 'anthropic').map((p) => p.id)).toEqual([
+      'anthropic',
     ]);
   });
 });

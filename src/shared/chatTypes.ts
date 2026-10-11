@@ -147,4 +147,6 @@ export interface ChatStarted {
   requestId: number;
   /** The stored user message (null on retry). */
   userMessage: ChatMessage | null;
+  /** The conversation's title (the first prompt names a new chat). */
+  title: string;
 }

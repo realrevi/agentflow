@@ -189,4 +189,5 @@ export type AppErrorKind =
   | 'pty'
   | 'conflict'
   | 'tooLarge'
+  | 'provider'
   | 'internal';

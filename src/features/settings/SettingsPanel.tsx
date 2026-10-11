@@ -5,6 +5,7 @@ import { CharactersSection } from './sections/CharactersSection';
 import { FilesSection } from './sections/FilesSection';
 import { LanguageSection } from './sections/LanguageSection';
 import { LayoutSection } from './sections/LayoutSection';
+import { ProvidersSection } from './sections/ProvidersSection';
 import { TerminalSection } from './sections/TerminalSection';
 
 export default function SettingsPanel() {
@@ -13,6 +14,7 @@ export default function SettingsPanel() {
       <AppearanceSection />
       <TerminalSection />
       <CharactersSection />
+      <ProvidersSection />
       <FilesSection />
       <LanguageSection />
       <LayoutSection />
