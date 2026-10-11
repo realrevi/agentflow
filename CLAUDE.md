@@ -6,8 +6,9 @@ Linux. Priorities: **low RAM, fast, clean code organization, fun look.**
 
 ## Stack (fixed)
 
-- **Backend:** Tauri 2, Rust stable, tokio, serde/serde_json, thiserror, tracing
-- **Frontend:** SolidJS + TypeScript (strict) + Vite, pnpm
+- **Backend:** Tauri 2, Rust stable, tokio, serde/serde_json, thiserror, tracing,
+  portable-pty (terminals), which (PATH lookup), tauri-plugin-dialog (folder picker)
+- **Frontend:** SolidJS + TypeScript (strict) + Vite, pnpm, xterm.js (+ fit, webgl, unicode11)
 - **Layout:** `dockview-core` (vanilla) behind a thin Solid wrapper. Its stylesheet ships in the
   `dockview` package (a pure re-export of dockview-core); keep both pinned to the same version.
 - **Styling:** plain CSS with `--af-*` CSS variables. No React, Electron, Tailwind or UI kits.
@@ -22,24 +23,28 @@ src-tauri/src/
   settings/           versioned settings JSON in the OS app config dir (atomic write, migrations)
   themes/             built-in + imported VS Code themes: JSONC parsing, validation, storage
   commands/           thin #[tauri::command] fns that delegate to modules
-  util/               atomic_write, run_blocking, hex color check, test_dir (tests only)
-  pty/ fs/ providers/ tokens/ agents/   future phases (empty)
+  pty/                PtyManager, sessions (reader/waiter/pump threads), shells, CLI detection
+  util/               atomic_write, run_blocking, lock/Signal, hex color check, test_dir
+  fs/ providers/ tokens/ agents/   future phases (empty)
 src/
   main.tsx, App.tsx   entry: bootstrap (settings -> locale -> theme), then render
   app/                shell: ActivityBar, Sidebar (+ views), StatusBar, Toasts, styles/
-  features/layout/    dockview host, panel registry, renderers, layout persistence
+  features/layout/    dockview host, panel registry, renderers, tabs, layout persistence
+  features/terminal/  TerminalController (xterm + pty session), lazy TerminalPanel, stores
+  features/workspace/ current/recent workspace folder, folder picker
   features/theme/     VS Code -> --af-* mapping, user overrides, engine, theme store
   features/i18n/      typed t(), lazy locale loading, reportError()
   features/settings/  settings store (debounced save) + lazy SettingsPanel and sections
-  features/{terminal,files,characters,providers,tokens,agents}/   future (empty)
+  features/{files,characters,providers,tokens,agents}/   future (empty)
   shared/             ipc.ts, types.ts, errors.ts, toast.ts, debounce.ts, color.ts, ui/
   assets/fonts/       woff2 + fonts.css + OFL license files
   locales/            en.json (source of truth), tr, de, zh, ru
 themes/               built-in theme JSON (embedded into the Rust binary via include_str!)
 ```
 
-Layering: `shared/` imports nothing from `features/` or `app/`. Features may import `shared/`,
-`features/i18n` and `features/settings`. `app/` composes features.
+Layering: `shared/` imports nothing from `features/` or `app/`. Core features (`i18n`,
+`settings`, `theme`) never import panel features. Panel features (`terminal`, `workspace`) may
+import core features. `layout` and the settings panel compose panel features; `app/` composes all.
 
 ## Code rules
 
@@ -48,9 +53,9 @@ Layering: `shared/` imports nothing from `features/` or `app/`. Features may imp
   to the frontend and are shown as a toast via `reportError(contextKey, err)`.
 - All IPC goes through `src/shared/ipc.ts`; components never call `invoke` directly.
 - Minimal dependencies; justify every new crate/package in the commit message.
-- Performance: no polling (events, ResizeObserver, debounced saves), no heavy re-renders
-  (fine-grained signals, large blobs like the layout kept out of reactive stores), lazy-load
-  panels that are not visible at startup (settings panel, non-English locales).
+- Performance: no polling (events, ResizeObserver, debounced saves), fine-grained signals
+  (big blobs like the layout stay out of reactive stores), lazy-load heavy panels (settings,
+  terminal/xterm, non-English locales).
 - Rust file I/O in commands runs through `util::run_blocking`, never on the main thread.
 
 ## IPC pattern
@@ -61,32 +66,40 @@ Layering: `shared/` imports nothing from `features/` or `app/`. Features may imp
    wrapper on the `ipc` object. Mirror Rust structs in `shared/types.ts` (serde camelCase).
 3. Errors arrive as `AppError { kind, message }`; `toAppError()` normalizes anything thrown.
 
+## PTY / Channel pattern
+
+- Output never uses global events. `ipc.ptySpawn()` creates a `Channel` _before_ invoking
+  `pty_spawn`; Rust sends coalesced raw bytes (`InvokeResponseBody::Raw`, an `ArrayBuffer` in
+  JS, flushed after ~10 ms or 64 KB) and one final JSON `{ type: 'exit', code, signal }`.
+- Rust never decodes or splits UTF-8; the frontend's streaming `OutputDecoder` does.
+- When the session ends Rust drops the channel, which unregisters the JS callback. Kill on panel
+  close / `pty_kill` / app exit = SIGHUP (TerminateProcess on Windows), SIGKILL after 2 s; the
+  waiter thread always reaps the child, and the session removes itself from the map.
+- Input and resizes go through per-session queues (`queues.ts`) so IPC calls stay in order.
+- Persist terminal _config_ only (kind, command, args, cwd). Restored agent CLIs never
+  auto-start; restored shells follow `terminal.autoStartShells`.
+
 ## Theme conventions
 
-- Themes use the VS Code color theme format. Only `colors` is used; `tokenColors` is stored
-  on import and ignored until the editor phase.
-- `features/theme/mapping.ts` lists every `--af-*` variable: VS Code keys tried in order, then a
-  fallback (`ref` to an earlier variable, or a dark/light default). Add new UI colors there
-  and use `var(--af-…)` in CSS; never hard-code colors in components.
-- User overrides (text, accent, agent bold) are layered in `overrides.ts`. `.af-agent-bold`
-  uses `--af-bold-color` (default `#F5C542`) and `--af-glow`.
-- Built-in themes live in `themes/` and must pass `cargo test` (validation + core keys).
-- Imported themes are saved to `<app config>/themes/<slug>.json` with id `user:<slug>`.
+- VS Code color theme format; only `colors` is used (`tokenColors` kept for the editor phase).
+- `features/theme/mapping.ts` lists every `--af-*` variable (VS Code keys, then a `ref` or a
+  dark/light fallback). Add UI colors there; never hard-code colors in components.
+- Overrides (text, accent, agent bold: `--af-bold-color` default `#F5C542`, `--af-glow`) live in
+  `overrides.ts`. Built-in themes in `themes/` must pass `cargo test`; imports are saved as
+  `<app config>/themes/<slug>.json` with id `user:<slug>`.
 
 ## i18n conventions
 
-- Flat dotted keys in `src/locales/en.json`; `I18nKey = keyof typeof en`.
-- Every visible string goes through `t('key', { param })`; no literals in components
-  (brand name and language endonyms excepted).
-- Adding a key: add it to **all five** locale files. A missing key fails `pnpm typecheck`
-  (loaders are typed against `Dictionary`) and `pnpm test` checks keys and `{placeholders}`.
+- Flat dotted keys in `src/locales/en.json`; `I18nKey = keyof typeof en`. Every visible string
+  goes through `t('key', { param })` (brand name and language endonyms excepted).
+- New keys go into **all five** locales: a missing key fails `pnpm typecheck`, and `pnpm test`
+  checks keys and `{placeholders}`.
 
 ## Settings
 
-- Rust owns `settings.json` (`version` field + `migrate.rs` steps; bump `CURRENT_VERSION` and
-  add a step when the shape changes). Unknown/invalid values are repaired by `normalized()`;
-  a corrupt file is moved to `settings.json.corrupt` and defaults are used.
-- Frontend changes apply instantly via `updateSettings()` and are saved with a 300 ms debounce.
+Rust owns `settings.json`: bump `CURRENT_VERSION` and add a `migrate.rs` step when the shape
+changes; `normalized()` repairs bad values; a corrupt file goes to `settings.json.corrupt`.
+The frontend applies changes via `updateSettings()` and saves with a 300 ms debounce.
 
 ## Commands
 
@@ -94,17 +107,16 @@ Layering: `shared/` imports nothing from `features/` or `app/`. Features may imp
 pnpm install && pnpm tauri dev
 pnpm typecheck && pnpm test && pnpm build
 cd src-tauri && cargo fmt --check && cargo clippy --all-targets -- -D warnings && cargo test
-pnpm tauri build --debug
+cargo build    # in src-tauri: compile check without bundling
 ```
 
 ## Roadmap (9 phases)
 
 1. [x] Skeleton, theme engine, i18n, dockable layout (done)
-2. [ ] PTY + multi terminal panels (xterm.js WebGL, portable-pty)
+2. [x] PTY + multi terminal panels (xterm.js WebGL, portable-pty) (done)
 3. [ ] Workspace file tree (notify + ignore) + CodeMirror 6 viewer/editor
 4. [ ] Pixel character system (15 characters, 16x16 JSON sprites scaled, typewriter speech bar)
-5. [ ] AI providers (Claude Code/Codex/Gemini CLI + Anthropic/OpenAI/Gemini/DeepSeek/
-       OpenAI-compatible APIs, keys in OS keyring)
+5. [ ] AI providers (CLI agents + Anthropic/OpenAI/Gemini/DeepSeek/compatible APIs, keyring keys)
 6. [ ] Token & cost tracking
 7. [ ] Agent installer wizard (per-AI formats/paths)
 8. [ ] Community agent library from GitHub
