@@ -100,6 +100,8 @@ DOMPurify.addHook('afterSanitizeAttributes', (node) => {
 
 /** Strips anything that could run code: scripts, event handlers, unsafe URLs, frames. */
 export function sanitizeHtml(html: string): string {
+  // Without a usable DOM, DOMPurify returns its input unchanged: fail closed instead.
+  if (!DOMPurify.isSupported) return escapeHtml(html);
   return DOMPurify.sanitize(html, {
     ALLOWED_TAGS,
     ALLOWED_ATTR,

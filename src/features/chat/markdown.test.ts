@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from 'vitest';
+import DOMPurify from 'dompurify';
 import { renderMarkdown, sanitizeHtml } from './markdown';
 
 function dom(html: string): HTMLElement {
@@ -9,6 +10,10 @@ function dom(html: string): HTMLElement {
 }
 
 describe('markdown rendering', () => {
+  it('runs with a working sanitizer', () => {
+    expect(DOMPurify.isSupported).toBe(true);
+  });
+
   it('renders GFM with the agent-bold style and copyable code blocks', () => {
     const host = dom(renderMarkdown('**Done!**\n\n```ts\nconst a = 1 < 2;\n```\n\n- [x] task'));
     expect(host.querySelector('strong.af-agent-bold')?.textContent).toBe('Done!');
