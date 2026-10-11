@@ -46,6 +46,12 @@ pub async fn pty_write(
     run_blocking(move || manager.write(id, data.as_bytes())).await
 }
 
+/// Flow control: the frontend reports how many output bytes xterm has processed.
+#[tauri::command]
+pub async fn pty_ack(manager: State<'_, PtyManager>, id: SessionId, bytes: usize) -> AppResult<()> {
+    manager.ack(id, bytes)
+}
+
 #[tauri::command]
 pub async fn pty_resize(
     manager: State<'_, PtyManager>,

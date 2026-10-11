@@ -7,6 +7,7 @@ use std::sync::{Arc, Mutex};
 use portable_pty::{Child, ChildKiller, MasterPty};
 
 use super::coalesce::PumpMsg;
+use super::flow::Flow;
 use super::model::{ExitInfo, SessionInfo};
 use crate::util::Signal;
 
@@ -21,16 +22,25 @@ pub struct Session {
     pub killer: Box<dyn ChildKiller + Send + Sync>,
     /// Set by the waiter thread once the child has been reaped.
     pub reaped: Arc<Signal>,
+    pub flow: Arc<Flow>,
+}
+
+impl Drop for Session {
+    /// Releases a reader paused by flow control so its thread can end.
+    fn drop(&mut self) {
+        self.flow.close();
+    }
 }
 
 /// Reader thread body: forwards raw bytes until EOF or an error (EIO once the child
-/// and every process holding the pty slave are gone).
-pub fn read_loop(mut reader: Box<dyn Read + Send>, tx: Sender<PumpMsg>) {
+/// and every process holding the pty slave are gone). Pauses while the frontend is behind.
+pub fn read_loop(mut reader: Box<dyn Read + Send>, tx: Sender<PumpMsg>, flow: &Flow) {
     let mut buffer = vec![0u8; READ_BUFFER];
-    loop {
+    while flow.wait_for_capacity() {
         match reader.read(&mut buffer) {
             Ok(0) | Err(_) => break,
             Ok(n) => {
+                flow.sent(n);
                 if tx.send(PumpMsg::Data(buffer[..n].to_vec())).is_err() {
                     break;
                 }

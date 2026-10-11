@@ -230,6 +230,49 @@ fn kill_all_stops_every_session() {
 }
 
 #[test]
+fn reader_pauses_until_output_is_acknowledged() {
+    use super::flow::HIGH_WATER;
+    const TOTAL: usize = 3 * 1024 * 1024;
+    let manager = PtyManager::new();
+    let script = format!("head -c {TOTAL} /dev/zero | tr '\\0' x");
+    let (info, rx) = spawn(&manager, &custom("sh", &["-c", &script]));
+
+    // Without acks the reader stops near the high-water mark and the child blocks.
+    let mut received = 0usize;
+    let deadline = Instant::now() + Duration::from_millis(800);
+    while let Ok(out) = rx.recv_timeout(deadline.saturating_duration_since(Instant::now())) {
+        match out {
+            PtyOutput::Data(bytes) => received += bytes.len(),
+            PtyOutput::Exit(info) => panic!("exited without acks: {info:?}"),
+        }
+    }
+    assert!(received >= HIGH_WATER / 2, "too little output: {received}");
+    assert!(
+        received < HIGH_WATER + 64 * 1024,
+        "flow control did not pause: {received}"
+    );
+
+    // Acknowledging lets everything through.
+    manager.ack(info.id, received).expect("ack");
+    let deadline = Instant::now() + TIMEOUT;
+    loop {
+        match rx.recv_timeout(deadline.saturating_duration_since(Instant::now())) {
+            Ok(PtyOutput::Data(bytes)) => {
+                received += bytes.len();
+                // The session may already have exited while these bytes were queued.
+                let _ = manager.ack(info.id, bytes.len());
+            }
+            Ok(PtyOutput::Exit(exit)) => {
+                assert_eq!(exit.code, Some(0));
+                break;
+            }
+            Err(_) => panic!("stalled at {received} bytes"),
+        }
+    }
+    assert_eq!(received, TOTAL);
+}
+
+#[test]
 fn unknown_sessions_are_errors() {
     let manager = PtyManager::new();
     assert!(matches!(

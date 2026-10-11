@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { InputQueue, LatestQueue } from './queues';
+import { AckBatcher, InputQueue, LatestQueue } from './queues';
 
 function deferred() {
   let resolve = () => {};
@@ -75,5 +75,15 @@ describe('LatestQueue', () => {
     gate.resolve();
     await tick();
     expect(sent).toEqual([1, 3]);
+  });
+});
+
+describe('AckBatcher', () => {
+  it('acknowledges in chunks and holds bytes until it may send', () => {
+    const acks = new AckBatcher(100);
+    expect(acks.add(60, true)).toBe(0);
+    expect(acks.add(50, true)).toBe(110);
+    expect(acks.add(150, false)).toBe(0); // session id not known yet
+    expect(acks.add(0, true)).toBe(150);
   });
 });

@@ -7,14 +7,17 @@ import { toAppError } from '../../shared/errors';
 import { ipc, type PtyHandle } from '../../shared/ipc';
 import type { PtyExitMessage, PtyMessage, TerminalSettings } from '../../shared/types';
 import { reportError, t } from '../i18n';
+import { copySelection, pasteInto } from './clipboard';
 import type { TerminalConfig } from './config';
 import { OutputDecoder } from './decoder';
 import { terminalShortcut } from './keys';
-import { InputQueue, LatestQueue } from './queues';
+import { AckBatcher, InputQueue, LatestQueue } from './queues';
 import type { TerminalStatus } from './types';
 import { WebglRenderer } from './webgl';
 
 const FIT_DEBOUNCE_MS = 50;
+/** Acknowledge processed output in 64 KB steps (backend pauses at 512 KB unacknowledged). */
+const ACK_CHUNK = 64 * 1024;
 const FONT_FAMILY = "'JetBrains Mono', ui-monospace, Menlo, Consolas, monospace";
 
 interface Session {
@@ -24,9 +27,11 @@ interface Session {
   resize: LatestQueue<{ cols: number; rows: number }>;
 }
 
-/** Identifies one start; output and exit messages of an older start are ignored. */
+/** One start of the process: its exit state and flow-control bookkeeping. */
 interface Launch {
   exited: boolean;
+  sessionId: number | undefined;
+  acks: AckBatcher;
 }
 
 export interface ControllerOptions {
@@ -138,7 +143,7 @@ export class TerminalController {
   async start(): Promise<void> {
     if (this.disposed || this.status === 'starting' || this.status === 'running') return;
     this.setStatus('starting', null);
-    const launch: Launch = { exited: false };
+    const launch: Launch = { exited: false, sessionId: undefined, acks: new AckBatcher(ACK_CHUNK) };
     const decoder = new OutputDecoder();
     const { config } = this.options;
     try {
@@ -163,6 +168,8 @@ export class TerminalController {
         return;
       }
       const id = handle.info.id;
+      launch.sessionId = id;
+      this.acknowledge(launch, 0); // output may have been processed before the id was known
       this.session = {
         id,
         handle,
@@ -205,7 +212,10 @@ export class TerminalController {
     // Closed while starting: the channel is still attached until spawn returns.
     if (this.disposed) return;
     if (message instanceof ArrayBuffer) {
-      this.term.write(decoder.decode(new Uint8Array(message)));
+      const bytes = message.byteLength;
+      this.term.write(decoder.decode(new Uint8Array(message)), () =>
+        this.acknowledge(launch, bytes),
+      );
       return;
     }
     if (!isExit(message)) return;
@@ -223,6 +233,13 @@ export class TerminalController {
     this.setStatus('exited', null);
   }
 
+  /** Reports output xterm has finished processing, so the backend keeps reading. */
+  private acknowledge(launch: Launch, bytes: number): void {
+    const id = launch.sessionId;
+    const ready = launch.acks.add(bytes, id !== undefined && !launch.exited);
+    if (id !== undefined && ready > 0) void ipc.ptyAck(id, ready).catch(quiet);
+  }
+
   private onInput(data: string): void {
     if (this.status === 'running') this.session?.input.push(data);
     else if (this.status === 'exited' && data === '\r') void this.start();
@@ -234,28 +251,10 @@ export class TerminalController {
     if (!shortcut) return true;
     if (shortcut !== 'newShell' && event.type === 'keydown') {
       event.preventDefault();
-      void (shortcut === 'copy' ? this.copy() : this.paste());
+      if (shortcut === 'copy') void copySelection(this.term);
+      else void pasteInto(this.term, () => this.disposed);
     }
     return false;
-  }
-
-  private async copy(): Promise<void> {
-    const text = this.term.getSelection();
-    if (!text) return;
-    try {
-      await navigator.clipboard.writeText(text);
-    } catch (err) {
-      reportError('error.clipboard', err);
-    }
-  }
-
-  private async paste(): Promise<void> {
-    try {
-      const text = await navigator.clipboard.readText();
-      if (text && !this.disposed) this.term.paste(text);
-    } catch (err) {
-      reportError('error.clipboard', err);
-    }
   }
 
   private scheduleFit(): void {

@@ -29,6 +29,7 @@ pub fn run() {
 
     let app = tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_clipboard_manager::init())
         .on_page_load(|webview, payload| {
             // A reload drops every terminal channel, so the old sessions can never be shown
             // again: stop them instead of leaving shells and agent CLIs running unseen.
@@ -51,6 +52,7 @@ pub fn run() {
             commands::themes::import_theme,
             commands::pty::pty_spawn,
             commands::pty::pty_write,
+            commands::pty::pty_ack,
             commands::pty::pty_resize,
             commands::pty::pty_kill,
             commands::pty::pty_list,

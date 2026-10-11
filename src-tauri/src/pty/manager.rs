@@ -13,6 +13,7 @@ use portable_pty::{native_pty_system, Child, CommandBuilder, PtySize};
 
 use super::coalesce::{run_pump, PumpMsg};
 use super::env_path::search_path;
+use super::flow::Flow;
 use super::kill::{escalate_after_grace, force_kill};
 use super::launch::Launch;
 use super::model::{OutputSink, PtyKind, SessionId, SessionInfo, TermSize};
@@ -44,6 +45,14 @@ impl Inner {
     fn remove(&self, id: SessionId) -> Option<Session> {
         lock(&self.sessions).remove(&id)
     }
+}
+
+/// What the session threads take over after the pty is open.
+struct Threads {
+    child: Box<dyn Child + Send + Sync>,
+    reader: Box<dyn std::io::Read + Send>,
+    reaped: Arc<Signal>,
+    flow: Arc<Flow>,
 }
 
 fn pty_error(err: impl std::fmt::Display) -> AppError {
@@ -110,18 +119,26 @@ impl PtyManager {
             pid: child.process_id(),
         };
         let reaped = Arc::new(Signal::new());
+        let flow = Arc::new(Flow::new());
         let session = Session {
             info: info.clone(),
             writer: Arc::new(Mutex::new(writer)),
             master: Arc::new(Mutex::new(pair.master)),
             killer: child.clone_killer(),
             reaped: Arc::clone(&reaped),
+            flow: Arc::clone(&flow),
         };
         // Insert before the threads start: a fast-exiting child must find itself to remove.
         lock(&self.inner.sessions).insert(id, session);
 
         let (tx, rx) = mpsc::channel();
-        if let Err(err) = self.start_threads(id, child, reader, reaped, (tx, rx), sink) {
+        let threads = Threads {
+            child,
+            reader,
+            reaped,
+            flow,
+        };
+        if let Err(err) = self.start_threads(id, threads, (tx, rx), sink) {
             self.kill(id);
             return Err(err);
         }
@@ -132,12 +149,16 @@ impl PtyManager {
     fn start_threads(
         &self,
         id: SessionId,
-        child: Box<dyn Child + Send + Sync>,
-        reader: Box<dyn std::io::Read + Send>,
-        reaped: Arc<Signal>,
+        threads: Threads,
         (tx, rx): (Sender<PumpMsg>, Receiver<PumpMsg>),
         sink: OutputSink,
     ) -> AppResult<()> {
+        let Threads {
+            child,
+            reader,
+            reaped,
+            flow,
+        } = threads;
         // The waiter starts first: once it runs, the child is always reaped. The child sits in
         // a slot so it can be reaped here if the thread cannot be started at all.
         let child_slot = Arc::new(Mutex::new(Some(child)));
@@ -168,7 +189,7 @@ impl PtyManager {
             })?;
         thread::Builder::new()
             .name(format!("pty-{id}-read"))
-            .spawn(move || read_loop(reader, tx))?;
+            .spawn(move || read_loop(reader, tx, &flow))?;
         Ok(())
     }
 
@@ -177,6 +198,13 @@ impl PtyManager {
         let mut writer = lock(&writer);
         writer.write_all(bytes)?;
         writer.flush()?;
+        Ok(())
+    }
+
+    /// The frontend has processed `bytes` more output; lets a paused reader continue.
+    pub fn ack(&self, id: SessionId, bytes: usize) -> AppResult<()> {
+        let flow = self.with_session(id, |session| Arc::clone(&session.flow))?;
+        flow.ack(bytes);
         Ok(())
     }
 

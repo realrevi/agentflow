@@ -63,3 +63,22 @@ export class LatestQueue<T> {
     this.busy = false;
   }
 }
+
+/**
+ * Flow control: counts output bytes xterm has processed and says when to acknowledge them
+ * (in chunks, to keep IPC calls rare). The chunk must stay below the backend's high-water mark.
+ */
+export class AckBatcher {
+  private pending = 0;
+
+  constructor(private readonly chunk: number) {}
+
+  /** Returns the number of bytes to acknowledge now, or 0 to keep batching. */
+  add(bytes: number, canSend: boolean): number {
+    this.pending += bytes;
+    if (!canSend || this.pending < this.chunk) return 0;
+    const ready = this.pending;
+    this.pending = 0;
+    return ready;
+  }
+}
