@@ -7,7 +7,8 @@ Linux. Priorities: **low RAM, fast, clean code organization, fun look.**
 ## Stack (fixed)
 
 - **Backend:** Tauri 2, Rust stable, tokio, serde/serde_json, thiserror, tracing,
-  portable-pty (terminals), which (PATH lookup), tauri-plugin-dialog (folder picker)
+  portable-pty (terminals), which (PATH lookup), tauri plugins: dialog (folder picker),
+  clipboard-manager (terminal copy/paste)
 - **Frontend:** SolidJS + TypeScript (strict) + Vite, pnpm, xterm.js (+ fit, webgl, unicode11)
 - **Layout:** `dockview-core` (vanilla) behind a thin Solid wrapper. Its stylesheet ships in the
   `dockview` package (a pure re-export of dockview-core); keep both pinned to the same version.
@@ -75,6 +76,8 @@ import core features. `layout` and the settings panel compose panel features; `a
 - When the session ends Rust drops the channel, which unregisters the JS callback. Kill on panel
   close / `pty_kill` / app exit = SIGHUP (TerminateProcess on Windows), SIGKILL after 2 s; the
   waiter thread always reaps the child, and the session removes itself from the map.
+- Flow control: the frontend acks bytes after xterm parses them (`pty_ack`, 64 KB batches);
+  the reader pauses at 512 KB unacked, so the child blocks instead of memory growing.
 - Input and resizes go through per-session queues (`queues.ts`) so IPC calls stay in order.
 - Persist terminal _config_ only (kind, command, args, cwd). Restored agent CLIs never
   auto-start; restored shells follow `terminal.autoStartShells`.
