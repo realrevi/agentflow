@@ -1,2 +1,15 @@
-// Pixel characters: 16x16 JSON sprites and the typewriter speech bar (phase 4).
-export {};
+// Pixel characters (core feature): sprite data, renderer, shared animation loop, avatars
+// and the agent state heuristic. Imports only shared/ and other core features.
+export { animatorStats, reducedMotion, startAnimation, type Animation } from './animator';
+import './characters.css';
+export { Avatar, type AvatarProps } from './Avatar';
+export { CharacterPicker } from './CharacterPicker';
+export {
+  characterById,
+  characters,
+  isCharacterRef,
+  loadCharacters,
+  pickCharacter,
+} from './catalog';
+export { AgentStateTracker, type AgentState } from './stateMachine';
+export type { CharacterRef, SpriteSheet, SpriteState } from './types';

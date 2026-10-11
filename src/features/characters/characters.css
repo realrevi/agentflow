@@ -1,0 +1,67 @@
+/* Avatars, the character picker and the agent overlay pieces. */
+.af-avatar {
+  display: block;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+.af-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.af-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 40px);
+  gap: 4px;
+}
+
+.af-picker-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: none;
+  cursor: pointer;
+}
+
+.af-picker-cell:hover {
+  background: var(--af-list-hover-bg);
+}
+
+.af-picker-cell.selected {
+  border-color: var(--af-accent);
+  background: var(--af-list-active-bg);
+}
+
+.af-picker-palettes {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.af-picker-name {
+  flex: 1;
+  font-family: var(--af-font-pixel);
+  font-size: 12px;
+  color: var(--af-bold-color);
+}
+
+.af-swatch {
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  border: 2px solid var(--af-widget-border);
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.af-swatch.selected {
+  border-color: var(--af-fg);
+  box-shadow: 0 0 0 1px var(--af-accent);
+}

@@ -70,3 +70,14 @@
   flex: 1;
   font-family: var(--af-font-mono);
 }
+
+.af-popover {
+  position: fixed;
+  z-index: 1000;
+  padding: 8px;
+  background: var(--af-widget-bg);
+  color: var(--af-widget-fg);
+  border: 1px solid var(--af-widget-border);
+  border-radius: 6px;
+  box-shadow: 0 8px 24px var(--af-shadow);
+}

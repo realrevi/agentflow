@@ -216,3 +216,7 @@ export const collapseIcon: PixelArt = {
     '........',
   ],
 };
+
+export const copyIcon: PixelArt = {
+  rows: ['........', '.####...', '.#..###.', '.#..#.#.', '.####.#.', '...#..#.', '...####.', '........'],
+};
