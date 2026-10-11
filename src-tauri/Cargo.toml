@@ -1,0 +1,31 @@
+[package]
+name = "agentflow"
+version = "0.1.0"
+description = "Multi-agent terminal and AI manager for vibe coders"
+authors = ["AgentFlow contributors"]
+license = "MIT"
+repository = "https://github.com/realrevi/agentflow"
+edition = "2021"
+rust-version = "1.90"
+
+[lib]
+name = "agentflow_lib"
+
+[build-dependencies]
+tauri-build = { version = "2.7", features = [] }
+
+[dependencies]
+tauri = { version = "2.12", features = [] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "2"
+tokio = { version = "1", features = ["sync"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", default-features = false, features = ["fmt", "std", "ansi"] }
+
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = "s"
+panic = "abort"
+strip = true
