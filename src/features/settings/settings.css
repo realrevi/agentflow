@@ -1,0 +1,125 @@
+.af-settings {
+  height: 100%;
+  overflow-y: auto;
+  padding: 20px 28px 40px;
+  container-type: inline-size;
+}
+
+.af-settings-section {
+  max-width: 720px;
+  padding: 18px 0 22px;
+  border-bottom: 1px solid var(--af-border);
+}
+
+.af-settings-section:last-child {
+  border-bottom: none;
+}
+
+.af-settings-title {
+  margin: 0 0 12px;
+  font-family: var(--af-font-pixel);
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  color: var(--af-accent);
+}
+
+.af-settings-subtitle {
+  margin: 22px 0 4px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.af-settings-hint {
+  margin: 0 0 12px;
+  font-size: 12px;
+  color: var(--af-fg-muted);
+}
+
+.af-settings-row {
+  display: grid;
+  grid-template-columns: minmax(120px, 180px) 1fr;
+  align-items: center;
+  gap: 8px 16px;
+  margin: 10px 0;
+}
+
+.af-settings-label {
+  font-size: 13px;
+}
+
+.af-settings-control {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.af-color-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.af-color-field input[type='color'] {
+  width: 36px;
+  height: 26px;
+  padding: 2px;
+  border: 1px solid var(--af-input-border);
+  border-radius: 4px;
+  background: var(--af-input-bg);
+  cursor: pointer;
+}
+
+.af-color-value {
+  min-width: 64px;
+  font-family: var(--af-font-mono);
+  font-size: 12px;
+  color: var(--af-fg-muted);
+}
+
+.af-bold-preview {
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px dashed var(--af-border);
+  border-radius: 6px;
+  background: var(--af-terminal-bg);
+  color: var(--af-terminal-fg);
+  font-family: var(--af-font-mono);
+  font-size: 13px;
+}
+
+.af-choice-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.af-choice {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: 1px solid var(--af-input-border);
+  border-radius: 6px;
+  background: var(--af-input-bg);
+  cursor: pointer;
+}
+
+.af-choice.active {
+  border-color: var(--af-accent);
+  background: var(--af-accent-soft);
+}
+
+.af-choice input {
+  accent-color: var(--af-accent);
+  margin: 0;
+}
+
+/* Narrow panels: stack labels above their controls. */
+@container (max-width: 480px) {
+  .af-settings-row {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+}

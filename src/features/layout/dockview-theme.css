@@ -1,0 +1,67 @@
+/* Maps dockview's --dv-* variables onto AgentFlow's --af-* theme variables. */
+.af-dockview {
+  --dv-paneview-active-outline-color: var(--af-focus);
+  --dv-tabs-and-actions-container-font-size: 12px;
+  --dv-tabs-and-actions-container-height: 34px;
+  --dv-drag-over-background-color: var(--af-accent-soft);
+  --dv-drag-over-border-color: var(--af-accent);
+  --dv-edge-dock-indicator-color: var(--af-accent);
+  --dv-tabs-container-scrollbar-color: var(--af-scrollbar);
+  --dv-icon-hover-background-color: var(--af-list-hover-bg);
+  --dv-floating-box-shadow: 0 8px 32px var(--af-shadow);
+  --dv-floating-border: 1px solid var(--af-widget-border);
+  --dv-overlay-z-index: 999;
+  --dv-tab-font-size: inherit;
+  --dv-border-radius: 0px;
+  --dv-tab-margin: 0;
+  --dv-sash-color: transparent;
+  --dv-active-sash-color: var(--af-accent);
+  --dv-active-sash-transition-duration: 0.1s;
+  --dv-active-sash-transition-delay: 0.3s;
+  --dv-spacing-padding: 0px;
+  --dv-tab-border-radius: 0px;
+  --dv-sash-border-radius: 0px;
+  --dv-dropdown-border-radius: 6px;
+  --dv-tab-close-icon-size: inherit;
+  --dv-floating-group-border: none;
+  --dv-drag-over-border: none;
+  --dv-floating-group-dragging-opacity: 0.5;
+  --dv-floating-titlebar-height: 22px;
+  --dv-floating-titlebar-background-color: var(--af-tabs-bg);
+  --dv-floating-titlebar-border-bottom: var(--dv-floating-border);
+
+  --dv-group-view-background-color: var(--af-panel-bg);
+  --dv-tabs-and-actions-container-background-color: var(--af-tabs-bg);
+  --dv-activegroup-visiblepanel-tab-background-color: var(--af-tab-active-bg);
+  --dv-activegroup-hiddenpanel-tab-background-color: var(--af-tab-inactive-bg);
+  --dv-inactivegroup-visiblepanel-tab-background-color: var(--af-tab-active-bg);
+  --dv-inactivegroup-hiddenpanel-tab-background-color: var(--af-tab-inactive-bg);
+  --dv-tab-divider-color: var(--af-tab-border);
+  --dv-activegroup-visiblepanel-tab-color: var(--af-tab-active-fg);
+  --dv-activegroup-hiddenpanel-tab-color: var(--af-tab-inactive-fg);
+  --dv-inactivegroup-visiblepanel-tab-color: var(--af-tab-unfocused-active-fg);
+  --dv-inactivegroup-hiddenpanel-tab-color: var(--af-tab-inactive-fg);
+  --dv-separator-border: var(--af-group-border);
+  --dv-paneview-header-border-color: var(--af-border);
+  --dv-scrollbar-background-color: var(--af-scrollbar);
+}
+
+/* Accent line on the visible tab of the focused group, like VS Code's activeBorderTop. */
+.af-dockview .dv-groupview.dv-active-group .dv-tab.dv-active-tab {
+  box-shadow: inset 0 2px 0 var(--af-tab-active-border);
+}
+
+.af-dockview .dv-tab:not(.dv-active-tab):hover {
+  background-color: var(--af-tab-hover-bg);
+}
+
+.af-header-actions {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  padding: 0 6px;
+}
+
+.af-watermark-host {
+  height: 100%;
+}
