@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 /// Bump when the on-disk shape changes and add a step in `migrate.rs`.
-pub const CURRENT_VERSION: u32 = 3;
+pub const CURRENT_VERSION: u32 = 4;
 pub const SUPPORTED_LANGUAGES: [&str; 5] = ["en", "tr", "de", "zh", "ru"];
 pub const DEFAULT_LANGUAGE: &str = "en";
 pub const DEFAULT_THEME_ID: &str = "agentflow-dark";
@@ -12,6 +12,8 @@ pub const DEFAULT_BOLD_COLOR: &str = "#F5C542";
 pub const SIDEBAR_VIEWS: [&str; 3] = ["agents", "explorer", "characters"];
 pub const MAX_RECENT_WORKSPACES: usize = 10;
 pub const CURSOR_STYLES: [&str; 3] = ["block", "underline", "bar"];
+pub const AVATAR_SCALES: [u8; 3] = [2, 3, 4];
+pub const ANIMATION_SPEED_RANGE: (f64, f64) = (0.5, 2.0);
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", default)]
@@ -26,6 +28,7 @@ pub struct Settings {
     pub recent_workspaces: Vec<String>,
     pub terminal: TerminalSettings,
     pub files: FilesSettings,
+    pub characters: CharacterSettings,
     /// Opaque dockview layout owned by the frontend. `None` means "use the default layout".
     pub layout: Option<Value>,
 }
@@ -46,6 +49,28 @@ pub struct TerminalSettings {
 pub struct FilesSettings {
     /// Show dotfiles in the file tree and quick open (`.git` always stays hidden).
     pub show_hidden: bool,
+}
+
+/// Pixel characters on agent panels (phase 4).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+pub struct CharacterSettings {
+    /// Avatars on agent panels at all.
+    pub enabled: bool,
+    /// The corner avatar rides above the terminal cursor while output streams.
+    pub cursor_follow: bool,
+    /// Sent prompts fly to the avatar as a pixel packet.
+    pub packet: bool,
+    /// Speech bubble under the corner avatar.
+    pub bubble: bool,
+    /// Bubble text appears letter by letter.
+    pub typewriter: bool,
+    /// Animation speed multiplier, `ANIMATION_SPEED_RANGE`.
+    pub speed: f64,
+    /// Corner avatar scale, one of `AVATAR_SCALES`.
+    pub scale: u8,
+    /// Shell panels get avatars too.
+    pub on_shells: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -85,6 +110,7 @@ impl Default for Settings {
             recent_workspaces: Vec::new(),
             terminal: TerminalSettings::default(),
             files: FilesSettings::default(),
+            characters: CharacterSettings::default(),
             layout: None,
         }
     }
@@ -97,6 +123,21 @@ impl Default for TerminalSettings {
             scrollback: 5000,
             cursor_style: CURSOR_STYLES[0].into(),
             auto_start_shells: true,
+        }
+    }
+}
+
+impl Default for CharacterSettings {
+    fn default() -> Self {
+        Self {
+            enabled: true,
+            cursor_follow: true,
+            packet: true,
+            bubble: true,
+            typewriter: true,
+            speed: 1.0,
+            scale: 3,
+            on_shells: false,
         }
     }
 }

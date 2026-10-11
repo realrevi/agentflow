@@ -1,8 +1,9 @@
 //! Repairs out-of-range or unknown values so the rest of the app can trust settings.
 
 use super::model::{
-    Settings, TerminalSettings, CURRENT_VERSION, CURSOR_STYLES, DEFAULT_BOLD_COLOR,
-    DEFAULT_LANGUAGE, DEFAULT_THEME_ID, MAX_RECENT_WORKSPACES, SIDEBAR_VIEWS, SUPPORTED_LANGUAGES,
+    CharacterSettings, Settings, TerminalSettings, ANIMATION_SPEED_RANGE, AVATAR_SCALES,
+    CURRENT_VERSION, CURSOR_STYLES, DEFAULT_BOLD_COLOR, DEFAULT_LANGUAGE, DEFAULT_THEME_ID,
+    MAX_RECENT_WORKSPACES, SIDEBAR_VIEWS, SUPPORTED_LANGUAGES,
 };
 use crate::util::is_hex_color;
 
@@ -42,6 +43,7 @@ impl Settings {
             .filter(|path| !path.trim().is_empty());
         self.recent_workspaces = normalize_recent(std::mem::take(&mut self.recent_workspaces));
         normalize_terminal(&mut self.terminal);
+        normalize_characters(&mut self.characters);
 
         if !self
             .layout
@@ -75,6 +77,18 @@ fn normalize_terminal(terminal: &mut TerminalSettings) {
     }
 }
 
+fn normalize_characters(characters: &mut CharacterSettings) {
+    let (min, max) = ANIMATION_SPEED_RANGE;
+    characters.speed = if characters.speed.is_finite() {
+        characters.speed.clamp(min, max)
+    } else {
+        1.0
+    };
+    if !AVATAR_SCALES.contains(&characters.scale) {
+        characters.scale = CharacterSettings::default().scale;
+    }
+}
+
 fn is_valid_theme_id(id: &str) -> bool {
     !id.is_empty()
         && id.len() <= MAX_THEME_ID_LEN
@@ -86,7 +100,7 @@ fn is_valid_theme_id(id: &str) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::settings::{AgentBold, Appearance, FilesSettings, UiState};
+    use crate::settings::{AgentBold, Appearance, CharacterSettings, FilesSettings, UiState};
     use serde_json::json;
 
     #[test]
@@ -112,6 +126,7 @@ mod tests {
             recent_workspaces: Vec::new(),
             terminal: TerminalSettings::default(),
             files: FilesSettings::default(),
+            characters: CharacterSettings::default(),
             layout: Some(json!([1, 2, 3])),
         };
 
@@ -178,5 +193,29 @@ mod tests {
         assert_eq!(fixed.terminal.scrollback, MAX_SCROLLBACK);
         assert_eq!(fixed.terminal.cursor_style, "block");
         assert!(!fixed.terminal.auto_start_shells);
+    }
+
+    #[test]
+    fn repairs_character_settings() {
+        let settings = Settings {
+            characters: CharacterSettings {
+                speed: 9.0,
+                scale: 7,
+                ..CharacterSettings::default()
+            },
+            ..Settings::default()
+        };
+        let fixed = settings.normalized().characters;
+        assert_eq!(fixed.speed, 2.0);
+        assert_eq!(fixed.scale, 3);
+        let slow = Settings {
+            characters: CharacterSettings {
+                speed: f64::NAN,
+                scale: 4,
+                ..CharacterSettings::default()
+            },
+            ..Settings::default()
+        };
+        assert_eq!(slow.normalized().characters.speed, 1.0);
     }
 }
