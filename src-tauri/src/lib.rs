@@ -13,6 +13,7 @@ mod util;
 
 use std::path::Path;
 
+use tauri::webview::PageLoadEvent;
 use tauri::{Manager, RunEvent};
 
 use crate::pty::{CliDetector, PtyManager};
@@ -28,6 +29,15 @@ pub fn run() {
 
     let app = tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
+        .on_page_load(|webview, payload| {
+            // A reload drops every terminal channel, so the old sessions can never be shown
+            // again: stop them instead of leaving shells and agent CLIs running unseen.
+            if payload.event() == PageLoadEvent::Started {
+                if let Some(manager) = webview.try_state::<PtyManager>() {
+                    manager.kill_all();
+                }
+            }
+        })
         .setup(|app| {
             let config_dir = app.path().app_config_dir()?;
             manage_stores(app, &config_dir);

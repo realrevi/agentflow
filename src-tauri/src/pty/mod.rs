@@ -6,6 +6,7 @@
 
 mod cli;
 mod coalesce;
+mod env_path;
 mod kill;
 mod launch;
 mod manager;

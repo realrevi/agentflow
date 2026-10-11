@@ -12,6 +12,7 @@ use std::time::{Duration, Instant};
 use portable_pty::{native_pty_system, Child, CommandBuilder, PtySize};
 
 use super::coalesce::{run_pump, PumpMsg};
+use super::env_path::search_path;
 use super::kill::{escalate_after_grace, force_kill};
 use super::launch::Launch;
 use super::model::{OutputSink, PtyKind, SessionId, SessionInfo, TermSize};
@@ -32,7 +33,12 @@ pub struct PtyManager {
 struct Inner {
     next_id: AtomicU64,
     sessions: Mutex<HashMap<SessionId, Session>>,
+    /// Killed sessions whose child may not be reaped yet; shutdown waits for them too.
+    dying: Mutex<Vec<Pending>>,
 }
+
+/// A child that was told to stop: its pid and the signal set once it is reaped.
+type Pending = (Option<u32>, Arc<Signal>);
 
 impl Inner {
     fn remove(&self, id: SessionId) -> Option<Session> {
@@ -73,6 +79,9 @@ impl PtyManager {
         command.cwd(cwd);
         command.env("TERM", "xterm-256color");
         command.env("COLORTERM", "truecolor");
+        if let Some(path) = search_path() {
+            command.env("PATH", path); // so agent CLIs also find node etc. on GUI launches
+        }
 
         let mut child = pair.slave.spawn_command(command).map_err(pty_error)?;
         // Only the child may hold the slave, so EOF arrives once it (and its children) exit.
@@ -129,6 +138,25 @@ impl PtyManager {
         (tx, rx): (Sender<PumpMsg>, Receiver<PumpMsg>),
         sink: OutputSink,
     ) -> AppResult<()> {
+        // The waiter starts first: once it runs, the child is always reaped. The child sits in
+        // a slot so it can be reaped here if the thread cannot be started at all.
+        let child_slot = Arc::new(Mutex::new(Some(child)));
+        let waiter_slot = Arc::clone(&child_slot);
+        let waiter_tx = tx.clone();
+        let waiter = thread::Builder::new()
+            .name(format!("pty-{id}-wait"))
+            .spawn(move || {
+                if let Some(child) = lock(&waiter_slot).take() {
+                    wait_loop(child, &reaped, &waiter_tx);
+                }
+            });
+        if let Err(err) = waiter {
+            if let Some(mut child) = lock(&child_slot).take() {
+                let _ = child.kill();
+                let _ = child.wait();
+            }
+            return Err(err.into());
+        }
         let inner: Weak<Inner> = Arc::downgrade(&self.inner);
         thread::Builder::new()
             .name(format!("pty-{id}-pump"))
@@ -138,10 +166,6 @@ impl PtyManager {
                     inner.remove(id);
                 }
             })?;
-        let waiter_tx = tx.clone();
-        thread::Builder::new()
-            .name(format!("pty-{id}-wait"))
-            .spawn(move || wait_loop(child, &reaped, &waiter_tx))?;
         thread::Builder::new()
             .name(format!("pty-{id}-read"))
             .spawn(move || read_loop(reader, tx))?;
@@ -180,7 +204,19 @@ impl PtyManager {
             tracing::debug!("pty {id}: kill: {err}");
         }
         escalate_after_grace(session.info.pid, Arc::clone(&session.reaped));
+        let mut dying = lock(&self.inner.dying);
+        dying.retain(|(_, reaped)| !reaped.is_set());
+        dying.push((session.info.pid, Arc::clone(&session.reaped)));
         true
+    }
+
+    /// Kills every session without waiting (e.g. when the page reloads and every panel's
+    /// channel is gone).
+    pub fn kill_all(&self) {
+        let ids: Vec<SessionId> = lock(&self.inner.sessions).keys().copied().collect();
+        for id in ids {
+            self.kill(id);
+        }
     }
 
     pub fn list(&self) -> Vec<SessionInfo> {
@@ -199,18 +235,21 @@ impl PtyManager {
             .drain()
             .map(|(_, session)| session)
             .collect();
-        if sessions.is_empty() {
-            return;
-        }
-        tracing::info!("stopping {} terminal session(s)", sessions.len());
         for session in &mut sessions {
             let _ = session.killer.kill();
         }
-        let pending: Vec<(Option<u32>, Arc<Signal>)> = sessions
+        let mut pending: Vec<Pending> = sessions
             .iter()
             .map(|session| (session.info.pid, Arc::clone(&session.reaped)))
             .collect();
         drop(sessions); // closes every pty master
+                        // Sessions killed moments ago may still be inside their SIGKILL grace period.
+        pending.extend(lock(&self.inner.dying).drain(..));
+        pending.retain(|(_, reaped)| !reaped.is_set());
+        if pending.is_empty() {
+            return;
+        }
+        tracing::info!("stopping {} terminal process(es)", pending.len());
 
         let deadline = Instant::now() + SHUTDOWN_GRACE;
         for (pid, reaped) in &pending {

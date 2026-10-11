@@ -36,7 +36,7 @@ impl CliDetector {
     }
 
     pub fn detect(&self, refresh: bool) -> Vec<CliStatus> {
-        self.detect_with(refresh, |binary| which::which(binary).ok())
+        self.detect_with(refresh, find_on_path)
     }
 
     fn detect_with(&self, refresh: bool, find: impl Fn(&str) -> Option<PathBuf>) -> Vec<CliStatus> {
@@ -59,6 +59,12 @@ impl CliDetector {
         *cache = Some(fresh.clone());
         fresh
     }
+}
+
+/// Looks `binary` up on the login-shell-aware search path (see `env_path`).
+pub fn find_on_path(binary: &str) -> Option<PathBuf> {
+    let cwd = std::env::current_dir().unwrap_or_default();
+    which::which_in(binary, super::env_path::search_path(), cwd).ok()
 }
 
 /// The executable name for an agent kind, or `None` for shell/custom.

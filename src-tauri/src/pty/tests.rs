@@ -201,6 +201,35 @@ fn shutdown_stops_every_session() {
 }
 
 #[test]
+fn shutdown_waits_for_recently_killed_children() {
+    let manager = PtyManager::new();
+    let launch = custom("sh", &["-c", "trap '' HUP; while :; do sleep 1; done"]);
+    let (info, _rx) = spawn(&manager, &launch);
+    let pid = info.pid.expect("pid");
+    std::thread::sleep(Duration::from_millis(200));
+    assert!(manager.kill(info.id)); // SIGHUP is ignored; the 2 s watchdog has not fired yet
+    manager.shutdown();
+    assert!(
+        wait_until(|| !process_exists(pid)),
+        "child {pid} outlived shutdown"
+    );
+}
+
+#[test]
+fn kill_all_stops_every_session() {
+    let manager = PtyManager::new();
+    let (a, rx_a) = spawn(&manager, &custom("sleep", &["30"]));
+    let (b, rx_b) = spawn(&manager, &custom("sleep", &["30"]));
+    manager.kill_all();
+    assert!(manager.list().is_empty());
+    read_to_exit(&rx_a);
+    read_to_exit(&rx_b);
+    for pid in [a.pid, b.pid].into_iter().flatten() {
+        assert!(wait_until(|| !process_exists(pid)), "child {pid} survived");
+    }
+}
+
+#[test]
 fn unknown_sessions_are_errors() {
     let manager = PtyManager::new();
     assert!(matches!(

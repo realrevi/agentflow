@@ -2,7 +2,7 @@
 
 use std::path::PathBuf;
 
-use super::cli::agent_binary;
+use super::cli::{agent_binary, find_on_path};
 use super::model::PtyKind;
 use super::shell::default_shell;
 use crate::error::{AppError, AppResult};
@@ -18,7 +18,7 @@ pub struct Launch {
 /// - `custom`: `command` with `args`; with no args, `command` is a command line that runs
 ///   through the default shell (so pipes, quotes and env vars work as typed).
 pub fn resolve_launch(kind: PtyKind, command: Option<&str>, args: &[String]) -> AppResult<Launch> {
-    resolve_with(kind, command, args, |binary| which::which(binary).ok())
+    resolve_with(kind, command, args, find_on_path)
 }
 
 fn resolve_with(

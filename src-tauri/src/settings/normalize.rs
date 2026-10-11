@@ -35,11 +35,11 @@ impl Settings {
             ui.active_view = SIDEBAR_VIEWS[0].into();
         }
 
+        // Paths are kept verbatim: leading/trailing spaces are legal in folder names.
         self.current_workspace = self
             .current_workspace
             .take()
-            .map(|path| path.trim().to_owned())
-            .filter(|path| !path.is_empty());
+            .filter(|path| !path.trim().is_empty());
         self.recent_workspaces = normalize_recent(std::mem::take(&mut self.recent_workspaces));
         normalize_terminal(&mut self.terminal);
 
@@ -54,11 +54,11 @@ impl Settings {
     }
 }
 
-/// Trimmed, non-empty, without duplicates, most recent first, at most 10.
+/// Not blank, without duplicates, most recent first, at most 10.
 fn normalize_recent(paths: Vec<String>) -> Vec<String> {
     let mut seen: Vec<String> = Vec::new();
-    for path in paths.into_iter().map(|path| path.trim().to_owned()) {
-        if !path.is_empty() && !seen.contains(&path) {
+    for path in paths {
+        if !path.trim().is_empty() && !seen.contains(&path) {
             seen.push(path);
         }
     }
@@ -147,7 +147,7 @@ mod tests {
     #[test]
     fn cleans_workspaces_and_terminal_settings() {
         let mut recent: Vec<String> = (0..15).map(|i| format!("/work/{i}")).collect();
-        recent.insert(1, " /work/0 ".into());
+        recent.insert(1, "/work/0".into());
         recent.insert(2, "   ".into());
         let settings = Settings {
             current_workspace: Some("  ".into()),
@@ -165,6 +165,14 @@ mod tests {
         assert_eq!(fixed.recent_workspaces.len(), MAX_RECENT_WORKSPACES);
         assert_eq!(fixed.recent_workspaces[0], "/work/0");
         assert_eq!(fixed.recent_workspaces[1], "/work/1");
+        let spaced = Settings {
+            current_workspace: Some(" my folder ".into()),
+            ..Settings::default()
+        };
+        assert_eq!(
+            spaced.normalized().current_workspace.as_deref(),
+            Some(" my folder ")
+        );
         assert_eq!(fixed.terminal.font_size, 32);
         assert_eq!(fixed.terminal.scrollback, MAX_SCROLLBACK);
         assert_eq!(fixed.terminal.cursor_style, "block");

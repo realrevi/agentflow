@@ -81,7 +81,8 @@ pub async fn cli_detect(
 
 /// The requested folder (which must exist), or the home directory when none is given.
 fn resolve_cwd(cwd: Option<&str>, home: Option<PathBuf>) -> AppResult<PathBuf> {
-    match cwd.map(str::trim).filter(|c| !c.is_empty()) {
+    // Not trimmed: leading/trailing spaces are legal in folder names.
+    match cwd.filter(|c| !c.trim().is_empty()) {
         Some(dir) if Path::new(dir).is_dir() => Ok(PathBuf::from(dir)),
         Some(dir) => Err(AppError::InvalidInput(format!(
             "folder does not exist: {dir}"
