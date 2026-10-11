@@ -4,11 +4,10 @@ use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
-use std::time::{SystemTime, UNIX_EPOCH};
 
 use super::model::{PromptEntry, WorkspaceHistory, FORMAT_VERSION};
 use crate::error::{AppError, AppResult};
-use crate::util::{lock, write_atomic};
+use crate::util::{lock, now_ms, workspace_key, write_atomic};
 
 /// Per panel, oldest entries are dropped beyond this.
 pub const MAX_ENTRIES: usize = 200;
@@ -113,27 +112,9 @@ fn prune_panels(history: &mut WorkspaceHistory) {
     }
 }
 
-/// `<folder>-<hash>.json` for a workspace (readable and collision-safe), `_home.json` without.
+/// `<folder>-<hash>.json` for a workspace, `_home.json` without one.
 pub fn file_name(workspace: Option<&str>) -> String {
-    let Some(path) = workspace else {
-        return "_home.json".into();
-    };
-    let folder: String = path
-        .trim_end_matches(['/', '\\'])
-        .rsplit(['/', '\\'])
-        .next()
-        .unwrap_or("")
-        .chars()
-        .filter(|c| c.is_ascii_alphanumeric() || matches!(c, '-' | '_' | '.'))
-        .take(40)
-        .collect();
-    format!("{folder}-{:016x}.json", fnv1a(path.as_bytes()))
-}
-
-fn fnv1a(bytes: &[u8]) -> u64 {
-    bytes.iter().fold(0xcbf2_9ce4_8422_2325, |hash, byte| {
-        (hash ^ u64::from(*byte)).wrapping_mul(0x0000_0100_0000_01b3)
-    })
+    format!("{}.json", workspace_key(workspace))
 }
 
 /// The longest prefix of `text` within `max` bytes, cut on a char boundary.
@@ -159,14 +140,6 @@ fn check_panel(panel: &str) -> AppResult<()> {
     } else {
         Err(AppError::InvalidInput(format!("bad panel key: {panel}")))
     }
-}
-
-fn now_ms() -> u64 {
-    SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .map_or(0, |since| {
-            u64::try_from(since.as_millis()).unwrap_or(u64::MAX)
-        })
 }
 
 #[cfg(test)]

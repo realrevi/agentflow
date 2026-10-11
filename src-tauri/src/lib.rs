@@ -2,6 +2,7 @@
 
 mod agents;
 mod commands;
+pub mod conversations;
 pub mod error;
 mod fs;
 pub mod prompts;
@@ -17,6 +18,7 @@ use std::path::Path;
 use tauri::webview::PageLoadEvent;
 use tauri::{Manager, RunEvent};
 
+use crate::conversations::ConversationStore;
 use crate::fs::FsState;
 use crate::prompts::PromptHistory;
 use crate::pty::{CliDetector, PtyManager};
@@ -26,6 +28,7 @@ use crate::themes::ThemeStore;
 const SETTINGS_FILE: &str = "settings.json";
 const THEMES_DIR: &str = "themes";
 const PROMPT_HISTORY_DIR: &str = "prompt-history";
+const CONVERSATIONS_DIR: &str = "conversations";
 
 /// Starts the desktop app. Called from `main.rs`.
 pub fn run() {
@@ -73,6 +76,11 @@ pub fn run() {
             commands::fs::fs_quick_open,
             commands::prompts::prompts_list,
             commands::prompts::prompts_add,
+            commands::conversations::conversations_list,
+            commands::conversations::conversation_get,
+            commands::conversations::conversation_create,
+            commands::conversations::conversation_update,
+            commands::conversations::conversation_delete,
         ])
         .build(tauri::generate_context!());
 
@@ -104,6 +112,7 @@ fn manage_stores(app: &tauri::App, config_dir: &Path, data_dir: &Path) {
     app.manage(CliDetector::new());
     app.manage(FsState::new());
     app.manage(PromptHistory::new(data_dir.join(PROMPT_HISTORY_DIR)));
+    app.manage(ConversationStore::new(data_dir.join(CONVERSATIONS_DIR)));
 }
 
 fn init_tracing() {
