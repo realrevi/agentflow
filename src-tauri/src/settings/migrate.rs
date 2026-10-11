@@ -6,7 +6,8 @@ use super::model::{Settings, CURRENT_VERSION};
 use crate::error::AppResult;
 
 /// `STEPS[n]` upgrades a document from version `n` to `n + 1`.
-const STEPS: [fn(&mut Map<String, Value>); CURRENT_VERSION as usize] = [v0_to_v1, v1_to_v2];
+const STEPS: [fn(&mut Map<String, Value>); CURRENT_VERSION as usize] =
+    [v0_to_v1, v1_to_v2, v2_to_v3];
 
 /// Migrates and deserializes a raw settings document. Missing fields get defaults,
 /// unknown fields are dropped, and invalid values are repaired by `normalized()`.
@@ -46,6 +47,12 @@ fn v1_to_v2(doc: &mut Map<String, Value>) {
     doc.entry("currentWorkspace").or_insert(Value::Null);
     doc.entry("recentWorkspaces")
         .or_insert_with(|| Value::Array(Vec::new()));
+}
+
+/// v3 adds file tree settings (defaults fill in on load). The layout is kept here: the
+/// frontend versions its own layout format and replaces older layouts itself.
+fn v2_to_v3(doc: &mut Map<String, Value>) {
+    doc.insert("version".into(), Value::from(3));
 }
 
 #[cfg(test)]
@@ -98,7 +105,7 @@ mod tests {
             "layout": { "grid": { "root": {} }, "panels": { "agent-1": {} } }
         });
         let settings = migrate(v1).expect("migrate");
-        assert_eq!(settings.version, 2);
+        assert_eq!(settings.version, CURRENT_VERSION);
         assert_eq!(settings.language, "zh");
         assert_eq!(settings.appearance.theme_id, "retro-crt");
         assert_eq!(settings.layout, None, "phase 1 layouts are reset");
@@ -116,6 +123,20 @@ mod tests {
         let settings = migrate(raw).expect("migrate");
         assert!(settings.layout.is_some());
         assert_eq!(settings.current_workspace.as_deref(), Some("/src"));
+    }
+
+    #[test]
+    fn v2_document_gains_file_settings_and_keeps_its_layout() {
+        let raw =
+            json!({ "version": 2, "layout": { "version": 1 }, "terminal": { "fontSize": 15 } });
+        let settings = migrate(raw).expect("migrate");
+        assert_eq!(settings.version, 3);
+        assert!(!settings.files.show_hidden);
+        assert_eq!(settings.terminal.font_size, 15);
+        assert!(
+            settings.layout.is_some(),
+            "the frontend migrates its own layout"
+        );
     }
 
     #[test]

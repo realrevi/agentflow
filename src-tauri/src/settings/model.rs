@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 /// Bump when the on-disk shape changes and add a step in `migrate.rs`.
-pub const CURRENT_VERSION: u32 = 2;
+pub const CURRENT_VERSION: u32 = 3;
 pub const SUPPORTED_LANGUAGES: [&str; 5] = ["en", "tr", "de", "zh", "ru"];
 pub const DEFAULT_LANGUAGE: &str = "en";
 pub const DEFAULT_THEME_ID: &str = "agentflow-dark";
@@ -25,6 +25,7 @@ pub struct Settings {
     /// Most recent first, at most `MAX_RECENT_WORKSPACES`.
     pub recent_workspaces: Vec<String>,
     pub terminal: TerminalSettings,
+    pub files: FilesSettings,
     /// Opaque dockview layout owned by the frontend. `None` means "use the default layout".
     pub layout: Option<Value>,
 }
@@ -38,6 +39,13 @@ pub struct TerminalSettings {
     pub cursor_style: String,
     /// Start restored shell panels automatically (agent CLIs never auto-start).
     pub auto_start_shells: bool,
+}
+
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+pub struct FilesSettings {
+    /// Show dotfiles in the file tree and quick open (`.git` always stays hidden).
+    pub show_hidden: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -76,6 +84,7 @@ impl Default for Settings {
             current_workspace: None,
             recent_workspaces: Vec::new(),
             terminal: TerminalSettings::default(),
+            files: FilesSettings::default(),
             layout: None,
         }
     }

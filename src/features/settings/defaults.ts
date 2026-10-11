@@ -2,7 +2,7 @@ import type { Settings } from '../../shared/types';
 
 /** Used until the backend answers (and if it cannot). Mirrors `Settings::default()` in Rust. */
 export const DEFAULT_SETTINGS: Settings = {
-  version: 2,
+  version: 3,
   language: 'en',
   appearance: {
     themeId: 'agentflow-dark',
@@ -14,6 +14,7 @@ export const DEFAULT_SETTINGS: Settings = {
   currentWorkspace: null,
   recentWorkspaces: [],
   terminal: { fontSize: 13, scrollback: 5000, cursorStyle: 'block', autoStartShells: true },
+  files: { showHidden: false },
   layout: null,
 };
 

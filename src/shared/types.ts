@@ -36,6 +36,11 @@ export interface TerminalSettings {
   autoStartShells: boolean;
 }
 
+export interface FilesSettings {
+  /** Show dotfiles in the file tree and quick open (`.git` always stays hidden). */
+  showHidden: boolean;
+}
+
 export interface Settings {
   version: number;
   language: Locale;
@@ -46,6 +51,7 @@ export interface Settings {
   /** Most recent first, at most 10. */
   recentWorkspaces: string[];
   terminal: TerminalSettings;
+  files: FilesSettings;
   layout: SerializedLayout | null;
 }
 
