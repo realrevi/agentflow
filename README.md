@@ -6,15 +6,16 @@ side in a VS Code-style dockable layout, watched over by cute pixel-art agent ch
 AgentFlow is a lightweight desktop app (Tauri 2 + Rust + SolidJS) for Windows, macOS and Linux.
 The goals are low RAM, a fast UI, a clean codebase, and a fun look.
 
-> **Status:** early development. Phases 1–2 of 9 are done: app shell, themes, languages,
-> dockable layout, and real terminal panels. See the [roadmap](#roadmap).
+> **Status:** early development. Phases 1–3 of 9 are done: app shell, themes, languages,
+> dockable layout, real terminal panels, the workspace file tree and a code editor. See the
+> [roadmap](#roadmap).
 
 ![AgentFlow screenshot](docs/screenshot.png)
-<!-- Phase 2: two real shell panels (Linux, WebKitGTK). -->
+<!-- Phase 3: editor in the center, file tree on the right, a real shell below (Linux, WebKitGTK). -->
 
 ## Features
 
-Available now (phases 1–2):
+Available now (phases 1–3):
 
 - VS Code-style shell: activity bar, resizable and collapsible sidebar, dock area, status bar
 - Dockable panels (split, tab, drag, close, re-open from **+**), and the layout persists across restarts
@@ -28,10 +29,16 @@ Available now (phases 1–2):
   shown as unavailable
 - Workspace folder: new terminals start there; recent folders in the status bar
 - Restored agent panels wait for you to press Start, so they never spend tokens on launch
+- Default layout: agents and editors in the center, the file tree on the right, shells at the
+  bottom. Each area remembers its role, so new panels land where you expect
+- File tree that respects `.gitignore`, updates live while agents change files, and stays
+  smooth with 10k+ entries; create, rename, delete (to the OS trash) and copy paths
+- Drag a file from the tree onto a terminal to type its path for your agent
+- CodeMirror 6 editor (loaded on demand) with syntax highlighting from your theme, safe saves
+  that never overwrite changes made on disk, and a quick open palette (Ctrl/Cmd+P)
 
 Planned:
 
-- Workspace file tree and a CodeMirror 6 editor
 - 15 pixel characters with a typewriter speech bar
 - AI providers: Claude Code, Codex and Gemini CLIs, plus Anthropic, OpenAI, Gemini, DeepSeek and
   OpenAI-compatible APIs (keys stored in the OS keyring)
@@ -43,14 +50,24 @@ Planned:
 | Phase | Scope                                                                  | Status |
 | ----- | ---------------------------------------------------------------------- | ------ |
 | 1     | Skeleton, theme engine, i18n, dockable layout                          | Done   |
-| 2     | PTY + multiple terminal panels (xterm.js WebGL, portable-pty)          |        |
-| 3     | Workspace file tree (notify + ignore) + CodeMirror 6 viewer/editor     |        |
+| 2     | PTY + multiple terminal panels (xterm.js WebGL, portable-pty)          | Done   |
+| 3     | Workspace file tree (notify + ignore) + CodeMirror 6 viewer/editor     | Done   |
 | 4     | Pixel character system (15 characters, 16x16 JSON sprites, speech bar) |        |
 | 5     | AI providers (CLI agents + HTTP APIs, keys in the OS keyring)          |        |
 | 6     | Token and cost tracking                                                |        |
 | 7     | Agent installer wizard (per-AI formats and paths)                      |        |
 | 8     | Community agent library from GitHub                                    |        |
 | 9     | Cross-platform builds + CI                                             |        |
+
+## Keyboard shortcuts
+
+| Shortcut (Cmd on macOS)     | Action                      |
+| --------------------------- | --------------------------- |
+| Ctrl+P                      | Quick open a workspace file |
+| Ctrl+S                      | Save the current editor     |
+| Ctrl+Shift+`                | New shell                   |
+| Ctrl+Shift+C / Ctrl+Shift+V | Copy / paste in a terminal  |
+| F2 / Delete (file tree)     | Rename / move to the trash  |
 
 ## Development setup
 
@@ -117,8 +134,8 @@ cd src-tauri
 cargo fmt --check
 cargo clippy --all-targets -- -D warnings
 cargo test              # backend unit tests
+cargo build             # compile check without bundling
 cd ..
-cargo build             # compile check (in src-tauri)
 pnpm tauri build --debug  # full desktop build + installers
 ```
 
