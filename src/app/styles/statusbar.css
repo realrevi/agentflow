@@ -1,0 +1,92 @@
+/* Status bar and toast notifications. */
+.af-statusbar {
+  display: flex;
+  align-items: center;
+  flex: none;
+  height: 24px;
+  padding: 0 6px;
+  background: var(--af-statusbar-bg);
+  color: var(--af-statusbar-fg);
+  border-top: 1px solid var(--af-statusbar-border);
+  font-size: 12px;
+}
+
+.af-statusbar-spacer {
+  flex: 1;
+}
+
+.af-status-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 100%;
+  padding: 0 8px;
+  border: none;
+  background: none;
+  color: inherit;
+  font: inherit;
+  white-space: nowrap;
+}
+
+button.af-status-item {
+  cursor: pointer;
+}
+
+button.af-status-item:hover {
+  background: var(--af-statusbar-hover-bg);
+}
+
+.af-status-brand {
+  font-family: var(--af-font-pixel);
+  letter-spacing: 0.4px;
+}
+
+/* Toasts */
+.af-toasts {
+  position: fixed;
+  right: 12px;
+  bottom: 36px;
+  z-index: 1100;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: min(380px, calc(100vw - 24px));
+  pointer-events: none;
+}
+
+.af-toast {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 10px 10px 12px;
+  border: 1px solid var(--af-widget-border);
+  border-left: 3px solid var(--af-accent);
+  border-radius: 6px;
+  background: var(--af-widget-bg);
+  color: var(--af-widget-fg);
+  box-shadow: 0 6px 20px var(--af-shadow);
+  pointer-events: auto;
+}
+
+.af-toast-error {
+  border-left-color: var(--af-error);
+}
+
+.af-toast-success {
+  border-left-color: var(--af-success);
+}
+
+.af-toast-text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.af-toast-detail {
+  font-size: 12px;
+  color: var(--af-fg-muted);
+  overflow-wrap: anywhere;
+  user-select: text;
+}

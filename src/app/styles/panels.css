@@ -1,0 +1,47 @@
+/* Dock panel contents: placeholders, loading state and the empty-dock watermark. */
+.af-panel {
+  height: 100%;
+  overflow: hidden;
+  background: var(--af-panel-bg);
+  color: var(--af-fg);
+}
+
+.af-panel-loading {
+  padding: 24px;
+  color: var(--af-fg-muted);
+}
+
+.af-placeholder,
+.af-watermark {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  height: 100%;
+  padding: 24px;
+  text-align: center;
+  color: var(--af-fg-muted);
+}
+
+.af-placeholder h2,
+.af-watermark h2 {
+  margin: 4px 0 0;
+  font-size: 18px;
+  color: var(--af-fg);
+}
+
+.af-placeholder h2.af-agent-bold {
+  color: var(--af-bold-color);
+}
+
+.af-placeholder p,
+.af-watermark p {
+  max-width: 340px;
+  margin: 0;
+}
+
+.af-placeholder svg,
+.af-watermark svg {
+  color: var(--af-accent);
+}

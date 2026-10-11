@@ -1,0 +1,51 @@
+.af-menu {
+  position: fixed;
+  z-index: 1000;
+  min-width: 180px;
+  max-height: 60vh;
+  overflow-y: auto;
+  padding: 4px;
+  background: var(--af-widget-bg);
+  color: var(--af-widget-fg);
+  border: 1px solid var(--af-widget-border);
+  border-radius: 6px;
+  box-shadow: 0 8px 24px var(--af-shadow);
+}
+
+.af-menu-heading {
+  padding: 6px 8px 2px;
+  font-family: var(--af-font-pixel);
+  font-size: 11px;
+  color: var(--af-fg-muted);
+}
+
+.af-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 5px 8px;
+  border: none;
+  border-radius: 4px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.af-menu-item:hover,
+.af-menu-item:focus-visible {
+  background: var(--af-list-hover-bg);
+  outline: none;
+}
+
+.af-menu-item[aria-checked='true'] {
+  color: var(--af-list-active-fg);
+}
+
+.af-menu-check {
+  display: inline-flex;
+  width: 16px;
+  color: var(--af-accent);
+}

@@ -1,0 +1,196 @@
+/* App frame: activity bar, sidebar and the dock area. */
+.af-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.af-shell-body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+.af-main {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+
+.af-dock {
+  position: absolute;
+  inset: 0;
+}
+
+/* Activity bar */
+.af-activitybar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: none;
+  width: 48px;
+  padding: 6px 0;
+  background: var(--af-activitybar-bg);
+  border-right: 1px solid var(--af-activitybar-border);
+}
+
+.af-activitybar-logo {
+  display: flex;
+  justify-content: center;
+  padding: 6px 0 10px;
+}
+
+.af-activitybar-spacer {
+  flex: 1;
+}
+
+.af-activity {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 44px;
+  border: none;
+  background: none;
+  color: var(--af-activitybar-inactive-fg);
+  cursor: pointer;
+}
+
+.af-activity:hover,
+.af-activity.active {
+  color: var(--af-activitybar-fg);
+}
+
+.af-activity.active::before {
+  content: '';
+  position: absolute;
+  top: 8px;
+  bottom: 8px;
+  left: 0;
+  width: 2px;
+  background: var(--af-activitybar-active-border);
+}
+
+/* Sidebar */
+.af-sidebar {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  flex: none;
+  background: var(--af-sidebar-bg);
+  color: var(--af-sidebar-fg);
+  border-right: 1px solid var(--af-sidebar-border);
+}
+
+.af-sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 34px;
+  padding: 0 8px 0 16px;
+}
+
+.af-sidebar-title {
+  margin: 0;
+  font-family: var(--af-font-pixel);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--af-sidebar-title-fg);
+}
+
+.af-sidebar-body {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.af-sidebar-sash {
+  position: absolute;
+  top: 0;
+  right: -3px;
+  bottom: 0;
+  width: 6px;
+  z-index: 10;
+  cursor: col-resize;
+}
+
+.af-sidebar-sash:hover {
+  background: var(--af-accent);
+  opacity: 0.6;
+  transition: opacity 0.1s 0.3s;
+}
+
+.af-view {
+  padding: 4px 12px 16px;
+}
+
+.af-view-heading {
+  margin: 8px 4px 6px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--af-sidebar-header-fg);
+}
+
+.af-view-empty {
+  margin: 4px;
+  color: var(--af-fg-muted);
+}
+
+.af-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.af-list-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 4px 8px;
+  border: none;
+  border-radius: 4px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.af-list-item:hover {
+  background: var(--af-list-hover-bg);
+}
+
+.af-list-item.active {
+  background: var(--af-list-active-bg);
+  color: var(--af-list-active-fg);
+}
+
+.af-dot {
+  flex: none;
+  width: 6px;
+  height: 6px;
+  background: var(--af-fg-muted);
+}
+
+.af-dot-agent {
+  background: var(--af-bold-color);
+}
+
+.af-dot-workspace {
+  background: var(--af-accent);
+}
+
+.af-coming-soon {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding-top: 32px;
+  text-align: center;
+  color: var(--af-fg-muted);
+}
