@@ -41,8 +41,8 @@ export function AgentsView() {
         >
           {t('sidebar.agents.newShell')}
         </button>
-        <button type="button" class="af-button secondary" onClick={() => openPanel('workspace')}>
-          {t('sidebar.agents.openWorkspace')}
+        <button type="button" class="af-button secondary" onClick={() => openPanel('files')}>
+          {t('sidebar.agents.showFiles')}
         </button>
       </div>
     </div>

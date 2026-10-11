@@ -8,23 +8,35 @@ import type {
   ITabRenderer,
   IWatermarkRenderer,
 } from 'dockview-core';
-import { lazy, Match, Suspense, Switch, type JSX } from 'solid-js';
+import { createSignal, lazy, Match, onCleanup, Show, Suspense, Switch, type JSX } from 'solid-js';
+import { FilesPanel } from '../files';
 import { t } from '../i18n';
 import { settings } from '../settings/settingsStore';
 import { AddPanelButton } from './AddPanelButton';
-import { consumeFreshPanel } from './layoutStore';
-import { parsePanelParams, TERMINAL_TAB, type PanelParams } from './panels';
-import { PlaceholderPanel } from './PlaceholderPanel';
+import { consumeFreshPanel, openEditor, renameEditors } from './layoutStore';
+import { createPanelTab } from './PanelTab';
+import { PANEL_TAB, parsePanelParams, type PanelParams } from './panels';
 import { createSolidPart } from './solidPart';
-import { createTerminalTab } from './TerminalTab';
 import { Watermark } from './Watermark';
 
-// Lazy: settings UI and xterm.js are only downloaded and parsed when first needed.
+// Lazy: settings UI, xterm.js and CodeMirror are only downloaded when first needed.
 const SettingsPanel = lazy(() => import('../settings/SettingsPanel'));
 const TerminalPanel = lazy(() => import('../terminal/TerminalPanel'));
+const EditorPanel = lazy(() => import('../editor/EditorPanel'));
 
 function Loading(): JSX.Element {
   return <div class="af-panel-loading">{t('panel.loading')}</div>;
+}
+
+/** Renders `children` only once the panel has been visible (restored background tabs
+ * do not read their file or load CodeMirror until they are shown). */
+function WhenVisible(props: { api: DockviewPanelApi; children: JSX.Element }) {
+  const [seen, setSeen] = createSignal(props.api.isVisible);
+  const subscription = props.api.onDidVisibilityChange((event) => {
+    if (event.isVisible) setSeen(true);
+  });
+  onCleanup(() => subscription.dispose());
+  return <Show when={seen()}>{props.children}</Show>;
 }
 
 function PanelView(props: { id: string; params: PanelParams; api: DockviewPanelApi }) {
@@ -37,9 +49,24 @@ function PanelView(props: { id: string; params: PanelParams; api: DockviewPanelA
       (params.config.kind === 'shell' && settings.terminal.autoStartShells));
   return (
     <Suspense fallback={<Loading />}>
-      <Switch fallback={<PlaceholderPanel />}>
+      <Switch>
         <Match when={params.kind === 'settings'}>
           <SettingsPanel />
+        </Match>
+        <Match when={params.kind === 'files'}>
+          <FilesPanel onOpenFile={openEditor} onRenamed={renameEditors} />
+        </Match>
+        <Match when={params.kind === 'editor' && params}>
+          {(editor) => (
+            <WhenVisible api={props.api}>
+              <EditorPanel
+                panelId={props.id}
+                api={props.api}
+                root={editor().root}
+                path={editor().path}
+              />
+            </WhenVisible>
+          )}
         </Match>
         <Match when={params.kind === 'terminal' && params}>
           {(terminal) => (
@@ -73,7 +100,7 @@ export function createContentRenderer(options: CreateComponentOptions): IContent
 }
 
 export function createTabRenderer(options: CreateComponentOptions): ITabRenderer | undefined {
-  return options.name === TERMINAL_TAB ? createTerminalTab() : undefined;
+  return options.name === PANEL_TAB ? createPanelTab() : undefined;
 }
 
 export function createHeaderActions(group: DockviewGroupPanel): IHeaderActionsRenderer {
@@ -89,7 +116,7 @@ export function createWatermark(): IWatermarkRenderer {
   const part = createSolidPart('af-watermark-host');
   return {
     element: part.element,
-    init: () => part.mount(() => <Watermark />),
+    init: (params) => part.mount(() => <Watermark groupId={params.group?.id} />),
     dispose: part.dispose,
   };
 }
