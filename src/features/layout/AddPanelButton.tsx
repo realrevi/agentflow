@@ -1,21 +1,55 @@
-import { createSignal, Show } from 'solid-js';
+import { createSignal, Match, Switch } from 'solid-js';
+import type { PtyKind } from '../../shared/types';
 import { plusIcon } from '../../shared/ui/icons';
+import { InlinePrompt } from '../../shared/ui/InlinePrompt';
 import { Menu, type MenuItem } from '../../shared/ui/Menu';
 import { PixelIcon } from '../../shared/ui/PixelIcon';
 import { t } from '../i18n';
-import { openPanel } from './layoutStore';
-import { isPanelKind } from './panels';
+import { AGENT_KINDS, cliFor, kindLabel, loadCliStatus, newTerminalConfig } from '../terminal';
+import { openPanel, openTerminal } from './layoutStore';
 
-/** The "+" in every group header: add an agent, or (re)open Workspace / Settings. */
+type Mode = 'closed' | 'menu' | 'custom';
+
+/** The "+" in every group header: new terminals, plus (re)opening Workspace / Settings. */
 export function AddPanelButton(props: { groupId: string }) {
-  const [open, setOpen] = createSignal(false);
+  const [mode, setMode] = createSignal<Mode>('closed');
   let button: HTMLButtonElement | undefined;
 
+  const agentItem = (kind: PtyKind): MenuItem => {
+    const cli = cliFor(kind);
+    const missing = cli?.found === false;
+    return {
+      id: kind,
+      label: kindLabel(kind),
+      disabled: missing,
+      title: missing ? t('terminal.notFound') : (cli?.path ?? undefined),
+    };
+  };
+
   const items = (): MenuItem[] => [
-    { id: 'agent', label: t('panel.add.agent') },
-    { id: 'workspace', label: t('panel.add.workspace') },
+    { id: 'shell', label: kindLabel('shell'), heading: t('panel.add.terminals') },
+    ...AGENT_KINDS.map(agentItem),
+    { id: 'custom', label: t('terminal.add.custom') },
+    { id: 'workspace', label: t('panel.add.workspace'), heading: t('panel.add.panels') },
     { id: 'settings', label: t('panel.add.settings') },
   ];
+
+  const select = (id: string) => {
+    if (id === 'custom') setMode('custom');
+    else if (id === 'workspace' || id === 'settings') openPanel(id, props.groupId);
+    else if (id === 'shell' || (AGENT_KINDS as readonly string[]).includes(id)) {
+      openTerminal(newTerminalConfig(id as PtyKind), props.groupId);
+    }
+  };
+
+  const toggle = () => {
+    if (mode() !== 'closed') {
+      setMode('closed');
+    } else {
+      void loadCliStatus();
+      setMode('menu');
+    }
+  };
 
   return (
     <>
@@ -26,22 +60,40 @@ export function AddPanelButton(props: { groupId: string }) {
         title={t('panel.add')}
         aria-label={t('panel.add')}
         aria-haspopup="menu"
-        aria-expanded={open()}
-        onClick={() => setOpen((value) => !value)}
+        aria-expanded={mode() !== 'closed'}
+        onClick={toggle}
       >
         <PixelIcon art={plusIcon} />
       </button>
-      <Show when={open() && button}>
-        {(anchor) => (
-          <Menu
-            anchor={anchor()}
-            items={items()}
-            placement="below-end"
-            onSelect={(id) => isPanelKind(id) && openPanel(id, props.groupId)}
-            onClose={() => setOpen(false)}
-          />
-        )}
-      </Show>
+      <Switch>
+        <Match when={mode() === 'menu' && button}>
+          {(anchor) => (
+            <Menu
+              anchor={anchor()}
+              items={items()}
+              placement="below-end"
+              onSelect={select}
+              // Choosing "Custom command…" switches to the prompt instead of closing.
+              onClose={() => setMode((current) => (current === 'menu' ? 'closed' : current))}
+            />
+          )}
+        </Match>
+        <Match when={mode() === 'custom' && button}>
+          {(anchor) => (
+            <InlinePrompt
+              anchor={anchor()}
+              placement="below-end"
+              label={t('terminal.customPrompt')}
+              placeholder={t('terminal.customPlaceholder')}
+              submitLabel={t('terminal.run')}
+              onSubmit={(command) =>
+                openTerminal(newTerminalConfig('custom', command), props.groupId)
+              }
+              onClose={() => setMode('closed')}
+            />
+          )}
+        </Match>
+      </Switch>
     </>
   );
 }

@@ -8,6 +8,9 @@ export interface MenuItem {
   id: string;
   label: string;
   checked?: boolean;
+  disabled?: boolean;
+  /** Tooltip, e.g. why an item is disabled or a full path. */
+  title?: string;
   /** Optional group heading rendered above this item. */
   heading?: string;
 }
@@ -22,7 +25,8 @@ interface MenuProps {
   onClose: () => void;
 }
 
-function position(anchor: HTMLElement, placement: MenuPlacement): JSX.CSSProperties {
+/** Fixed-position style that places a popover next to `anchor`. */
+export function anchorPosition(anchor: HTMLElement, placement: MenuPlacement): JSX.CSSProperties {
   const rect = anchor.getBoundingClientRect();
   const gap = 4;
   if (placement === 'below-end') {
@@ -49,7 +53,7 @@ export function Menu(props: MenuProps): JSX.Element {
     document.addEventListener('pointerdown', onPointerDown, true);
     document.addEventListener('keydown', onKeyDown);
     const checked = menu?.querySelector<HTMLButtonElement>('[aria-checked="true"]');
-    (checked ?? menu?.querySelector<HTMLButtonElement>('button'))?.focus();
+    (checked ?? menu?.querySelector<HTMLButtonElement>('button:not([aria-disabled])'))?.focus();
   });
   onCleanup(() => {
     document.removeEventListener('pointerdown', onPointerDown, true);
@@ -58,7 +62,12 @@ export function Menu(props: MenuProps): JSX.Element {
 
   return (
     <Portal>
-      <div ref={menu} class="af-menu" role="menu" style={position(props.anchor, props.placement)}>
+      <div
+        ref={menu}
+        class="af-menu"
+        role="menu"
+        style={anchorPosition(props.anchor, props.placement)}
+      >
         <For each={props.items}>
           {(item) => (
             <>
@@ -70,7 +79,11 @@ export function Menu(props: MenuProps): JSX.Element {
                 class="af-menu-item"
                 role={item.checked === undefined ? 'menuitem' : 'menuitemradio'}
                 aria-checked={item.checked}
+                aria-disabled={item.disabled ? 'true' : undefined}
+                title={item.title}
                 onClick={() => {
+                  // aria-disabled (not `disabled`) so the tooltip still shows on hover.
+                  if (item.disabled) return;
                   props.onSelect(item.id);
                   props.onClose();
                 }}

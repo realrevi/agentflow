@@ -22,6 +22,13 @@ thiserror = "2"
 tokio = { version = "1", features = ["sync"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", default-features = false, features = ["fmt", "std", "ansi"] }
+portable-pty = "0.9"
+which = "8"
+tauri-plugin-dialog = "2.8"
+tauri-plugin-clipboard-manager = "2.4"
+
+[target.'cfg(unix)'.dependencies]
+libc = "0.2"
 
 [profile.release]
 codegen-units = 1

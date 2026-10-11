@@ -6,4 +6,11 @@ export {
   settings,
   updateSettings,
 } from './settingsStore';
-export { DEFAULT_SETTINGS, SIDEBAR_MAX_WIDTH, SIDEBAR_MIN_WIDTH } from './defaults';
+export {
+  DEFAULT_SETTINGS,
+  MAX_RECENT_WORKSPACES,
+  SIDEBAR_MAX_WIDTH,
+  SIDEBAR_MIN_WIDTH,
+  TERMINAL_FONT_SIZE,
+  TERMINAL_SCROLLBACK_MAX,
+} from './defaults';

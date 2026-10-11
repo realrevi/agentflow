@@ -6,6 +6,7 @@ import type { Locale } from '../shared/types';
 import { globeIcon, paletteIcon } from '../shared/ui/icons';
 import { Menu, type MenuItem } from '../shared/ui/Menu';
 import { PixelIcon } from '../shared/ui/PixelIcon';
+import { WorkspaceStatus } from './WorkspaceStatus';
 
 type OpenMenu = 'theme' | 'language' | null;
 
@@ -54,6 +55,7 @@ export function StatusBar() {
       >
         AgentFlow v{__APP_VERSION__}
       </span>
+      <WorkspaceStatus />
       <div class="af-statusbar-spacer" />
       <button
         ref={themeButton}

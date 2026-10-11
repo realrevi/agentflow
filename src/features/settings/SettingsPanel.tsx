@@ -3,11 +3,13 @@ import './settings.css';
 import { AppearanceSection } from './sections/AppearanceSection';
 import { LanguageSection } from './sections/LanguageSection';
 import { LayoutSection } from './sections/LayoutSection';
+import { TerminalSection } from './sections/TerminalSection';
 
 export default function SettingsPanel() {
   return (
     <div class="af-settings">
       <AppearanceSection />
+      <TerminalSection />
       <LanguageSection />
       <LayoutSection />
     </div>

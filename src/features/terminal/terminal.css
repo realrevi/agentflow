@@ -1,0 +1,73 @@
+.af-terminal {
+  position: relative;
+  height: 100%;
+  overflow: hidden;
+  background: var(--af-terminal-bg);
+}
+
+/* Inset instead of padding: FitAddon measures the host's inner box. */
+.af-terminal-host {
+  position: absolute;
+  inset: 6px 4px 2px 10px;
+}
+
+.af-terminal-host .xterm {
+  height: 100%;
+}
+
+/* xterm.css paints the viewport black; the strip below the last row must match the theme. */
+.af-terminal-host .xterm-viewport {
+  background-color: var(--af-terminal-bg) !important;
+}
+
+.af-terminal-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 24px;
+  text-align: center;
+  background: var(--af-terminal-bg);
+  color: var(--af-fg-muted);
+}
+
+.af-terminal-overlay svg {
+  color: var(--af-accent);
+}
+
+.af-terminal-overlay h2 {
+  margin: 0;
+  font-size: 17px;
+  color: var(--af-bold-color);
+  text-shadow: var(--af-glow);
+}
+
+.af-terminal-command {
+  max-width: 90%;
+  padding: 3px 8px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  border-radius: 4px;
+  background: var(--af-input-bg);
+  color: var(--af-terminal-fg);
+  font-size: 12px;
+}
+
+.af-terminal-error {
+  max-width: 420px;
+  margin: 0;
+  color: var(--af-error);
+  font-size: 12px;
+  user-select: text;
+}
+
+.af-terminal-hint {
+  max-width: 340px;
+  margin: 0;
+  font-size: 12px;
+}

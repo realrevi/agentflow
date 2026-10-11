@@ -118,3 +118,22 @@
   background: var(--af-accent-fg);
   transform: translateX(16px);
 }
+
+.af-input {
+  min-width: 0;
+  padding: 5px 8px;
+  border: 1px solid var(--af-input-border);
+  border-radius: 6px;
+  background: var(--af-input-bg);
+  color: var(--af-input-fg);
+  font: inherit;
+}
+
+.af-input:focus {
+  border-color: var(--af-focus);
+  outline: none;
+}
+
+.af-input[type='number'] {
+  width: 96px;
+}

@@ -107,7 +107,7 @@ export function AppearanceSection() {
       </Row>
       <Row label={t('settings.agentBold.preview')}>
         <p class="af-bold-preview">
-          <span class="af-agent-bold">{t('panel.agent.title', { n: 1 })}</span>{' '}
+          <span class="af-agent-bold">{t('settings.agentBold.previewName')}</span>{' '}
           {t('settings.agentBold.previewText')}
         </p>
       </Row>

@@ -74,3 +74,32 @@
 .af-watermark-host {
   height: 100%;
 }
+
+/* Terminal tabs: status dot before the title. */
+.af-terminal-tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.af-status-dot {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border: 1px solid var(--af-fg-muted);
+  background: transparent;
+}
+
+.af-status-dot.starting {
+  border-color: var(--af-warning);
+  background: var(--af-warning);
+}
+
+.af-status-dot.running {
+  border-color: var(--af-success);
+  background: var(--af-success);
+}
+
+.af-status-dot.exited {
+  background: var(--af-fg-muted);
+}

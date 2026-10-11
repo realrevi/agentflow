@@ -5,7 +5,12 @@ import './dockview-theme.css';
 import { createDockview, type DockviewTheme } from 'dockview-core';
 import { onCleanup, onMount } from 'solid-js';
 import { attachLayout } from './layoutStore';
-import { createContentRenderer, createHeaderActions, createWatermark } from './renderers';
+import {
+  createContentRenderer,
+  createHeaderActions,
+  createTabRenderer,
+  createWatermark,
+} from './renderers';
 
 /** All colors come from `--af-*` variables (see dockview-theme.css), so one theme fits all. */
 const DOCK_THEME: DockviewTheme = {
@@ -23,6 +28,7 @@ export function DockviewHost() {
     const dock = createDockview(host, {
       theme: DOCK_THEME,
       createComponent: createContentRenderer,
+      createTabComponent: createTabRenderer,
       createRightHeaderActionComponent: createHeaderActions,
       createWatermarkComponent: createWatermark,
     });

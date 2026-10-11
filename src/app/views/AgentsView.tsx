@@ -1,6 +1,7 @@
 import { For, Show } from 'solid-js';
 import { t } from '../../features/i18n';
-import { focusPanel, openPanel, openPanels } from '../../features/layout';
+import { focusPanel, openPanel, openPanels, openTerminal } from '../../features/layout';
+import { newTerminalConfig, terminalStatus } from '../../features/terminal';
 
 export function AgentsView() {
   return (
@@ -17,13 +18,14 @@ export function AgentsView() {
                 <button
                   type="button"
                   class="af-list-item"
-                  classList={{
-                    active: panel.active,
-                    'af-agent-bold': panel.kind === 'agent' && panel.active,
-                  }}
+                  classList={{ active: panel.active }}
                   onClick={() => focusPanel(panel.id)}
                 >
-                  <span class={`af-dot af-dot-${panel.kind}`} aria-hidden="true" />
+                  <span
+                    class={`af-dot af-dot-${panel.kind}`}
+                    classList={{ running: terminalStatus(panel.id) === 'running' }}
+                    aria-hidden="true"
+                  />
                   {panel.title}
                 </button>
               </li>
@@ -32,8 +34,12 @@ export function AgentsView() {
         </ul>
       </Show>
       <div class="af-button-column">
-        <button type="button" class="af-button" onClick={() => openPanel('agent')}>
-          {t('sidebar.agents.newAgent')}
+        <button
+          type="button"
+          class="af-button"
+          onClick={() => openTerminal(newTerminalConfig('shell'))}
+        >
+          {t('sidebar.agents.newShell')}
         </button>
         <button type="button" class="af-button secondary" onClick={() => openPanel('workspace')}>
           {t('sidebar.agents.openWorkspace')}

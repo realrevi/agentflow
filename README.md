@@ -6,15 +6,15 @@ side in a VS Code-style dockable layout, watched over by cute pixel-art agent ch
 AgentFlow is a lightweight desktop app (Tauri 2 + Rust + SolidJS) for Windows, macOS and Linux.
 The goals are low RAM, a fast UI, a clean codebase, and a fun look.
 
-> **Status:** early development. Phase 1 of 9 (app shell, themes, languages, layout) is done.
-> Terminals and AI providers come in the next phases. See the [roadmap](#roadmap).
+> **Status:** early development. Phases 1–2 of 9 are done: app shell, themes, languages,
+> dockable layout, and real terminal panels. See the [roadmap](#roadmap).
 
 ![AgentFlow screenshot](docs/screenshot.png)
-<!-- Placeholder: phase 1 shell. Replace once terminals land in phase 2. -->
+<!-- Phase 2: two real shell panels (Linux, WebKitGTK). -->
 
 ## Features
 
-Available now (phase 1):
+Available now (phases 1–2):
 
 - VS Code-style shell: activity bar, resizable and collapsible sidebar, dock area, status bar
 - Dockable panels (split, tab, drag, close, re-open from **+**), and the layout persists across restarts
@@ -23,10 +23,14 @@ Available now (phase 1):
 - User overrides on top of any theme: text color, accent color, and the glowing "agent bold" style
 - Five languages, switchable live: English, Türkçe, Deutsch, 中文, Русский
 - Offline-first: fonts are bundled (JetBrains Mono, Pixelify Sans), no network needed
+- Terminal panels (xterm.js, WebGL when visible): your shell, Claude Code, Codex, Gemini CLI
+  or any custom command, each in its own dockable panel; agent CLIs missing from PATH are
+  shown as unavailable
+- Workspace folder: new terminals start there; recent folders in the status bar
+- Restored agent panels wait for you to press Start, so they never spend tokens on launch
 
 Planned:
 
-- Multiple agent terminals (xterm.js WebGL + native PTYs)
 - Workspace file tree and a CodeMirror 6 editor
 - 15 pixel characters with a typewriter speech bar
 - AI providers: Claude Code, Codex and Gemini CLIs, plus Anthropic, OpenAI, Gemini, DeepSeek and
@@ -114,6 +118,7 @@ cargo fmt --check
 cargo clippy --all-targets -- -D warnings
 cargo test              # backend unit tests
 cd ..
+cargo build             # compile check (in src-tauri)
 pnpm tauri build --debug  # full desktop build + installers
 ```
 
