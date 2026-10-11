@@ -11,7 +11,9 @@ const GALLERY_SCALE = 3;
 export function CharactersView() {
   const [palette, setPalette] = createSignal(0);
   const [hovered, setHovered] = createSignal<string | null>(null);
-  onMount(() => void loadCharacters().catch((err: unknown) => reportError('error.characters', err)));
+  onMount(
+    () => void loadCharacters().catch((err: unknown) => reportError('error.characters', err)),
+  );
 
   const target = createMemo(() => {
     const agent = focusedAgent();

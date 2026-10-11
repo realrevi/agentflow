@@ -6,16 +6,16 @@ side in a VS Code-style dockable layout, watched over by cute pixel-art agent ch
 AgentFlow is a lightweight desktop app (Tauri 2 + Rust + SolidJS) for Windows, macOS and Linux.
 The goals are low RAM, a fast UI, a clean codebase, and a fun look.
 
-> **Status:** early development. Phases 1–3 of 9 are done: app shell, themes, languages,
-> dockable layout, real terminal panels, the workspace file tree and a code editor. See the
-> [roadmap](#roadmap).
+> **Status:** early development. Phases 1–4 of 9 are done: app shell, themes, languages,
+> dockable layout, real terminal panels, the workspace file tree, a code editor, and pixel
+> characters with a prompt bar. See the [roadmap](#roadmap).
 
 ![AgentFlow screenshot](docs/screenshot.png)
-<!-- Phase 3: editor in the center, file tree on the right, a real shell below (Linux, WebKitGTK). -->
+<!-- Phase 4: an agent panel with its character, speech bubble and prompt bar; the Characters view on the left. -->
 
 ## Features
 
-Available now (phases 1–3):
+Available now (phases 1–4):
 
 - VS Code-style shell: activity bar, resizable and collapsible sidebar, dock area, status bar
 - Dockable panels (split, tab, drag, close, re-open from **+**), and the layout persists across restarts
@@ -36,10 +36,18 @@ Available now (phases 1–3):
 - Drag a file from the tree onto a terminal to type its path for your agent
 - CodeMirror 6 editor (loaded on demand) with syntax highlighting from your theme, safe saves
   that never overwrite changes made on disk, and a quick open palette (Ctrl/Cmd+P)
+- 15 pixel characters: every agent panel gets one (in its tab, its corner and the Agents list);
+  it thinks, works, finishes and sleeps along with the agent, and rides above the terminal
+  cursor while output streams. Pick another one from the tab or the Characters view
+- A prompt bar under agent panels: Enter sends straight to the agent, Shift+Enter adds a line,
+  Up recalls; your character walks along as you type and catches the prompt as a pixel packet.
+  Prompt history per panel and workspace (click the character)
+- Animations cost nothing while agents rest, stop when hidden and follow reduced motion
+
+![The 15 characters](docs/characters.png)
 
 Planned:
 
-- 15 pixel characters with a typewriter speech bar
 - AI providers: Claude Code, Codex and Gemini CLIs, plus Anthropic, OpenAI, Gemini, DeepSeek and
   OpenAI-compatible APIs (keys stored in the OS keyring)
 - Token and cost tracking
@@ -52,7 +60,7 @@ Planned:
 | 1     | Skeleton, theme engine, i18n, dockable layout                          | Done   |
 | 2     | PTY + multiple terminal panels (xterm.js WebGL, portable-pty)          | Done   |
 | 3     | Workspace file tree (notify + ignore) + CodeMirror 6 viewer/editor     | Done   |
-| 4     | Pixel character system (15 characters, 16x16 JSON sprites, speech bar) |        |
+| 4     | Pixel character system (15 characters, 16x16 JSON sprites, speech bar) | Done   |
 | 5     | AI providers (CLI agents + HTTP APIs, keys in the OS keyring)          |        |
 | 6     | Token and cost tracking                                                |        |
 | 7     | Agent installer wizard (per-AI formats and paths)                      |        |
@@ -61,13 +69,15 @@ Planned:
 
 ## Keyboard shortcuts
 
-| Shortcut (Cmd on macOS)     | Action                      |
-| --------------------------- | --------------------------- |
-| Ctrl+P                      | Quick open a workspace file |
-| Ctrl+S                      | Save the current editor     |
-| Ctrl+Shift+`                | New shell                   |
-| Ctrl+Shift+C / Ctrl+Shift+V | Copy / paste in a terminal  |
-| F2 / Delete (file tree)     | Rename / move to the trash  |
+| Shortcut (Cmd on macOS)     | Action                       |
+| --------------------------- | ---------------------------- |
+| Ctrl+P                      | Quick open a workspace file  |
+| Ctrl+S                      | Save the current editor      |
+| Ctrl+Shift+`                | New shell                    |
+| Ctrl+Shift+C / Ctrl+Shift+V | Copy / paste in a terminal   |
+| Enter / Shift+Enter         | Send / new line (prompt bar) |
+| Up / Down (prompt bar)      | Recall earlier prompts       |
+| F2 / Delete (file tree)     | Rename / move to the trash   |
 
 ## Development setup
 

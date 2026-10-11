@@ -55,7 +55,11 @@ export { focusedAgent };
 export function trackFocusedAgent(dock: DockviewApi): void {
   const active = dock.activePanel;
   const params = active ? parsePanelParams(active.params) : null;
-  if (active && params?.kind === 'terminal' && wantsCharacter(params.config, settings.characters.onShells)) {
+  if (
+    active &&
+    params?.kind === 'terminal' &&
+    wantsCharacter(params.config, settings.characters.onShells)
+  ) {
     setFocusedAgent({ id: active.id, title: active.title ?? active.id });
   } else if (focusedAgent() && !dock.getPanel(focusedAgent()?.id ?? '')) {
     setFocusedAgent(null);

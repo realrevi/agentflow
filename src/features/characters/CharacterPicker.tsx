@@ -28,7 +28,12 @@ export function CharacterPicker(props: CharacterPickerProps) {
               title={sheet.name}
               onClick={() => props.onPick({ id: sheet.id, palette: 0 })}
             >
-              <Avatar character={{ id: sheet.id, palette: 0 }} state="idle" scale={2} animate={false} />
+              <Avatar
+                character={{ id: sheet.id, palette: 0 }}
+                state="idle"
+                scale={2}
+                animate={false}
+              />
             </button>
           )}
         </For>
