@@ -108,6 +108,7 @@ pnpm install && pnpm tauri dev
 pnpm typecheck && pnpm test && pnpm build
 cd src-tauri && cargo fmt --check && cargo clippy --all-targets -- -D warnings && cargo test
 cargo build    # in src-tauri: compile check without bundling
+pnpm tauri build --debug    # full build + installers (local machines)
 ```
 
 ## Roadmap (9 phases)

@@ -8,7 +8,6 @@ import { PixelIcon } from '../../shared/ui/PixelIcon';
 import { t } from '../i18n';
 import { settings } from '../settings/settingsStore';
 import { themeVars } from '../theme/themeStore';
-import { currentWorkspace } from '../workspace/workspaceStore';
 import { isAgentKind, terminalTitle, type TerminalConfig } from './config';
 import { clearTerminalStatus, setTerminalStatus } from './statusStore';
 import { TerminalController } from './TerminalController';
@@ -30,7 +29,7 @@ export default function TerminalPanel(props: TerminalPanelProps) {
 
   const controller = new TerminalController({
     config: props.config,
-    defaultCwd: currentWorkspace,
+    defaultCwd: () => settings.currentWorkspace,
     settings: untrack(() => ({ ...settings.terminal })),
     theme: untrack(() => xtermTheme(themeVars())),
     onStatus: (next, message) => {

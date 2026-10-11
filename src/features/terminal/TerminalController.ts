@@ -53,6 +53,15 @@ function isExit(message: unknown): message is PtyExitMessage {
 
 const quiet = (err: unknown) => console.debug('[agentflow] terminal IPC:', err);
 
+/**
+ * After a process exits, undo modes it may have left on (it could have crashed): leave the
+ * alternate screen, disable mouse tracking and bracketed paste, show the cursor, normal cursor
+ * keys, reset colors.
+ */
+const RESET_MODES =
+  '\x1b[?1049l\x1b[?1000l\x1b[?1002l\x1b[?1003l\x1b[?1006l\x1b[?1015l' +
+  '\x1b[?2004l\x1b[?25h\x1b[?1l\x1b>\x1b[0m';
+
 export class TerminalController {
   private readonly term: Terminal;
   private readonly fit = new FitAddon();
@@ -187,11 +196,14 @@ export class TerminalController {
   }
 
   private setStatus(status: TerminalStatus, error: string | null): void {
+    if (this.disposed) return;
     this.status = status;
     this.options.onStatus(status, error);
   }
 
   private onMessage(launch: Launch, decoder: OutputDecoder, message: PtyMessage): void {
+    // Closed while starting: the channel is still attached until spawn returns.
+    if (this.disposed) return;
     if (message instanceof ArrayBuffer) {
       this.term.write(decoder.decode(new Uint8Array(message)));
       return;
@@ -200,6 +212,7 @@ export class TerminalController {
     launch.exited = true;
     const tail = decoder.flush();
     if (tail) this.term.write(tail);
+    this.term.write(RESET_MODES);
     this.session?.handle.detach();
     this.session = undefined;
     const line =
