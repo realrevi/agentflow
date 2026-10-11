@@ -4,6 +4,7 @@
 import { isHexColor } from '../../shared/color';
 import type { ThemeKind } from '../../shared/types';
 import { ANSI_SPECS } from './ansi';
+import { SYNTAX_SPECS } from './syntax';
 
 type Fallback = { ref: string } | { dark: string; light: string };
 
@@ -155,6 +156,31 @@ export const THEME_VARS: readonly VarSpec[] = [
     fallback: ref('selection'),
   },
   ...ANSI_SPECS,
+  // Editor (phase 3). Background and text use `bg` / `fg` (editor.background/foreground).
+  { name: 'editor-cursor', keys: ['editorCursor.foreground'], fallback: ref('accent') },
+  {
+    name: 'editor-line-highlight',
+    keys: ['editor.lineHighlightBackground'],
+    fallback: d('#ffffff0a', '#0000000a'),
+  },
+  { name: 'editor-gutter-fg', keys: ['editorLineNumber.foreground'], fallback: ref('fg-muted') },
+  {
+    name: 'editor-gutter-active-fg',
+    keys: ['editorLineNumber.activeForeground'],
+    fallback: ref('fg'),
+  },
+  {
+    name: 'editor-selection-match',
+    keys: ['editor.selectionHighlightBackground'],
+    fallback: d('#ffffff1a', '#0000001a'),
+  },
+  {
+    name: 'editor-find-match',
+    keys: ['editor.findMatchHighlightBackground'],
+    fallback: d('#ea5c0055', '#ea5c0040'),
+  },
+  { name: 'editor-bracket', keys: ['editorBracketMatch.border'], fallback: ref('fg-muted') },
+  ...SYNTAX_SPECS,
 ];
 
 export const cssVar = (name: string): string => `--af-${name}`;

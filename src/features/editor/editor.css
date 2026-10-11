@@ -1,0 +1,73 @@
+/* Editor panel: CodeMirror host, disk-change banner and info views. */
+.af-editor {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--af-bg);
+}
+
+.af-editor-host {
+  flex: 1;
+  min-height: 0;
+}
+
+.af-editor-host.hidden {
+  display: none;
+}
+
+.af-editor-banner,
+.af-editor-note {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  background: var(--af-widget-bg);
+  border-bottom: 1px solid var(--af-widget-border);
+}
+
+.af-editor-banner span {
+  flex: 1;
+  color: var(--af-warning);
+}
+
+.af-editor-note {
+  color: var(--af-fg-muted);
+  font-size: 12px;
+}
+
+.af-editor-info {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 24px;
+  text-align: center;
+  color: var(--af-fg-muted);
+}
+
+.af-editor-info svg {
+  color: var(--af-accent);
+}
+
+.af-editor-info h2 {
+  margin: 4px 0 0;
+  font-size: 16px;
+  color: var(--af-fg);
+}
+
+.af-editor-info p {
+  max-width: 420px;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.af-editor-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  background: var(--af-bg);
+}
