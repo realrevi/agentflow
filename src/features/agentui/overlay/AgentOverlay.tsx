@@ -13,8 +13,7 @@ import {
 } from '../../characters';
 import { t, type I18nKey } from '../../i18n';
 import { settings } from '../../settings/settingsStore';
-import type { CursorCell } from '../support';
-import { avatarAboveCursor, lerp, type Box } from './follow';
+import { avatarAboveCursor, lerp, type Box, type CursorCell } from './follow';
 import { HistoryPopover } from './HistoryPopover';
 import { SpeechBubble } from './SpeechBubble';
 
@@ -53,11 +52,12 @@ interface AgentOverlayProps {
   lastPrompt: { text: string; at: number } | null;
   history: readonly PromptEntry[];
   onPickPrompt: (text: string) => void;
-  cursor: () => CursorCell | null;
-  onCursorChange: (listener: () => void) => () => void;
+  /** Terminal panels only: the cursor the avatar rides above while output streams. */
+  cursor?: () => CursorCell | null;
+  onCursorChange?: (listener: () => void) => () => void;
   /** The terminal host (for cell size) and the panel body (bounds). */
-  host: () => HTMLElement | undefined;
-  body: () => HTMLElement | undefined;
+  host?: () => HTMLElement | undefined;
+  body?: () => HTMLElement | undefined;
   ref: (handle: AgentOverlayHandle) => void;
 }
 
@@ -105,12 +105,15 @@ export function AgentOverlay(props: AgentOverlayProps) {
 
   // --- Riding above the cursor while output streams -------------------------------------
   const following = () =>
-    settings.characters.cursorFollow && props.state === 'work' && !reducedMotion();
+    props.cursor !== undefined &&
+    settings.characters.cursorFollow &&
+    props.state === 'work' &&
+    !reducedMotion();
   let hostBox: Box = { left: 0, top: 0, width: 0, height: 0 };
   let bounds = { width: 0, height: 0 };
   const measure = () => {
-    const host = props.host();
-    const body = props.body();
+    const host = props.host?.();
+    const body = props.body?.();
     if (!host || !body) return;
     hostBox = {
       left: host.offsetLeft,
@@ -144,7 +147,7 @@ export function AgentOverlay(props: AgentOverlayProps) {
   /** Offset from the corner spot to just above the cursor. */
   const track = () => {
     if (!following()) return;
-    const cursor = props.cursor();
+    const cursor = props.cursor?.() ?? null;
     const spot = cursor && avatarAboveCursor(cursor, hostBox, bounds, size());
     if (!spot) return moveTo({ ...goal, hidden: true });
     const cornerX = bounds.width - CORNER.right - size();
@@ -157,8 +160,8 @@ export function AgentOverlay(props: AgentOverlayProps) {
     }
     measure();
     track();
-    const stopListening = props.onCursorChange(track);
-    const body = props.body();
+    const stopListening = props.onCursorChange?.(track) ?? (() => undefined);
+    const body = props.body?.();
     const observer = new ResizeObserver(() => {
       measure();
       track();

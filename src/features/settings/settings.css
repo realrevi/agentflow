@@ -167,3 +167,132 @@
   font-variant-numeric: tabular-nums;
   color: var(--af-fg-muted);
 }
+
+.af-provider-list {
+  margin: 0 0 12px;
+  padding: 0;
+  list-style: none;
+}
+
+.af-provider {
+  margin-bottom: 8px;
+  border: 1px solid var(--af-widget-border);
+  border-radius: 6px;
+}
+
+.af-provider.open {
+  border-color: var(--af-accent);
+}
+
+.af-provider-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px 4px 4px;
+}
+
+.af-provider-toggle {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 6px 8px;
+  border: none;
+  border-radius: 4px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.af-provider-toggle:hover {
+  background: var(--af-list-hover-bg);
+}
+
+.af-provider-name {
+  font-weight: 600;
+}
+
+.af-provider-meta {
+  overflow: hidden;
+  font-size: 12px;
+  color: var(--af-fg-muted);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.af-key-dot {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  margin-left: auto;
+  background: var(--af-fg-muted);
+}
+
+.af-key-dot.ok {
+  background: var(--af-success);
+}
+
+.af-provider-editor {
+  padding: 4px 12px 12px;
+  border-top: 1px solid var(--af-widget-border);
+}
+
+.af-input-wide {
+  flex: 1;
+  min-width: 220px;
+}
+
+.af-input-number {
+  width: 110px;
+}
+
+.af-field-error {
+  flex-basis: 100%;
+  font-size: 12px;
+  color: var(--af-error);
+}
+
+.af-settings-hint.inline {
+  margin: 0;
+  flex-basis: 100%;
+}
+
+.af-key-field {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.af-key-status {
+  font-size: 12px;
+  color: var(--af-fg-muted);
+}
+
+.af-key-status.ok {
+  color: var(--af-success);
+}
+
+.af-provider-test {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.af-test-result {
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.af-test-result.ok {
+  color: var(--af-success);
+}
+
+.af-test-result.error {
+  color: var(--af-error);
+}

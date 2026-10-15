@@ -9,6 +9,7 @@ const KINDS: readonly AppErrorKind[] = [
   'pty',
   'conflict',
   'tooLarge',
+  'provider',
   'internal',
 ];
 

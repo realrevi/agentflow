@@ -4,13 +4,15 @@ import { plusIcon } from '../../shared/ui/icons';
 import { InlinePrompt } from '../../shared/ui/InlinePrompt';
 import { Menu, type MenuItem } from '../../shared/ui/Menu';
 import { PixelIcon } from '../../shared/ui/PixelIcon';
+import { NewChatPrompt } from '../chat';
 import { t } from '../i18n';
 import { AGENT_KINDS, cliFor, kindLabel, loadCliStatus, newTerminalConfig } from '../terminal';
+import { startChat } from './chatPanels';
 import { openPanel, openTerminal } from './layoutStore';
 
-type Mode = 'closed' | 'menu' | 'custom';
+type Mode = 'closed' | 'menu' | 'custom' | 'api';
 
-/** The "+" in every group header: new terminals, plus (re)opening Files / Settings. */
+/** The "+" in every group header: terminals, API agents, and (re)opening Files / Settings. */
 export function AddPanelButton(props: { groupId: string }) {
   const [mode, setMode] = createSignal<Mode>('closed');
   let button: HTMLButtonElement | undefined;
@@ -30,12 +32,13 @@ export function AddPanelButton(props: { groupId: string }) {
     { id: 'shell', label: kindLabel('shell'), heading: t('panel.add.terminals') },
     ...AGENT_KINDS.map(agentItem),
     { id: 'custom', label: t('terminal.add.custom') },
+    { id: 'api', label: t('panel.add.api') },
     { id: 'files', label: t('panel.add.files'), heading: t('panel.add.panels') },
     { id: 'settings', label: t('panel.add.settings') },
   ];
 
   const select = (id: string) => {
-    if (id === 'custom') setMode('custom');
+    if (id === 'custom' || id === 'api') setMode(id);
     else if (id === 'files' || id === 'settings') openPanel(id, props.groupId);
     else if (id === 'shell' || (AGENT_KINDS as readonly string[]).includes(id)) {
       openTerminal(newTerminalConfig(id as PtyKind), props.groupId);
@@ -73,8 +76,19 @@ export function AddPanelButton(props: { groupId: string }) {
               items={items()}
               placement="below-end"
               onSelect={select}
-              // Choosing "Custom command…" switches to the prompt instead of closing.
+              // "Custom command…" and "API agent…" switch to their prompt instead of closing.
               onClose={() => setMode((current) => (current === 'menu' ? 'closed' : current))}
+            />
+          )}
+        </Match>
+        <Match when={mode() === 'api' && button}>
+          {(anchor) => (
+            <NewChatPrompt
+              anchor={anchor()}
+              placement="below-end"
+              onStart={(providerId, model) => void startChat(providerId, model, props.groupId)}
+              onOpenSettings={() => openPanel('settings')}
+              onClose={() => setMode('closed')}
             />
           )}
         </Match>

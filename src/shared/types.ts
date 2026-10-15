@@ -1,4 +1,7 @@
 // Types shared with the Rust backend. Keep in sync with src-tauri/src/{settings,themes,error}.
+import type { ChatSettings, ProviderEntry } from './chatTypes';
+
+export type * from './chatTypes';
 
 export type Locale = 'en' | 'tr' | 'de' | 'zh' | 'ru';
 export type SidebarView = 'agents' | 'explorer' | 'characters';
@@ -70,6 +73,8 @@ export interface Settings {
   terminal: TerminalSettings;
   files: FilesSettings;
   characters: CharacterSettings;
+  providers: ProviderEntry[];
+  chat: ChatSettings;
   layout: SerializedLayout | null;
 }
 
@@ -184,4 +189,5 @@ export type AppErrorKind =
   | 'pty'
   | 'conflict'
   | 'tooLarge'
+  | 'provider'
   | 'internal';

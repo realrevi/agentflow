@@ -1,0 +1,222 @@
+// Lazy-loaded dock panel for one API chat (see layout/renderers.tsx). Default export.
+// Header (provider, model, system prompt), the messages, and the shared prompt bar with the
+// panel's character; files dragged from the tree onto the bottom area are attached.
+import './chat.css';
+import type { DockviewPanelApi } from 'dockview-core';
+import { createEffect, createSignal, onCleanup, onMount, Show } from 'solid-js';
+import { FILE_PATH_MIME } from '../../shared/dnd';
+import type { Attachment } from '../../shared/types';
+import { agentState } from '../agentui';
+import {
+  AgentOverlay,
+  createPromptHistory,
+  playPacket,
+  PromptBar,
+  type AgentOverlayHandle,
+  type PromptBarHandle,
+  type SentPrompt,
+} from '../agentui/components';
+import { reducedMotion } from '../characters';
+import { reportError, t } from '../i18n';
+import { providerName } from '../providers';
+import { settings } from '../settings/settingsStore';
+import { AttachmentChips } from './AttachmentChips';
+import { readAttachment, withAttachment } from './attachments';
+import { ChatHeader } from './ChatHeader';
+import { chatTitle, parseChatConfig, type ChatConfig } from './config';
+import { listedTitle, refreshConversations } from './conversationsStore';
+import { MessageList } from './MessageList';
+import { createChatSession } from './session';
+
+export interface ChatPanelProps {
+  panelId: string;
+  config: ChatConfig;
+  api: DockviewPanelApi;
+}
+
+const PACKET_MS = 600;
+
+export default function ChatPanel(props: ChatPanelProps) {
+  const [config, setConfig] = createSignal(props.config);
+  const [files, setFiles] = createSignal<readonly Attachment[]>([]);
+  const [dropping, setDropping] = createSignal(false);
+  const [lastPrompt, setLastPrompt] = createSignal<{ text: string; at: number } | null>(null);
+  let root: HTMLDivElement | undefined;
+  let overlay: AgentOverlayHandle | undefined;
+  let bar: PromptBarHandle | undefined;
+
+  const setTitle = (title: string) => {
+    props.api.setTitle(chatTitle({ title }));
+    if (title === config().title) return;
+    const params = props.api.getParameters<Record<string, unknown>>();
+    props.api.updateParameters({ ...params, config: { ...config(), title } });
+  };
+  const session = createChatSession({
+    panelId: props.panelId,
+    workspace: props.config.workspace,
+    conversationId: props.config.conversationId,
+    onTitle: setTitle,
+    onChanged: () => void refreshConversations(),
+  });
+  const history = createPromptHistory(
+    props.config.workspace,
+    props.config.historyKey ?? props.panelId,
+  );
+  const character = () => (settings.characters.enabled ? config().character : null);
+  const provider = () => {
+    const id = session.conversation()?.providerId;
+    return settings.providers.find((p) => p.id === id);
+  };
+  const ready = () => Boolean(provider() && session.conversation()?.model.trim());
+  const aiName = () => {
+    const entry = provider();
+    return session.conversation()?.model || (entry ? providerName(entry) : t('chat.untitled'));
+  };
+
+  // A rename in the sidebar reaches the open panel.
+  createEffect(() => {
+    const listed = listedTitle(props.config.conversationId);
+    if (listed !== undefined) setTitle(listed);
+  });
+
+  const send = (text: string) => {
+    if (!ready() || session.streaming()) return false;
+    const attached = [...files()];
+    setFiles([]);
+    setLastPrompt({ text, at: Date.now() });
+    void session.send(text, attached).then((ok) => {
+      if (ok) history.add(text);
+      else {
+        bar?.insert(text);
+        setFiles(attached);
+      }
+    });
+    return true;
+  };
+
+  const flyPacket = (sent: SentPrompt) => {
+    const target = overlay;
+    if (!target || !character()) return;
+    if (!settings.characters.packet || reducedMotion() || !root) return target.receive();
+    playPacket({
+      host: root,
+      ...sent,
+      target: target.target(),
+      duration: PACKET_MS / Math.max(0.25, settings.characters.speed),
+      onArrive: () => target.receive(),
+    });
+  };
+
+  const accepts = (event: DragEvent) => event.dataTransfer?.types.includes(FILE_PATH_MIME) ?? false;
+  const onDrop = async (event: DragEvent) => {
+    setDropping(false);
+    const path = event.dataTransfer?.getData(FILE_PATH_MIME);
+    if (!accepts(event) || !path) return;
+    event.preventDefault();
+    try {
+      const file = await readAttachment(path);
+      setFiles((list) => withAttachment(list, file));
+    } catch (err) {
+      reportError('error.attach', err);
+    }
+  };
+
+  onMount(() => {
+    void session.load();
+    // The panel loads lazily: its parameters (e.g. the assigned character) may have changed
+    // before it mounted.
+    const current = parseChatConfig(props.api.getParameters<{ config?: unknown }>().config);
+    if (current) setConfig(current);
+    const subscriptions = [
+      props.api.onDidParametersChange((params) => {
+        const next = parseChatConfig((params as { config?: unknown }).config);
+        if (next) setConfig(next);
+      }),
+      props.api.onDidActiveChange((event) => event.isActive && bar?.focus()),
+    ];
+    if (props.api.isActive) queueMicrotask(() => bar?.focus());
+    onCleanup(() => {
+      for (const subscription of subscriptions) subscription.dispose();
+      session.dispose();
+    });
+  });
+
+  return (
+    <div ref={root} class="af-chat">
+      <Show when={session.conversation()}>
+        {(conversation) => (
+          <ChatHeader
+            panelId={props.panelId}
+            workspace={props.config.workspace}
+            conversation={conversation()}
+            onChanged={session.setConversation}
+          />
+        )}
+      </Show>
+      <div class="af-chat-body">
+        <MessageList
+          messages={session.messages()}
+          streaming={session.streaming()}
+          error={session.error()}
+          canRetry={session.canRetry()}
+          onRetry={() => void session.retry()}
+        />
+        <Show when={character()}>
+          {(ref) => (
+            <AgentOverlay
+              ref={(handle) => (overlay = handle)}
+              character={ref()}
+              aiName={aiName()}
+              state={agentState(props.panelId)}
+              lastPrompt={lastPrompt()}
+              history={history.entries()}
+              onPickPrompt={(text) => bar?.insert(text)}
+            />
+          )}
+        </Show>
+      </div>
+      <div
+        class="af-chat-compose"
+        classList={{ dropping: dropping() }}
+        onDragOver={(event) => {
+          if (!accepts(event)) return;
+          event.preventDefault();
+          if (event.dataTransfer) event.dataTransfer.dropEffect = 'copy';
+          setDropping(true);
+        }}
+        onDragLeave={() => setDropping(false)}
+        onDrop={(event) => void onDrop(event)}
+      >
+        <AttachmentChips
+          files={files()}
+          onRemove={(path) => setFiles((list) => list.filter((file) => file.path !== path))}
+        />
+        <div class="af-chat-row">
+          <div class="af-chat-bar">
+            <PromptBar
+              ref={(handle) => (bar = handle)}
+              history={history}
+              character={character}
+              enabled={ready}
+              disabledPlaceholder={t('chat.notReady')}
+              onSend={send}
+              onSent={flyPacket}
+            />
+          </div>
+          <Show when={session.streaming()}>
+            <button
+              type="button"
+              class="af-button danger small af-chat-stop"
+              onClick={() => session.stop()}
+            >
+              {t('chat.stop')}
+            </button>
+          </Show>
+        </div>
+        <Show when={dropping()}>
+          <div class="af-chat-drop">{t('chat.attach.drop')}</div>
+        </Show>
+      </div>
+    </div>
+  );
+}

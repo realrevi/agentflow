@@ -1,6 +1,13 @@
 // Where the corner avatar goes when it rides above the terminal cursor. Pure geometry from
 // public numbers: the cursor cell, the grid size and the terminal host's box.
-import type { CursorCell } from '../support';
+
+/** Where the cursor is, in cells of the visible screen (`row` < 0 or >= rows: scrolled away). */
+export interface CursorCell {
+  col: number;
+  row: number;
+  cols: number;
+  rows: number;
+}
 
 export interface Box {
   left: number;

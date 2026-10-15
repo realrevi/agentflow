@@ -19,7 +19,7 @@ tauri = { version = "2.12", features = [] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 thiserror = "2"
-tokio = { version = "1", features = ["sync"] }
+tokio = { version = "1", features = ["sync", "macros", "time"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", default-features = false, features = ["fmt", "std", "ansi"] }
 portable-pty = "0.9"
@@ -29,6 +29,9 @@ tauri-plugin-clipboard-manager = "2.4"
 ignore = "0.4"
 notify = "8"
 trash = "5"
+reqwest = { version = "0.13", default-features = false, features = ["rustls-no-provider", "system-proxy"] }
+rustls = { version = "0.23", default-features = false, features = ["ring", "std", "tls12"] }
+keyring = "4.2"
 
 [target.'cfg(unix)'.dependencies]
 libc = "0.2"

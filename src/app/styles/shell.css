@@ -206,3 +206,41 @@
 .af-view-gap {
   margin-top: 20px;
 }
+
+.af-dot-chat {
+  background: var(--af-bold-color);
+}
+
+.af-chat-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.af-chat-item .af-list-item {
+  flex: 1;
+  min-width: 0;
+  padding-right: 28px;
+}
+
+.af-chat-item-title {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.af-chat-item-more {
+  position: absolute;
+  right: 2px;
+  opacity: 0;
+}
+
+.af-chat-item:hover .af-chat-item-more,
+.af-chat-item-more:focus-visible,
+.af-chat-item-more[aria-expanded='true'] {
+  opacity: 1;
+}
+
+.af-chat-new {
+  margin: 6px 4px 0;
+}

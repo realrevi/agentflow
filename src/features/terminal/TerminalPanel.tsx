@@ -7,8 +7,17 @@ import { createEffect, createSignal, onCleanup, onMount, Show, untrack } from 's
 import { reducedMotion } from '../characters';
 import { settings } from '../settings/settingsStore';
 import { themeVars } from '../theme/themeStore';
-import { AgentActivity, agentState } from './agentActivity';
-import { AgentOverlay, type AgentOverlayHandle } from './agent/AgentOverlay';
+import { agentState } from '../agentui';
+import {
+  AgentOverlay,
+  createPromptHistory,
+  playPacket,
+  PromptBar,
+  type AgentOverlayHandle,
+  type PromptBarHandle,
+  type SentPrompt,
+} from '../agentui/components';
+import { AgentActivity } from './agentActivity';
 import {
   agentName,
   avatarFor,
@@ -17,9 +26,6 @@ import {
   type TerminalConfig,
 } from './config';
 import { createDropTarget } from './dropTarget';
-import { createPromptHistory } from './prompt/history';
-import { playPacket } from './prompt/packet';
-import { PromptBar, type PromptBarHandle, type SentPrompt } from './prompt/PromptBar';
 import { StartOverlay } from './StartOverlay';
 import { clearTerminalStatus, setTerminalStatus } from './statusStore';
 import { TerminalController } from './TerminalController';
@@ -113,6 +119,10 @@ export default function TerminalPanel(props: TerminalPanelProps) {
         if (next) setConfig(next);
       }),
     ];
+    // The panel loads lazily: its parameters (e.g. the assigned character) may have changed
+    // before it mounted.
+    const current = parseTerminalConfig(props.api.getParameters<{ config?: unknown }>().config);
+    if (current) setConfig(current);
     if (props.autoStart) void controller.start();
     onCleanup(() => {
       for (const subscription of subscriptions) subscription.dispose();

@@ -3,8 +3,10 @@
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
+use super::providers::{ChatSettings, ProviderEntry};
+
 /// Bump when the on-disk shape changes and add a step in `migrate.rs`.
-pub const CURRENT_VERSION: u32 = 4;
+pub const CURRENT_VERSION: u32 = 5;
 pub const SUPPORTED_LANGUAGES: [&str; 5] = ["en", "tr", "de", "zh", "ru"];
 pub const DEFAULT_LANGUAGE: &str = "en";
 pub const DEFAULT_THEME_ID: &str = "agentflow-dark";
@@ -29,6 +31,9 @@ pub struct Settings {
     pub terminal: TerminalSettings,
     pub files: FilesSettings,
     pub characters: CharacterSettings,
+    /// AI providers for API chat panels (keys are in the OS keychain, never here).
+    pub providers: Vec<ProviderEntry>,
+    pub chat: ChatSettings,
     /// Opaque dockview layout owned by the frontend. `None` means "use the default layout".
     pub layout: Option<Value>,
 }
@@ -111,6 +116,8 @@ impl Default for Settings {
             terminal: TerminalSettings::default(),
             files: FilesSettings::default(),
             characters: CharacterSettings::default(),
+            providers: Vec::new(),
+            chat: ChatSettings::default(),
             layout: None,
         }
     }

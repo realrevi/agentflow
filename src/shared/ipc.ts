@@ -5,57 +5,19 @@ import { readText, writeText } from '@tauri-apps/plugin-clipboard-manager';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { open as openDialog } from '@tauri-apps/plugin-dialog';
 import { toAppError } from './errors';
+import type { Commands } from './ipcCommands';
 import type {
-  CliStatus,
+  ChatEvent,
+  ChatSendRequest,
+  ChatStarted,
+  ConversationPatch,
   EntryKind,
-  FileContent,
-  FileStat,
   FsChanges,
-  FsEntry,
-  PromptEntry,
   PtyMessage,
   PtySpawnRequest,
-  QuickOpenMatch,
   SessionInfo,
   Settings,
-  ThemeData,
-  ThemeSummary,
 } from './types';
-
-interface Commands {
-  get_settings: { args: Record<string, never>; result: Settings };
-  save_settings: { args: { settings: Settings }; result: Settings };
-  list_themes: { args: Record<string, never>; result: ThemeSummary[] };
-  get_theme: { args: { id: string }; result: ThemeData };
-  import_theme: { args: { fileName: string; contents: string }; result: ThemeSummary };
-  pty_spawn: { args: PtySpawnRequest & { onOutput: Channel<PtyMessage> }; result: SessionInfo };
-  pty_write: { args: { id: number; data: string }; result: null };
-  pty_ack: { args: { id: number; bytes: number }; result: null };
-  pty_resize: { args: { id: number; cols: number; rows: number }; result: null };
-  pty_kill: { args: { id: number }; result: boolean };
-  pty_list: { args: Record<string, never>; result: SessionInfo[] };
-  cli_detect: { args: { refresh: boolean }; result: CliStatus[] };
-  fs_open_workspace: {
-    args: { root: string; showHidden: boolean; onEvent: Channel<FsChanges> };
-    result: null;
-  };
-  fs_close_workspace: { args: Record<string, never>; result: null };
-  fs_list: { args: { dir: string }; result: FsEntry[] };
-  fs_read: { args: { path: string }; result: FileContent };
-  fs_write: {
-    args: { path: string; content: string; expectedMtime: number | null };
-    result: FileStat;
-  };
-  fs_create: { args: { path: string; kind: EntryKind }; result: FsEntry };
-  fs_rename: { args: { from: string; to: string }; result: FsEntry };
-  fs_delete: { args: { path: string }; result: null };
-  fs_quick_open: { args: { query: string }; result: QuickOpenMatch[] };
-  prompts_list: { args: { workspace: string | null; panel: string }; result: PromptEntry[] };
-  prompts_add: {
-    args: { workspace: string | null; panel: string; text: string };
-    result: PromptEntry;
-  };
-}
 
 async function call<K extends keyof Commands>(
   command: K,
@@ -111,6 +73,28 @@ async function fsOpenWorkspace(
   try {
     await call('fs_open_workspace', { root, showHidden, onEvent: channel });
     return { detach };
+  } catch (err) {
+    detach();
+    throw err;
+  }
+}
+
+/**
+ * Starts an API chat reply. The channel exists before the call, so no event is missed;
+ * events can arrive before the promise resolves. Rust drops the channel after the final
+ * stop/error event. `detach()` stops delivery (e.g. the panel closed).
+ */
+async function chatSend(
+  request: ChatSendRequest,
+  onEvent: (event: ChatEvent) => void,
+): Promise<{ started: ChatStarted; detach(): void }> {
+  const channel = new Channel<ChatEvent>(onEvent);
+  const detach = () => {
+    channel.onmessage = () => {};
+  };
+  try {
+    const started = await call('chat_send', { request, onEvent: channel });
+    return { started, detach };
   } catch (err) {
     detach();
     throw err;
@@ -180,6 +164,28 @@ export const ipc = {
     call('prompts_list', { workspace, panel }),
   promptsAdd: (workspace: string | null, panel: string, text: string) =>
     call('prompts_add', { workspace, panel, text }),
+  conversationsList: (workspace: string | null) => call('conversations_list', { workspace }),
+  conversationGet: (workspace: string | null, id: string) =>
+    call('conversation_get', { workspace, id }),
+  conversationCreate: (
+    workspace: string | null,
+    providerId: string | null,
+    model: string,
+    systemPrompt = '',
+  ) => call('conversation_create', { workspace, providerId, model, systemPrompt }),
+  conversationUpdate: (workspace: string | null, id: string, patch: ConversationPatch) =>
+    call('conversation_update', { workspace, id, patch }),
+  conversationDelete: (workspace: string | null, id: string) =>
+    call('conversation_delete', { workspace, id }),
+  chatSend,
+  chatCancel: (requestId: number) => call('chat_cancel', { requestId }),
+  /** Keys are write-only: the frontend only ever sees has-key + the last 4 characters. */
+  providerKeyStatus: (providerId: string) => call('provider_key_status', { providerId }),
+  providerSetKey: (providerId: string, key: string) =>
+    call('provider_set_key', { providerId, key }),
+  providerDeleteKey: (providerId: string) => call('provider_delete_key', { providerId }),
+  providerModels: (providerId: string) => call('provider_models', { providerId }),
+  providerTest: (providerId: string) => call('provider_test', { providerId }),
   onWindowClose,
   pickFolder,
   readClipboard: () => clipboard(readText),

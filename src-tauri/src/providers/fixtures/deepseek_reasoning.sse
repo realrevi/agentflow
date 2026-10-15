@@ -1,0 +1,14 @@
+: keep-alive
+
+: keep-alive
+
+data: {"choices":[{"delta":{"content":null,"reasoning_content":" memory"},"finish_reason":null,"index":0,"logprobs":null}],"created":0,"id":"12d53f01-b881-4f9c-b8a7-ad8403942706","model":"deepseek-flash","object":"chat.completion.chunk","system_fingerprint":"aeb56401ca74e127821c4f9126dcb669","usage":null}
+
+data: {"choices":[{"delta":{"content":"Use a","reasoning_content":null},"finish_reason":null,"index":0,"logprobs":null}],"created":0,"id":"12d53f01-b881-4f9c-b8a7-ad8403942706","model":"deepseek-flash","object":"chat.completion.chunk","system_fingerprint":"aeb56401ca74e127821c4f9126dcb669","usage":null}
+
+data: {"choices":[{"delta":{"content":" profiler.","reasoning_content":null},"finish_reason":null,"index":0,"logprobs":null}],"created":0,"id":"12d53f01-b881-4f9c-b8a7-ad8403942706","model":"deepseek-flash","object":"chat.completion.chunk","system_fingerprint":"aeb56401ca74e127821c4f9126dcb669","usage":null}
+
+data: {"choices":[{"delta":{"content":"","reasoning_content":null},"finish_reason":"length","index":0,"logprobs":null}],"created":0,"id":"12d53f01-b881-4f9c-b8a7-ad8403942706","model":"deepseek-flash","object":"chat.completion.chunk","system_fingerprint":"aeb56401ca74e127821c4f9126dcb669","usage":{"completion_tokens":81,"completion_tokens_details":{"reasoning_tokens":80},"prompt_cache_hit_tokens":40,"prompt_cache_miss_tokens":6,"prompt_tokens":46,"prompt_tokens_details":{"cached_tokens":40},"total_tokens":127}}
+
+data: [DONE]
+

@@ -11,7 +11,6 @@ export {
   wantsCharacter,
   type TerminalConfig,
 } from './config';
-export { agentState } from './agentActivity';
 export { cliFor, cliStatus, loadCliStatus } from './cliStore';
 export { newTerminalConfig } from './newConfig';
 export { installNewShellShortcut } from './shortcuts';

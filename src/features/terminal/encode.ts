@@ -1,5 +1,5 @@
 // What the prompt bar writes to the pty for one prompt.
-import { sanitizePaste } from '../paste';
+import { sanitizePaste } from './paste';
 
 const PASTE_START = '\x1b[200~';
 const PASTE_END = '\x1b[201~';

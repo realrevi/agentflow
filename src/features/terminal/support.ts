@@ -1,6 +1,7 @@
 // Small helpers for TerminalController: fonts, exit messages, mode resets, the cursor.
 import type { IDisposable, Terminal } from '@xterm/xterm';
 import type { PtyExitMessage } from '../../shared/types';
+import type { CursorCell } from '../agentui';
 
 export const FONT_FAMILY = "'JetBrains Mono', ui-monospace, Menlo, Consolas, monospace";
 
@@ -25,14 +26,6 @@ export function isExit(message: unknown): message is PtyExitMessage {
 export const RESET_MODES =
   '\x1b[?1049l\x1b[?1000l\x1b[?1002l\x1b[?1003l\x1b[?1006l\x1b[?1015l' +
   '\x1b[?2004l\x1b[?25h\x1b[?1l\x1b>\x1b[0m';
-
-/** Where the cursor is, in cells of the visible screen (`row` < 0 or >= rows: scrolled away). */
-export interface CursorCell {
-  col: number;
-  row: number;
-  cols: number;
-  rows: number;
-}
 
 /** The cursor of an opened terminal (public xterm API only). */
 export function cursorCell(term: Terminal): CursorCell {
