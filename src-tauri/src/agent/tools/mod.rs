@@ -16,7 +16,7 @@ use super::checkpoint::TurnCheckpoint;
 use super::permissions::{Category, Preview};
 use crate::conversations::PermissionMode;
 use crate::fs::WorkspaceRoot;
-use crate::providers::{CancelToken, ToolCall, ToolSpec};
+use crate::providers::{CancelToken, ToolCall, ToolMeta, ToolSpec};
 
 /// What a tool run needs: the sandboxed workspace, limits, the turn's checkpoint.
 pub struct ToolEnv {
@@ -31,31 +31,24 @@ pub struct ToolEnv {
 pub struct ToolOutput {
     pub content: String,
     pub is_error: bool,
-    /// One line for the chat ("12 files", "exit 0", "3 matches").
-    pub summary: String,
+    /// For the chat's summary line.
+    pub meta: ToolMeta,
 }
 
 impl ToolOutput {
-    pub fn ok(content: impl Into<String>, summary: impl Into<String>) -> Self {
+    pub fn ok(content: impl Into<String>, meta: ToolMeta) -> Self {
         Self {
             content: content.into(),
             is_error: false,
-            summary: summary.into(),
+            meta,
         }
     }
 
     pub fn error(message: impl Into<String>) -> Self {
-        let message = message.into();
         Self {
-            summary: message
-                .lines()
-                .next()
-                .unwrap_or("")
-                .chars()
-                .take(120)
-                .collect(),
-            content: message,
+            content: message.into(),
             is_error: true,
+            meta: ToolMeta::default(),
         }
     }
 }
@@ -182,25 +175,6 @@ pub fn specs(mode: PermissionMode) -> Vec<ToolSpec> {
 
 pub fn category(name: &str) -> Option<Category> {
     TOOLS.iter().find(|t| t.name == name).map(|t| t.category)
-}
-
-/// For the speech bubble: "Reading src/app.ts", "Running npm test".
-pub fn status_text(call: &ToolCall) -> String {
-    let arg = |key: &str| {
-        call.input[key]
-            .as_str()
-            .map(|s| s.chars().take(60).collect::<String>())
-    };
-    match call.name.as_str() {
-        "list_dir" => format!("Listing {}", arg("path").unwrap_or_else(|| ".".into())),
-        "read_file" => format!("Reading {}", arg("path").unwrap_or_default()),
-        "glob" => format!("Finding {}", arg("pattern").unwrap_or_default()),
-        "search" => format!("Searching {}", arg("regex").unwrap_or_default()),
-        "write_file" => format!("Writing {}", arg("path").unwrap_or_default()),
-        "edit_file" => format!("Editing {}", arg("path").unwrap_or_default()),
-        "run_command" => format!("Running {}", arg("command").unwrap_or_default()),
-        other => format!("Using {other}"),
-    }
 }
 
 /// Runs one call. Errors become error results the model can react to.

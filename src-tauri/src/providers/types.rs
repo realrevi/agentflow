@@ -49,14 +49,73 @@ pub struct ToolCall {
     pub input: Value,
 }
 
-/// The result of one tool call, sent back to the model.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+/// The result of one tool call. `call_id`, `content` and `is_error` go to the model; the
+/// rest is for the chat UI only (adapters never send it).
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ToolResult {
     pub call_id: String,
     pub content: String,
     #[serde(default)]
     pub is_error: bool,
+    #[serde(default, skip_serializing_if = "ToolOutcome::is_ran")]
+    pub outcome: ToolOutcome,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub duration_ms: Option<u64>,
+    #[serde(default, skip_serializing_if = "ToolMeta::is_empty")]
+    pub meta: ToolMeta,
+}
+
+/// Whether the call ran at all.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum ToolOutcome {
+    #[default]
+    Ran,
+    /// The user said no.
+    Denied,
+    /// Never ran: the turn was stopped, or the tool is not available in this mode.
+    Skipped,
+}
+
+impl ToolOutcome {
+    pub fn is_ran(&self) -> bool {
+        *self == Self::Ran
+    }
+}
+
+/// Numbers the chat builds its one-line summaries from (localized there).
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ToolMeta {
+    /// Entries (list_dir), files (glob), matches (search), lines (write_file),
+    /// replacements (edit_file).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub count: Option<u64>,
+    /// Files with matches (search).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub files: Option<u64>,
+    /// The line range shown and the file's line count (read_file).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub lines: Option<[u64; 3]>,
+    /// write_file: the file did not exist before.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub created: Option<bool>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub exit_code: Option<i64>,
+}
+
+impl ToolMeta {
+    pub fn is_empty(&self) -> bool {
+        *self == Self::default()
+    }
+
+    pub fn count(count: usize) -> Self {
+        Self {
+            count: Some(count as u64),
+            ..Self::default()
+        }
+    }
 }
 
 /// Reasoning the model produced, kept to send back unchanged where the provider needs it:
@@ -69,6 +128,9 @@ pub struct Reasoning {
     pub signature: Option<String>,
     pub redacted: Option<String>,
     pub details: Option<Value>,
+    /// How long the model thought (chat UI only; adapters never send it).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub duration_ms: Option<u64>,
 }
 
 /// One piece of a turn.

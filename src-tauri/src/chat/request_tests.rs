@@ -225,6 +225,7 @@ mod agent_parts {
                     call_id: "c1".into(),
                     content: "a/".into(),
                     is_error: false,
+                    ..ToolResult::default()
                 })],
                 None,
                 3,

@@ -1,11 +1,15 @@
 //! What the chat panel receives on its Channel while an agent turn runs, and the sink that
 //! collects one model call (text, reasoning, tool calls) and forwards it.
 
+use std::time::Instant;
+
 use serde::Serialize;
 
 use crate::agent::PermissionRequest;
 use crate::conversations::ChatMessage;
-use crate::providers::{EventSink, Part, ProviderError, StreamEvent, TokenUsage, ToolCall};
+use crate::providers::{
+    EventSink, Part, ProviderError, StreamEvent, TokenUsage, ToolCall, ToolResult,
+};
 
 /// What the character does right now.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
@@ -37,19 +41,17 @@ pub enum ChatEvent {
     Usage {
         usage: TokenUsage,
     },
-    /// For the character and its bubble ("Reading src/app.ts").
+    /// For the character: a model call, a tool run, waiting for the user's answer.
     Status {
         phase: Phase,
-        text: Option<String>,
     },
+    /// A call starts running (after its permission, if it needed one).
     ToolStart {
         call: ToolCall,
-        status: String,
     },
+    /// Every call ends with one (ran, denied or skipped), before its `tool` message.
     ToolEnd {
-        call_id: String,
-        ok: bool,
-        summary: String,
+        result: ToolResult,
     },
     /// Answer with `agent_permission_answer`.
     Permission {
@@ -83,6 +85,8 @@ pub struct StepSink<'a> {
     send: &'a mut (dyn FnMut(ChatEvent) + Send),
     pending: String,
     pending_reasoning: String,
+    /// From the first reasoning delta to the first answer text or tool call.
+    thinking: Option<(Instant, Option<Instant>)>,
     pub text: String,
     /// In arrival order; text deltas extend the last text part.
     pub parts: Vec<Part>,
@@ -96,6 +100,7 @@ impl<'a> StepSink<'a> {
             send,
             pending: String::new(),
             pending_reasoning: String::new(),
+            thinking: None,
             text: String::new(),
             parts: Vec::new(),
             usage: TokenUsage::default(),
@@ -129,6 +134,11 @@ impl<'a> StepSink<'a> {
 
 impl EventSink for StepSink<'_> {
     fn event(&mut self, event: StreamEvent) {
+        if let (Some((_, end @ None)), StreamEvent::Delta(_) | StreamEvent::ToolCall(_)) =
+            (&mut self.thinking, &event)
+        {
+            *end = Some(Instant::now());
+        }
         match event {
             StreamEvent::Delta(text) => {
                 self.text.push_str(&text);
@@ -138,8 +148,15 @@ impl EventSink for StepSink<'_> {
                     _ => self.parts.push(Part::Text { text }),
                 }
             }
-            StreamEvent::ReasoningDelta(text) => self.pending_reasoning.push_str(&text),
-            StreamEvent::Reasoning(reasoning) => {
+            StreamEvent::ReasoningDelta(text) => {
+                self.thinking.get_or_insert((Instant::now(), None));
+                self.pending_reasoning.push_str(&text);
+            }
+            StreamEvent::Reasoning(mut reasoning) => {
+                if let Some((start, end)) = self.thinking {
+                    let took = end.unwrap_or_else(Instant::now).duration_since(start);
+                    reasoning.duration_ms = u64::try_from(took.as_millis()).ok();
+                }
                 if Self::keep_reasoning(&reasoning) {
                     self.parts.push(Part::Reasoning(reasoning));
                 }

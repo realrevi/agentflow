@@ -246,6 +246,7 @@ fn close_dangling_calls(turns: &mut Vec<ChatTurn>, attached: &mut Vec<Vec<usize>
                     call_id,
                     content: "No result: the turn was interrupted before this tool ran.".into(),
                     is_error: true,
+                    ..ToolResult::default()
                 }))
             })
             .collect();

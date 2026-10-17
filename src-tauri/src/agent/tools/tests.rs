@@ -85,7 +85,7 @@ fn read_tools_list_read_glob_and_search() {
         Some("     2\t    println!(\"hi\");")
     );
     assert!(read.content.contains("1 more lines"));
-    assert_eq!(read.summary, "src/main.rs: lines 2–2 of 3");
+    assert_eq!(read.meta.lines, Some([2, 2, 3]));
 
     let glob = run_tool(&f, "glob", json!({ "pattern": "**/*.rs" }));
     assert_eq!(glob.content, "src/main.rs", "target/ is ignored");
@@ -94,7 +94,7 @@ fn read_tools_list_read_glob_and_search() {
         "search",
         json!({ "regex": "export const \\w", "glob": "**/*.ts" }),
     );
-    assert_eq!(search.summary, "2 matches in 1 files");
+    assert_eq!((search.meta.count, search.meta.files), (Some(2), Some(1)));
     assert!(search
         .content
         .starts_with("src/ui/app.ts:1: export const a = 1;"));
@@ -153,7 +153,7 @@ fn edit_file_needs_one_exact_match_unless_replace_all() {
     assert!(twice.is_error && twice.content.contains("appears 2 times"));
     let exact = edit("const a = 1;", "const a = 10;", false);
     assert!(!exact.is_error, "{}", exact.content);
-    assert_eq!(exact.summary, "Edited src/ui/app.ts");
+    assert_eq!(exact.meta.count, Some(1));
     let all = edit("export", "export default", true);
     assert!(all.content.contains("2 replacements"));
     assert_eq!(
@@ -170,7 +170,7 @@ fn writes_are_checkpointed_and_can_be_undone() {
         "write_file",
         json!({ "path": "notes/todo.md", "content": "- one\n" }),
     );
-    assert_eq!(created.summary, "Created notes/todo.md");
+    assert_eq!(created.meta.created, Some(true));
     let edited = run_tool(
         &f,
         "edit_file",
@@ -227,7 +227,7 @@ fn run_command_captures_output_and_exit_code() {
     let f = fixture();
     let output = run_tool(&f, "run_command", json!({ "command": exit_three() }));
     assert!(output.is_error, "exit 3 is an error result");
-    assert_eq!(output.summary, "exit 3");
+    assert_eq!(output.meta.exit_code, Some(3));
     assert!(output.content.contains("out-line"), "{}", output.content);
     assert!(
         output.content.contains("--- stderr ---\nerr-line"),
@@ -292,8 +292,4 @@ fn read_only_offers_read_tools_only() {
         ["list_dir", "read_file", "glob", "search"]
     );
     assert_eq!(names(PermissionMode::Ask).len(), 7);
-    assert_eq!(
-        status_text(&call("run_command", json!({ "command": "npm test" }))),
-        "Running npm test"
-    );
 }

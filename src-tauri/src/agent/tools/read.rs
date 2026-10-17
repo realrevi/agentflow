@@ -3,8 +3,8 @@
 
 use serde_json::Value;
 
-use super::args::{display_path, optional_string, optional_u64, string, workspace_rel};
-use super::{ToolEnv, ToolOutput};
+use super::args::{optional_string, optional_u64, string, workspace_rel};
+use super::{ToolEnv, ToolMeta, ToolOutput};
 use crate::fs::{read_file as read_text, walker};
 
 const MAX_ENTRIES: usize = 500;
@@ -45,8 +45,7 @@ pub fn list_dir(env: &ToolEnv, input: &Value) -> ToolOutput {
     if count == 0 {
         out = "(empty)".into();
     }
-    let rel = env.root.relative(&dir).unwrap_or_default();
-    ToolOutput::ok(out, format!("{}: {count} entries", display_path(&rel)))
+    ToolOutput::ok(out, ToolMeta::count(count))
 }
 
 pub fn read_file(env: &ToolEnv, input: &Value) -> ToolOutput {
@@ -93,11 +92,9 @@ pub fn read_file(env: &ToolEnv, input: &Value) -> ToolOutput {
     if total == 0 {
         out = "(empty file)".into();
     }
-    let rel = env.root.relative(&path).unwrap_or(raw);
-    let summary = if first == 1 && last >= total {
-        format!("{rel}: {total} lines")
-    } else {
-        format!("{rel}: lines {first}–{last} of {total}")
+    let meta = ToolMeta {
+        lines: Some([first.min(total), last, total]),
+        ..ToolMeta::default()
     };
-    ToolOutput::ok(out, summary)
+    ToolOutput::ok(out, meta)
 }

@@ -6,7 +6,7 @@ use std::path::{Path, PathBuf};
 use serde_json::Value;
 
 use super::args::{flag, string, workspace_rel};
-use super::{ToolEnv, ToolOutput};
+use super::{ToolEnv, ToolMeta, ToolOutput};
 use crate::agent::permissions::Preview;
 use crate::error::AppError;
 use crate::fs::{read_file, write_file as write_atomic_file};
@@ -67,10 +67,11 @@ pub fn write_file(env: &ToolEnv, input: &Value) -> ToolOutput {
     }
     let lines = content.lines().count();
     let verb = if existed { "Replaced" } else { "Created" };
-    ToolOutput::ok(
-        format!("{verb} {rel} ({lines} lines)."),
-        format!("{verb} {rel}"),
-    )
+    let meta = ToolMeta {
+        created: Some(!existed),
+        ..ToolMeta::count(lines)
+    };
+    ToolOutput::ok(format!("{verb} {rel} ({lines} lines)."), meta)
 }
 
 /// The new content of an edit, or why it cannot be applied.
@@ -125,7 +126,7 @@ pub fn edit_file(env: &ToolEnv, input: &Value) -> ToolOutput {
     } else {
         format!("{count} replacements")
     };
-    ToolOutput::ok(format!("Edited {rel} ({what})."), format!("Edited {rel}"))
+    ToolOutput::ok(format!("Edited {rel} ({what})."), ToolMeta::count(count))
 }
 
 /// Before/after for the approval prompt; `None` when the call cannot apply anyway (its

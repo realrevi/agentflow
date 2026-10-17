@@ -111,7 +111,6 @@ async fn run(
         );
         send(ChatEvent::Status {
             phase: Phase::Think,
-            text: None,
         });
         let step = model_call(turn, send, system, &offered).await?;
         if let Err(err) = &step.outcome {
@@ -273,6 +272,8 @@ async fn close_calls(
             call_id: call.id.clone(),
             content: reason.to_owned(),
             is_error: true,
+            outcome: crate::providers::ToolOutcome::Skipped,
+            ..Default::default()
         })
         .collect();
     let message = tool_message(results);

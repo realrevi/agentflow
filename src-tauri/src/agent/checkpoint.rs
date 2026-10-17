@@ -24,6 +24,9 @@ struct Manifest {
     at: u64,
     workspace: String,
     files: Vec<Entry>,
+    /// Set when the turn was undone.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    reverted_at: Option<u64>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -42,6 +45,8 @@ pub struct CheckpointSummary {
     pub turn: String,
     pub at: u64,
     pub files: Vec<String>,
+    /// When the turn was undone (`None` = its changes are still in place).
+    pub reverted_at: Option<u64>,
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize)]
@@ -89,6 +94,7 @@ impl CheckpointStore {
             at: now_ms(),
             workspace: root.to_string_lossy().into_owned(),
             files: Vec::new(),
+            reverted_at: None,
         });
         TurnCheckpoint {
             dir,
@@ -107,6 +113,7 @@ impl CheckpointStore {
                     turn: m.turn,
                     at: m.at,
                     files: m.files.into_iter().map(|f| f.path).collect(),
+                    reverted_at: m.reverted_at,
                 })
                 .collect();
         out.sort_by_key(|summary| std::cmp::Reverse(summary.at));
@@ -123,7 +130,7 @@ impl CheckpointStore {
         remove: impl Fn(&Path) -> AppResult<()>,
     ) -> AppResult<RestoreReport> {
         let dir = self.conversation_dir(workspace, conversation).join(turn);
-        let manifest =
+        let mut manifest =
             read_manifest(&dir).ok_or_else(|| AppError::NotFound(format!("checkpoint {turn}")))?;
         let root = WorkspaceRoot::open(Path::new(&manifest.workspace))?;
         let mut report = RestoreReport::default();
@@ -146,6 +153,8 @@ impl CheckpointStore {
                 (None, true) => {}
             }
         }
+        manifest.reverted_at = Some(now_ms());
+        write_atomic(&dir.join(MANIFEST), &serde_json::to_vec(&manifest)?)?;
         Ok(report)
     }
 }
@@ -240,6 +249,7 @@ mod tests {
         let listed = store.list(Some("/w"), "c1");
         assert_eq!(listed.len(), 1);
         assert_eq!(listed[0].files, ["src/a.txt", "new.txt"]);
+        assert_eq!(listed[0].reverted_at, None);
 
         let report = store
             .restore(Some("/w"), "c1", "m1", |path| Ok(fs::remove_file(path)?))
@@ -248,6 +258,10 @@ mod tests {
         assert_eq!(report.removed, ["new.txt"]);
         assert_eq!(fs::read_to_string(&a).expect("read"), "original");
         assert!(!created.exists());
+        assert!(
+            store.list(Some("/w"), "c1")[0].reverted_at.is_some(),
+            "the turn shows as undone"
+        );
         assert!(store
             .restore(Some("/w"), "c1", "missing", |_| Ok(()))
             .is_err());

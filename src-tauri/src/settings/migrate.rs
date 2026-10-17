@@ -282,6 +282,7 @@ mod tests {
                 "maxIterations": 40,
                 "defaultMode": "readOnly",
                 "defaultPrompt": false,
+                "showReasoning": false,
                 "toolModels": [{ "model": "glm-5.3", "tools": false }]
             }
         });
@@ -292,6 +293,13 @@ mod tests {
             crate::conversations::PermissionMode::ReadOnly
         );
         assert!(!settings.agent.default_prompt);
+        assert!(!settings.agent.show_reasoning);
+        assert!(
+            migrate(json!({ "version": 7 }))
+                .expect("defaults")
+                .agent
+                .show_reasoning
+        );
         assert_eq!(settings.agent.tools_override("glm-5.3"), Some(false));
     }
 

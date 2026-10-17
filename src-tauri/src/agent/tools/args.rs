@@ -48,13 +48,3 @@ pub fn workspace_rel(root: &Path, raw: &str) -> Result<String, String> {
     }
     Ok(raw.replace('\\', "/"))
 }
-
-/// How a path is shown in summaries ("." for the root).
-pub fn display_path(rel: &str) -> String {
-    let trimmed = rel.trim_matches('/');
-    if trimmed.is_empty() || trimmed == "." {
-        ".".into()
-    } else {
-        trimmed.to_owned()
-    }
-}

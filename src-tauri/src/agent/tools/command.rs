@@ -10,7 +10,7 @@ use tokio::io::{AsyncRead, AsyncReadExt};
 use tokio::process::Command;
 
 use super::args::{optional_u64, string};
-use super::{ToolEnv, ToolOutput};
+use super::{ToolEnv, ToolMeta, ToolOutput};
 use crate::providers::CancelToken;
 use crate::pty::{default_shell, search_path};
 
@@ -81,7 +81,10 @@ pub async fn run(
             ToolOutput {
                 content,
                 is_error: code != Some(0),
-                summary: format!("exit {code_text}"),
+                meta: ToolMeta {
+                    exit_code: code.map(i64::from),
+                    ..ToolMeta::default()
+                },
             }
         }
         Ended::Cancelled | Ended::TimedOut => {

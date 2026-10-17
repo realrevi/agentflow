@@ -24,6 +24,8 @@ pub struct AgentSettings {
     pub default_mode: PermissionMode,
     /// Prepend AgentFlow's system prompt (identity, environment, tools, rules).
     pub default_prompt: bool,
+    /// Show the model's reasoning ("Thinking") in chats; it is stored either way.
+    pub show_reasoning: bool,
     /// The user's "supports tools" overrides; models not listed default to on (and are
     /// turned off automatically when the provider rejects tools).
     pub tool_models: Vec<ModelTools>,
@@ -44,6 +46,7 @@ impl Default for AgentSettings {
             command_timeout_secs: 120,
             default_mode: PermissionMode::Ask,
             default_prompt: true,
+            show_reasoning: true,
             tool_models: Vec::new(),
         }
     }

@@ -5,7 +5,7 @@ use regex::Regex;
 use serde_json::Value;
 
 use super::args::{optional_string, string, workspace_rel};
-use super::{ToolEnv, ToolOutput};
+use super::{ToolEnv, ToolMeta, ToolOutput};
 use crate::fs::walker;
 
 const MAX_FILES: usize = 200;
@@ -58,7 +58,7 @@ pub fn glob(env: &ToolEnv, input: &Value) -> ToolOutput {
     if total == 0 {
         out = "No files match.".into();
     }
-    ToolOutput::ok(out, format!("{pattern}: {total} files"))
+    ToolOutput::ok(out, ToolMeta::count(total))
 }
 
 pub fn search(env: &ToolEnv, input: &Value) -> ToolOutput {
@@ -131,5 +131,9 @@ pub fn search(env: &ToolEnv, input: &Value) -> ToolOutput {
     if total == 0 {
         out = "No matches.".into();
     }
-    ToolOutput::ok(out, format!("{total} matches in {files_hit} files"))
+    let meta = ToolMeta {
+        files: Some(files_hit as u64),
+        ..ToolMeta::count(total)
+    };
+    ToolOutput::ok(out, meta)
 }

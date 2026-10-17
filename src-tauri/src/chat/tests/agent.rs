@@ -216,9 +216,23 @@ fn deny_sends_the_reason_to_the_model() {
     ]);
     let setup = agent_setup(&server.base);
     let (_, rx) = setup.send("install");
-    run_answering(&setup, &rx, || PermissionAnswer::Deny {
+    let events = run_answering(&setup, &rx, || PermissionAnswer::Deny {
         reason: Some("use pnpm".into()),
     });
+    // The denial shows at once: ToolEnd right after the answer, before the tool message.
+    let end = events
+        .iter()
+        .position(|e| matches!(e, ChatEvent::ToolEnd { result }
+            if result.outcome == crate::providers::ToolOutcome::Denied && result.duration_ms.is_none()))
+        .expect("denied ToolEnd");
+    let stored = events
+        .iter()
+        .position(|e| matches!(e, ChatEvent::Message { message } if message.role == crate::conversations::Role::Tool))
+        .expect("tool message");
+    assert!(end < stored);
+    assert!(!events
+        .iter()
+        .any(|e| matches!(e, ChatEvent::ToolStart { .. })));
     let results = tool_results(&server, 1);
     assert_eq!(
         results[0]["content"],
@@ -317,7 +331,7 @@ fn cancel_stops_a_running_command_and_the_turn() {
     );
     assert!(events
         .iter()
-        .any(|e| matches!(e, ChatEvent::ToolEnd { ok: false, .. })));
+        .any(|e| matches!(e, ChatEvent::ToolEnd { result } if result.is_error && result.duration_ms.is_some())));
     assert!(matches!(events.last(), Some(ChatEvent::Stop { reason, .. }) if reason == "cancelled"));
     // The stored history stays valid: the call has a result.
     let stored = setup

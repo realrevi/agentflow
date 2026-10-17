@@ -24,6 +24,7 @@ fn agent_chat() -> ChatRequest {
         text: "think".into(),
         signature: Some("sig".into()),
         details: Some(json!([{ "type": "reasoning.text", "text": "think", "index": 0 }])),
+        duration_ms: Some(5), // UI only: the exact-JSON asserts show it is not sent
         ..Reasoning::default()
     };
     ChatRequest {
@@ -50,6 +51,11 @@ fn agent_chat() -> ChatRequest {
                         call_id: "call_1".into(),
                         content: "no such file".into(),
                         is_error: true,
+                        // UI-only fields never reach the provider (the asserts compare
+                        // whole objects).
+                        outcome: crate::providers::ToolOutcome::Ran,
+                        duration_ms: Some(12),
+                        meta: crate::providers::ToolMeta::count(3),
                     })),
                     TurnBlock::text("Try b.ts"),
                 ],

@@ -28,5 +28,5 @@ pub use keys::{KeyStatus, KeyVault, OsKeychain, SecretStore};
 pub use provider::{build_provider, Provider};
 pub use types::{
     ChatRequest, ChatRole, ChatTurn, EventSink, ModelInfo, Part, Reasoning, StreamEnd, StreamEvent,
-    TokenUsage, ToolCall, ToolResult, ToolSpec, TurnBlock,
+    TokenUsage, ToolCall, ToolMeta, ToolOutcome, ToolResult, ToolSpec, TurnBlock,
 };
