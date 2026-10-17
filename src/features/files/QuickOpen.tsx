@@ -1,5 +1,15 @@
-// Ctrl/Cmd+P palette: fuzzy file search over the workspace (fs_quick_open).
-import { createEffect, createSignal, For, on, onCleanup, onMount, Show } from 'solid-js';
+// Ctrl/Cmd+P palette: fuzzy file search over the workspace (fs_quick_open). A query that
+// starts with `>` lists the commands the app passes in instead (e.g. "Open Agents library").
+import {
+  createEffect,
+  createMemo,
+  createSignal,
+  For,
+  on,
+  onCleanup,
+  onMount,
+  Show,
+} from 'solid-js';
 import { Portal } from 'solid-js/web';
 import { debounce } from '../../shared/debounce';
 import { ipc } from '../../shared/ipc';
@@ -13,6 +23,12 @@ import { closeQuickOpen, quickOpenVisible } from './quickOpenStore';
 
 const SEARCH_DELAY_MS = 40;
 
+export interface PaletteCommand {
+  id: string;
+  label: string;
+  run: () => void;
+}
+
 function Marked(props: { segments: Segment[] }) {
   return (
     <For each={props.segments}>
@@ -21,7 +37,10 @@ function Marked(props: { segments: Segment[] }) {
   );
 }
 
-function Palette(props: { onOpen: (path: string) => void }) {
+function Palette(props: {
+  onOpen: (path: string) => void;
+  commands: () => readonly PaletteCommand[];
+}) {
   const [query, setQuery] = createSignal('');
   const [results, setResults] = createSignal<readonly QuickOpenMatch[]>([]);
   const [active, setActive] = createSignal(0);
@@ -30,9 +49,16 @@ function Palette(props: { onOpen: (path: string) => void }) {
   let request = 0;
   let disposed = false;
 
+  const commandMode = () => query().startsWith('>');
+  const commands = createMemo(() => {
+    const words = query().slice(1).trim().toLowerCase();
+    return props.commands().filter((c) => c.label.toLowerCase().includes(words));
+  });
+  const count = () => (commandMode() ? commands().length : results().length);
+
   const search = debounce(() => {
     const ticket = ++request;
-    if (!fsRoot()) return;
+    if (!fsRoot() || commandMode()) return;
     ipc.fsQuickOpen(query()).then(
       (found) => {
         if (disposed || ticket !== request) return;
@@ -43,6 +69,7 @@ function Palette(props: { onOpen: (path: string) => void }) {
     );
   }, SEARCH_DELAY_MS);
   createEffect(on([query, fsRoot], () => search()));
+  createEffect(on(commandMode, () => setActive(0)));
   onMount(() => input?.focus());
   onCleanup(() => (disposed = true));
 
@@ -51,10 +78,15 @@ function Palette(props: { onOpen: (path: string) => void }) {
     closeQuickOpen();
     props.onOpen(match.path);
   };
+  const run = (command: PaletteCommand | undefined) => {
+    if (!command) return;
+    closeQuickOpen();
+    command.run();
+  };
   const move = (delta: number) => {
-    const count = results().length;
-    if (count === 0) return;
-    const next = (active() + delta + count) % count;
+    const total = count();
+    if (total === 0) return;
+    const next = (active() + delta + total) % total;
     setActive(next);
     list?.children[next]?.scrollIntoView({ block: 'nearest' });
   };
@@ -64,7 +96,8 @@ function Palette(props: { onOpen: (path: string) => void }) {
       move(event.key === 'ArrowDown' ? 1 : -1);
     } else if (event.key === 'Enter') {
       event.preventDefault();
-      choose(results()[active()]);
+      if (commandMode()) run(commands()[active()]);
+      else choose(results()[active()]);
     } else if (event.key === 'Escape') {
       event.preventDefault();
       closeQuickOpen();
@@ -107,7 +140,28 @@ function Palette(props: { onOpen: (path: string) => void }) {
             onInput={(event) => setQuery(event.currentTarget.value)}
             onKeyDown={onKeyDown}
           />
-          <ul ref={list} class="af-quickopen-list" role="listbox">
+          <Show when={commandMode()}>
+            <ul ref={list} class="af-quickopen-list" role="listbox">
+              <For
+                each={commands()}
+                fallback={<li class="af-quickopen-none">{t('quickOpen.noCommands')}</li>}
+              >
+                {(command, index) => (
+                  <li
+                    class="af-quickopen-item"
+                    classList={{ active: index() === active() }}
+                    role="option"
+                    aria-selected={index() === active()}
+                    onPointerMove={() => setActive(index())}
+                    onClick={() => run(command)}
+                  >
+                    <span class="af-quickopen-name">{command.label}</span>
+                  </li>
+                )}
+              </For>
+            </ul>
+          </Show>
+          <ul ref={list} class="af-quickopen-list" role="listbox" hidden={commandMode()}>
             <For
               each={results()}
               fallback={<li class="af-quickopen-none">{t('quickOpen.noResults')}</li>}
@@ -143,11 +197,14 @@ function Palette(props: { onOpen: (path: string) => void }) {
 }
 
 /** Mounted once by the app; shows the palette while it is open. */
-export function QuickOpen(props: { onOpen: (path: string) => void }) {
+export function QuickOpen(props: {
+  onOpen: (path: string) => void;
+  commands?: () => readonly PaletteCommand[];
+}) {
   return (
     <Show when={quickOpenVisible()}>
       <Portal>
-        <Palette onOpen={props.onOpen} />
+        <Palette onOpen={props.onOpen} commands={props.commands ?? (() => [])} />
       </Portal>
     </Show>
   );

@@ -1,7 +1,12 @@
 // API chat panels: start a new chat (creates the conversation), reopen one from the
 // sidebar (or focus the panel that shows it), and close panels of a deleted chat.
 import type { DockviewApi, IDockviewPanel } from 'dockview-core';
+import { ipc } from '../../shared/ipc';
+import { showToast } from '../../shared/toast';
+import type { AgentProfile } from '../../shared/types';
+import { loadCharacters } from '../characters';
 import { createConversation, newChatConfig, type ChatConfig } from '../chat';
+import { reportError, t } from '../i18n';
 import { settings } from '../settings/settingsStore';
 import { addPanel, assignCharacters, currentDock, nextIndex } from './layoutStore';
 import { parsePanelParams } from './panels';
@@ -35,6 +40,38 @@ export async function startChat(
   const conversation = await createConversation(providerId, model);
   if (!conversation) return;
   openChat(newChatConfig(conversation.id, settings.currentWorkspace), groupId);
+}
+
+/**
+ * "New API agent → <profile>": a chat with an installed AgentFlow agent. The provider is the
+ * profile's hint (provider id, preset or kind) when configured, else the first one.
+ */
+export async function openProfileChat(profile: AgentProfile, groupId?: string): Promise<void> {
+  const hint = profile.provider;
+  const entry =
+    settings.providers.find(
+      (p) => hint && (p.id === hint || p.preset === hint || p.kind === hint),
+    ) ?? settings.providers[0];
+  const model = profile.model ?? entry?.defaultModel ?? '';
+  if (!entry || !model.trim()) {
+    showToast({ kind: 'error', title: t('installer.profile.noProvider') });
+    return;
+  }
+  try {
+    const workspace = settings.currentWorkspace;
+    const conversation = await ipc.agentsProfileChat(workspace, profile.id, entry.id, model);
+    const sprite = (await loadCharacters()).find((sheet) => sheet.id === profile.character);
+    openChat(
+      {
+        ...newChatConfig(conversation.id, workspace),
+        title: conversation.title,
+        character: sprite ? { id: sprite.id, palette: 0 } : null,
+      },
+      groupId,
+    );
+  } catch (err) {
+    reportError('error.installerProfile', err);
+  }
 }
 
 /** Reopens a conversation of the current workspace from the sidebar. */

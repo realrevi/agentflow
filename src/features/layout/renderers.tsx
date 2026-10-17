@@ -31,6 +31,7 @@ const ChatPanel = lazy(() => import('../chat/ChatPanel'));
 const EditorPanel = lazy(() => import('../editor/EditorPanel'));
 const UsagePanel = lazy(() => import('../tokens/UsagePanel'));
 const DiffView = lazy(() => import('../editor/DiffView'));
+const InstallerPanel = lazy(() => import('../agents/InstallerPanel'));
 
 /** Chat panels open files, check unsaved edits, mark agent changes and show diffs. */
 const chatHooks: ChatHooks = {
@@ -78,6 +79,9 @@ function PanelView(props: { id: string; params: PanelParams; api: DockviewPanelA
             panelTitle={(id) => openPanels().find((panel) => panel.id === id)?.title}
             onOpenSettings={() => openPanel('settings')}
           />
+        </Match>
+        <Match when={params.kind === 'installer'}>
+          <InstallerPanel hooks={{ Diff: DiffView, openFile: openEditor }} />
         </Match>
         <Match when={params.kind === 'files'}>
           <FilesPanel onOpenFile={openEditor} onRenamed={renameEditors} />

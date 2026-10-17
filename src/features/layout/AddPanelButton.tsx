@@ -7,7 +7,8 @@ import { PixelIcon } from '../../shared/ui/PixelIcon';
 import { NewChatPrompt } from '../chat';
 import { t } from '../i18n';
 import { AGENT_KINDS, cliFor, kindLabel, loadCliStatus, newTerminalConfig } from '../terminal';
-import { startChat } from './chatPanels';
+import { agentProfiles } from '../agents';
+import { openProfileChat, startChat } from './chatPanels';
 import { openPanel, openTerminal } from './layoutStore';
 
 type Mode = 'closed' | 'menu' | 'custom' | 'api';
@@ -33,15 +34,25 @@ export function AddPanelButton(props: { groupId: string }) {
     ...AGENT_KINDS.map(agentItem),
     { id: 'custom', label: t('terminal.add.custom') },
     { id: 'api', label: t('panel.add.api') },
+    ...agentProfiles().map((profile, index) => ({
+      id: `profile:${profile.id}`,
+      label: t('panel.add.profile', { name: profile.name }),
+      title: profile.description,
+      heading: index === 0 ? t('panel.add.installed') : undefined,
+    })),
     { id: 'files', label: t('panel.add.files'), heading: t('panel.add.panels') },
+    { id: 'installer', label: t('panel.add.installer') },
     { id: 'usage', label: t('panel.add.usage') },
     { id: 'settings', label: t('panel.add.settings') },
   ];
 
   const select = (id: string) => {
-    if (id === 'custom' || id === 'api') setMode(id);
-    else if (id === 'files' || id === 'settings' || id === 'usage') openPanel(id, props.groupId);
-    else if (id === 'shell' || (AGENT_KINDS as readonly string[]).includes(id)) {
+    const profile = agentProfiles().find((p) => `profile:${p.id}` === id);
+    if (profile) void openProfileChat(profile, props.groupId);
+    else if (id === 'custom' || id === 'api') setMode(id);
+    else if (id === 'files' || id === 'settings' || id === 'usage' || id === 'installer') {
+      openPanel(id, props.groupId);
+    } else if (id === 'shell' || (AGENT_KINDS as readonly string[]).includes(id)) {
       openTerminal(newTerminalConfig(id as PtyKind), props.groupId);
     }
   };
