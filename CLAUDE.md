@@ -38,7 +38,7 @@ src/
   app/                shell: ActivityBar, Sidebar (+ views), StatusBar, Toasts, Dialogs, styles/
   features/layout/    dockview host, panels, roles, placement, saved layout, tabs, characters
   features/terminal/  TerminalController, lazy TerminalPanel, agent activity
-  features/chat/      lazy ChatPanel: session, agent turn, smooth reveal, markdown, attachments
+  features/chat/      lazy ChatPanel: session, agent/ (timeline, cards, undo), reveal, markdown
   features/agentui/   corner character overlay + prompt bar, shared by terminal and chat panels
   features/providers/ presets (base URLs), model list and key status stores
   features/characters/  sprites/*.json, renderer, shared rAF animator, Avatar, state heuristic
@@ -64,11 +64,11 @@ other. `layout` and the settings panel compose panel features; `app/` composes a
 
 - Small files, one responsibility each; nothing over ~300 lines. No `any` in TS, no
   `unwrap()`/`expect()` in non-test Rust. Errors flow as `AppError` -> `reportError()` toast.
-- All IPC goes through `src/shared/ipc.ts`; components never call `invoke` directly.
-- Minimal dependencies; justify every new crate/package in the commit message.
+- All IPC goes through `src/shared/ipc.ts` (never `invoke` in components). Minimal
+  dependencies; justify every new crate/package in the commit message.
 - Performance: no polling (events, ResizeObserver, debounced saves), fine-grained signals (big
   blobs like the layout or tree listings stay out of reactive stores), lazy-load heavy panels.
-- Rust file I/O and keychain calls in commands run through `util::run_blocking`.
+  Rust file I/O and keychain calls in commands run through `util::run_blocking`.
 
 ## IPC, PTY and FS patterns
 
@@ -79,8 +79,7 @@ other. `layout` and the settings panel compose panel features; `app/` composes a
 - Streams use a `Channel` created _before_ the invoke, never global events. PTY: raw bytes
   (coalesced ~10 ms / 64 KB, `OutputDecoder`) then `{ type: 'exit', code, signal }`; flow control
   via `pty_ack` (reader pauses at 512 KB). Kill = SIGHUP / TerminateProcess, SIGKILL after 2 s.
-- Panels persist _config_ only (incl. `character`, `historyKey`). Restored agent CLIs never
-  auto-start; shells follow `terminal.autoStartShells`.
+- Panels persist _config_ only; restored agent CLIs never auto-start.
 - Frontend paths are workspace-relative with `/`; `fs/paths.rs` rejects `..`, absolute paths and
   escaping symlinks. One `ignore` config (`fs/walk.rs`: .gitignore even outside git, `.git`
   hidden, dotfiles per `files.showHidden`) for list, quick open and the watcher (notify, 200 ms
@@ -118,10 +117,17 @@ other. `layout` and the settings panel compose panel features; `app/` composes a
   `save()`, which checkpoints the original once per turn (`checkpoint.rs`). No network tools.
 - Permissions (`permissions.rs`): Ask (reads run), Auto-edit (writes run), Read-only (write and
   command tools not offered); "allow for this conversation" is per tool. **Dangerous commands
-  ALWAYS ask**: patterns live only in `agent/dangerous.rs`, each with Unix/Windows tests.
-- Events: `reasoning`, `status { phase }`, `toolStart`, `toolEnd { callId, ok, summary }`,
-  `permission { request }`, `notice`, `message` (a stored step); answer with
-  `agent_permission_answer`. Frontend: `chat/agentTurn.ts`, `PermissionRow`, `AgentControls`.
+  ALWAYS ask** (never a conversation grant): patterns + reason ids only in `agent/dangerous.rs`,
+  each with tests and an `agent.danger.<id>` text.
+- **Permission answers** come only from a trusted click/keypress on that request's card
+  (`liveTurn.answer`: `isTrusted`, pending id) and carry the conversation id; the gate rejects
+  unknown, answered or foreign ids. A turn that ends (cancel, panel close, reload) never allows.
+- Events: `reasoning`, `status { phase }` (character `wait` while asking), `toolStart`,
+  `toolEnd { result }` (every call, denials at once; results keep outcome, duration and
+  `meta` for summaries), `permission`, `notice`, `message` (a stored step).
+- UI (`chat/agent/`): `timeline.ts` turns messages into cards (reads grouped), `liveTurn.ts`
+  holds what is in flight, summaries are localized from `meta` (`toolText.ts`). The layout
+  lends chat panels `ChatHooks` (open file, dirty check, tree marks, the editor's lazy DiffView).
 
 ## Usage tracking (phase 6)
 
@@ -133,19 +139,14 @@ other. `layout` and the settings panel compose panel features; `app/` composes a
   `budget { status }`. Hard stop = API chats only (kind `budget`, "Allow once" token -> resend).
   Chat: debounced `usage_estimate`, Compact at the threshold; Anthropic cache: max 4 breakpoints.
 
-## Layout roles
+## Layout, characters & prompt bar
 
 - Groups have a role (`layout/roles.ts`): `agents` (center), `files` (right, ~22%), `terminal`
   (~30% under the center). New panels open in the last focused group of their role
   (`placement.ts`). Saved layout `{ version: 2, dock, roles }`; bump `LAYOUT_VERSION` on changes.
-
-## Characters & prompt bar
-
-- Sprites: `characters/sprites/*.json` = `{ id, name, size, palettes, frameMs, states }`, 8 states
-  (idle walk think work receive done error sleep) of 2-4 frames, `.` = transparent, else a
-  base-36 palette index (`validate.ts`). Names are never translated.
-- `renderer.ts` caches ImageBitmap strips; all motion uses the ONE loop in `animator.ts` (runs
-  only while something animates on screen). Respect `reducedMotion()`.
+- Sprites: `characters/sprites/*.json`, 8 states (idle walk think work receive done error sleep)
+  of 2-4 frames, `.` = transparent, else a base-36 palette index (`validate.ts`); names are
+  never translated. ONE animation loop (`animator.ts`), only while visible; `reducedMotion()`.
 - Terminal (`stateMachine.ts`): prompt -> think, output -> work, 2 s quiet -> done, 5 s -> idle,
   exit 0 -> sleep else error. Chat: send -> think, delta/tool -> work (bubble = tool status).
 
@@ -175,7 +176,7 @@ cargo build    # in src-tauri: compile check, no bundling
 4. [x] Pixel character system (15 characters, 16x16 JSON sprites scaled, typewriter speech bar)
 5. [x] AI provider APIs (Anthropic + OpenAI-compatible, keychain keys) + API chat panels
 6. [x] Token & cost tracking (ledger, CLI log readers, prices, budgets, dashboard, Compact)
-7. [ ] API agent tools + default system prompt (7A: loop, tools, permissions, minimal UI done)
+7. [x] API agent tools + default system prompt (tool cards, diffs, permissions, undo)
 8. [ ] Agent installer wizard (per-AI formats/paths)
 9. [ ] Community agent library from GitHub
 10. [ ] UI polish
