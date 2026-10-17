@@ -103,7 +103,9 @@ async fn ask(
     send: &mut (dyn FnMut(ChatEvent) + Send),
     mut request: PermissionRequest,
 ) -> Option<PermissionAnswer> {
-    let (id, answer) = turn.gate.open();
+    let (id, answer) = turn
+        .gate
+        .open(&turn.conversation_id, request.dangerous.is_some());
     request.id = id;
     send(ChatEvent::Status {
         phase: Phase::Wait,

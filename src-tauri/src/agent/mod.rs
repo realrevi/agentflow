@@ -14,6 +14,8 @@ pub mod tools;
 
 pub use capabilities::ModelCapabilities;
 pub use checkpoint::{CheckpointStore, CheckpointSummary, RestoreReport};
+#[cfg(test)]
+pub use permissions::Rejected;
 pub use permissions::{PermissionAnswer, PermissionGate, PermissionRequest};
 pub use run::{run_turn, Turn};
 

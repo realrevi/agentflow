@@ -15,6 +15,7 @@ use crate::tokens::{CliRoots, UsageTracker};
 use crate::util::test_dir::TestDir;
 
 mod agent;
+mod agent_permissions;
 mod compact;
 mod usage;
 

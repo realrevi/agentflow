@@ -11,15 +11,20 @@ use crate::error::AppResult;
 use crate::fs::move_to_trash;
 use crate::util::run_blocking;
 
-/// The user's answer to a permission request. `false` if the request is gone (the turn
-/// ended or was cancelled).
+/// The user's answer to a permission request of `conversation_id`. `false` = rejected: the
+/// request is gone (answered, turn ended), belongs to another conversation, or the answer
+/// was not offered for it (a conversation grant for a dangerous command).
 #[tauri::command]
 pub async fn agent_permission_answer(
     agent: State<'_, AgentServices>,
     request_id: u64,
+    conversation_id: String,
     answer: PermissionAnswer,
 ) -> AppResult<bool> {
-    Ok(agent.gate.answer(request_id, answer))
+    Ok(agent
+        .gate
+        .answer(request_id, &conversation_id, answer)
+        .is_ok())
 }
 
 /// Turns of a conversation that changed files, newest first.

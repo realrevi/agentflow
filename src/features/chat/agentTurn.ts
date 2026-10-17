@@ -55,7 +55,10 @@ export function statusText(call: ToolCall): string {
   return key ? t(key, { target: callTarget(call) }) : call.name;
 }
 
-export function createAgentTurn(onPhase: (phase: 'think' | 'work' | 'wait') => void) {
+export function createAgentTurn(
+  conversationId: string,
+  onPhase: (phase: 'think' | 'work' | 'wait') => void,
+) {
   const [reasoning, setReasoning] = createSignal('');
   const [tools, setTools] = createSignal<readonly LiveTool[]>([]);
   const [permission, setPermission] = createSignal<PermissionRequest | null>(null);
@@ -105,12 +108,16 @@ export function createAgentTurn(onPhase: (phase: 'think' | 'work' | 'wait') => v
     });
   }
 
-  async function answer(value: PermissionAnswer): Promise<void> {
+  /**
+   * Answers request `requestId` — only from a real click or keypress on its own card
+   * (`event.isTrusted`), and only while that request is the pending one.
+   */
+  async function answer(requestId: number, value: PermissionAnswer, event: Event): Promise<void> {
     const request = permission();
-    if (!request) return;
+    if (!event.isTrusted || !request || request.id !== requestId) return;
     setPermission(null);
     try {
-      await ipc.agentPermissionAnswer(request.id, value);
+      await ipc.agentPermissionAnswer(request.id, conversationId, value);
     } catch (err) {
       reportError('error.agentAnswer', err);
     }

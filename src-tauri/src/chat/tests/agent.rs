@@ -9,14 +9,14 @@ use super::*;
 use crate::agent::PermissionAnswer;
 use crate::conversations::{ConversationPatch, PermissionMode};
 
-struct AgentSetup {
-    base: Setup,
-    ws: String,
-    conversation: String,
+pub(super) struct AgentSetup {
+    pub(super) base: Setup,
+    pub(super) ws: String,
+    pub(super) conversation: String,
     _work: TestDir,
 }
 
-fn agent_setup(server: &str) -> AgentSetup {
+pub(super) fn agent_setup(server: &str) -> AgentSetup {
     let base = setup(server, "openai", "custom");
     let work = TestDir::new("agent-ws");
     std::fs::write(work.path().join("README.md"), "# demo\n").expect("write");
@@ -35,7 +35,7 @@ fn agent_setup(server: &str) -> AgentSetup {
 }
 
 impl AgentSetup {
-    fn send(&self, text: &str) -> (u64, mpsc::Receiver<ChatEvent>) {
+    pub(super) fn send(&self, text: &str) -> (u64, mpsc::Receiver<ChatEvent>) {
         let (tx, rx) = mpsc::channel();
         let request = ChatSendRequest {
             workspace: Some(self.ws.clone()),
@@ -53,7 +53,7 @@ impl AgentSetup {
         (started.request_id, rx)
     }
 
-    fn mode(&self, mode: PermissionMode) {
+    pub(super) fn mode(&self, mode: PermissionMode) {
         let patch = ConversationPatch {
             permission_mode: Some(mode),
             ..ConversationPatch::default()
@@ -64,13 +64,13 @@ impl AgentSetup {
             .expect("mode");
     }
 
-    fn file(&self, name: &str) -> std::path::PathBuf {
+    pub(super) fn file(&self, name: &str) -> std::path::PathBuf {
         std::path::Path::new(&self.ws).join(name)
     }
 }
 
 /// One OpenAI-style streamed tool call.
-fn tool_call(id: &str, name: &str, args: Value) -> Reply {
+pub(super) fn tool_call(id: &str, name: &str, args: Value) -> Reply {
     let chunk = json!({ "choices": [{ "index": 0, "delta": { "tool_calls": [{
         "index": 0, "id": id, "type": "function",
         "function": { "name": name, "arguments": args.to_string() } }] },
@@ -82,14 +82,14 @@ fn tool_call(id: &str, name: &str, args: Value) -> Reply {
     ))
 }
 
-fn text_reply(text: &str) -> Reply {
+pub(super) fn text_reply(text: &str) -> Reply {
     let chunk = json!({ "choices": [{ "index": 0, "delta": { "content": text }, "finish_reason": "stop" }],
         "usage": { "prompt_tokens": 12, "completion_tokens": 3, "total_tokens": 15 } });
     Reply::sse(&format!("data: {chunk}\n\ndata: [DONE]\n\n"))
 }
 
 /// Events until the end, answering permission requests with `answer`.
-fn run_answering(
+pub(super) fn run_answering(
     setup: &AgentSetup,
     rx: &mpsc::Receiver<ChatEvent>,
     answer: impl Fn() -> PermissionAnswer,
@@ -98,7 +98,12 @@ fn run_answering(
     loop {
         let event = rx.recv_timeout(Duration::from_secs(20)).expect("event");
         if let ChatEvent::Permission { request } = &event {
-            assert!(setup.base.agent.gate.answer(request.id, answer()));
+            assert!(setup
+                .base
+                .agent
+                .gate
+                .answer(request.id, &setup.conversation, answer())
+                .is_ok());
         }
         let last = matches!(event, ChatEvent::Stop { .. } | ChatEvent::Error { .. });
         events.push(event);
@@ -108,7 +113,7 @@ fn run_answering(
     }
 }
 
-fn tool_results(server: &MockServer, request: usize) -> Vec<Value> {
+pub(super) fn tool_results(server: &MockServer, request: usize) -> Vec<Value> {
     let body = server.requests()[request].json();
     body["messages"]
         .as_array()
@@ -119,7 +124,7 @@ fn tool_results(server: &MockServer, request: usize) -> Vec<Value> {
         .collect()
 }
 
-fn permission_count(events: &[ChatEvent]) -> usize {
+pub(super) fn permission_count(events: &[ChatEvent]) -> usize {
     events
         .iter()
         .filter(|e| matches!(e, ChatEvent::Permission { .. }))

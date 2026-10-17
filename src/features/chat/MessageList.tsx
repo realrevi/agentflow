@@ -171,7 +171,10 @@ export function MessageList(props: MessageListProps) {
             </Show>
             <Show when={props.agent.permission()}>
               {(request) => (
-                <PermissionRow request={request()} onAnswer={(a) => void props.agent.answer(a)} />
+                <PermissionRow
+                  request={request()}
+                  onAnswer={(a, event) => void props.agent.answer(request().id, a, event)}
+                />
               )}
             </Show>
           </>

@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
-import type { ToolCall } from '../../shared/types';
+import { ipc } from '../../shared/ipc';
+import type { PermissionRequest, ToolCall } from '../../shared/types';
 import { callTarget, createAgentTurn, isAgentEvent, statusText } from './agentTurn';
 
 const read: ToolCall = { id: 'c1', name: 'read_file', input: { path: 'src/app.ts' } };
@@ -17,7 +18,7 @@ describe('agent turn state', () => {
 
   it('tracks live tools, reasoning, permission and notices', () => {
     const phase = vi.fn();
-    const turn = createAgentTurn(phase);
+    const turn = createAgentTurn('c1', phase);
     expect(isAgentEvent({ type: 'delta', text: 'x' })).toBe(false);
     turn.handle({ type: 'reasoning', text: 'Look ' });
     turn.handle({ type: 'reasoning', text: 'first.' });
@@ -50,5 +51,32 @@ describe('agent turn state', () => {
     expect(turn.notices()).toHaveLength(1);
     turn.reset();
     expect(turn.notices()).toHaveLength(0);
+  });
+
+  it('answers only from a trusted event on the pending request, with its conversation', async () => {
+    const send = vi.spyOn(ipc, 'agentPermissionAnswer').mockResolvedValue(true);
+    const turn = createAgentTurn('c1', () => undefined);
+    const request: PermissionRequest = {
+      id: 3,
+      callId: 'c2',
+      tool: 'run_command',
+      input: run.input,
+      category: 'command',
+      dangerous: null,
+      preview: null,
+    };
+    turn.handle({ type: 'permission', request });
+    const trusted = { isTrusted: true } as Event;
+    const synthetic = new Event('click');
+    await turn.answer(3, { decision: 'allowOnce' }, synthetic);
+    await turn.answer(2, { decision: 'allowOnce' }, trusted);
+    expect(send).not.toHaveBeenCalled();
+    expect(turn.permission()?.id).toBe(3);
+    await turn.answer(3, { decision: 'deny', reason: 'no' }, trusted);
+    expect(send).toHaveBeenCalledWith(3, 'c1', { decision: 'deny', reason: 'no' });
+    expect(turn.permission()).toBeNull();
+    await turn.answer(3, { decision: 'allowOnce' }, trusted);
+    expect(send).toHaveBeenCalledTimes(1);
+    send.mockRestore();
   });
 });

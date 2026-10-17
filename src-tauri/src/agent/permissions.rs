@@ -86,10 +86,29 @@ pub enum PermissionAnswer {
     },
 }
 
-/// Managed state: permission requests waiting for an answer from the frontend.
+/// Why an answer was not delivered (the request stays as it was).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Rejected {
+    /// Never opened, already answered, or its turn ended.
+    Unknown,
+    /// The id belongs to another conversation.
+    WrongConversation,
+    /// "Allow for this conversation" is never offered for dangerous commands.
+    NotOffered,
+}
+
+struct Pending {
+    tx: oneshot::Sender<PermissionAnswer>,
+    conversation: String,
+    dangerous: bool,
+}
+
+/// Managed state: permission requests waiting for an answer from the frontend. An answer is
+/// delivered at most once, only for its own conversation; a turn that ends (cancel, panel
+/// closed, reload) drops its request, which the loop treats as "not run", never as allowed.
 #[derive(Clone, Default)]
 pub struct PermissionGate {
-    waiting: Arc<Mutex<HashMap<u64, oneshot::Sender<PermissionAnswer>>>>,
+    waiting: Arc<Mutex<HashMap<u64, Pending>>>,
     next: Arc<AtomicU64>,
 }
 
@@ -99,22 +118,54 @@ impl PermissionGate {
     }
 
     /// A new request id and the receiver its answer arrives on.
-    pub fn open(&self) -> (u64, oneshot::Receiver<PermissionAnswer>) {
+    pub fn open(
+        &self,
+        conversation: &str,
+        dangerous: bool,
+    ) -> (u64, oneshot::Receiver<PermissionAnswer>) {
         let id = self.next.fetch_add(1, Ordering::Relaxed) + 1;
         let (tx, rx) = oneshot::channel();
-        lock(&self.waiting).insert(id, tx);
+        let pending = Pending {
+            tx,
+            conversation: conversation.to_owned(),
+            dangerous,
+        };
+        lock(&self.waiting).insert(id, pending);
         (id, rx)
     }
 
-    /// Delivers an answer; `false` if nobody waits for `id` any more.
-    pub fn answer(&self, id: u64, answer: PermissionAnswer) -> bool {
-        match lock(&self.waiting).remove(&id) {
-            Some(tx) => tx.send(answer).is_ok(),
-            None => false,
+    /// Delivers the user's answer to request `id` of `conversation`.
+    pub fn answer(
+        &self,
+        id: u64,
+        conversation: &str,
+        answer: PermissionAnswer,
+    ) -> Result<(), Rejected> {
+        let mut waiting = lock(&self.waiting);
+        let result = match waiting.get(&id) {
+            None => Err(Rejected::Unknown),
+            Some(p) if p.conversation != conversation => Err(Rejected::WrongConversation),
+            Some(p) if p.dangerous && answer == PermissionAnswer::AllowConversation => {
+                Err(Rejected::NotOffered)
+            }
+            Some(_) => Ok(()),
+        };
+        tracing::debug!(
+            request = id,
+            conversation,
+            decision = ?answer,
+            outcome = ?result,
+            "permission answer"
+        );
+        result?;
+        match waiting.remove(&id) {
+            // The turn may have ended a moment ago: then nobody receives it.
+            Some(pending) => pending.tx.send(answer).map_err(|_| Rejected::Unknown),
+            None => Err(Rejected::Unknown),
         }
     }
 
-    /// Forgets a request whose turn ended (cancelled) without an answer.
+    /// Forgets a request whose turn ended without an answer.
     pub fn close(&self, id: u64) {
         lock(&self.waiting).remove(&id);
     }
@@ -188,17 +239,61 @@ mod tests {
     #[test]
     fn answers_reach_the_waiting_request_once() {
         let gate = PermissionGate::new();
-        let (id, rx) = gate.open();
-        assert!(gate.answer(id, PermissionAnswer::AllowOnce));
-        assert!(
-            !gate.answer(id, PermissionAnswer::AllowOnce),
+        let (id, rx) = gate.open("c1", false);
+        assert_eq!(gate.answer(id, "c1", PermissionAnswer::AllowOnce), Ok(()));
+        assert_eq!(
+            gate.answer(id, "c1", PermissionAnswer::AllowOnce),
+            Err(Rejected::Unknown),
             "already answered"
         );
         let answer = tauri::async_runtime::block_on(rx).expect("answer");
         assert_eq!(answer, PermissionAnswer::AllowOnce);
-        let (closed, _rx) = gate.open();
+        assert_eq!(
+            gate.answer(999, "c1", PermissionAnswer::AllowOnce),
+            Err(Rejected::Unknown),
+            "never opened"
+        );
+        let (closed, _rx) = gate.open("c1", false);
         gate.close(closed);
-        assert!(!gate.answer(closed, PermissionAnswer::Deny { reason: None }));
+        assert_eq!(
+            gate.answer(closed, "c1", PermissionAnswer::AllowOnce),
+            Err(Rejected::Unknown),
+            "turn ended"
+        );
+    }
+
+    #[test]
+    fn answers_only_count_for_their_own_conversation() {
+        let gate = PermissionGate::new();
+        let (id, mut rx) = gate.open("c1", false);
+        assert_eq!(
+            gate.answer(id, "c2", PermissionAnswer::AllowConversation),
+            Err(Rejected::WrongConversation)
+        );
+        assert!(rx.try_recv().is_err(), "still pending");
+        assert_eq!(gate.answer(id, "c1", PermissionAnswer::AllowOnce), Ok(()));
+    }
+
+    #[test]
+    fn dangerous_requests_never_take_a_conversation_grant() {
+        let gate = PermissionGate::new();
+        let (id, mut rx) = gate.open("c1", true);
+        assert_eq!(
+            gate.answer(id, "c1", PermissionAnswer::AllowConversation),
+            Err(Rejected::NotOffered)
+        );
+        assert!(rx.try_recv().is_err(), "still pending");
+        let deny = PermissionAnswer::Deny { reason: None };
+        assert_eq!(gate.answer(id, "c1", deny.clone()), Ok(()));
+        assert_eq!(tauri::async_runtime::block_on(rx).expect("answer"), deny);
+    }
+
+    #[test]
+    fn a_dropped_turn_never_reads_as_allowed() {
+        let gate = PermissionGate::new();
+        let (id, rx) = gate.open("c1", false);
+        gate.close(id);
+        assert!(tauri::async_runtime::block_on(rx).is_err());
     }
 
     #[test]

@@ -98,7 +98,7 @@ export interface Commands {
   chat_cancel: { args: { requestId: number }; result: boolean };
   chat_compact: { args: { request: CompactRequest }; result: CompactResult };
   agent_permission_answer: {
-    args: { requestId: number; answer: PermissionAnswer };
+    args: { requestId: number; conversationId: string; answer: PermissionAnswer };
     result: boolean;
   };
   agent_checkpoints: { args: Workspace & { conversationId: string }; result: CheckpointSummary[] };

@@ -223,8 +223,8 @@ export const ipc = {
   /** Summarizes the older turns (the last `chat.compactKeepTurns` stay verbatim). */
   chatCompact: (request: CompactRequest) => call('chat_compact', { request }),
   /** The answer to an agent's permission request; `false` if the turn already ended. */
-  agentPermissionAnswer: (requestId: number, answer: PermissionAnswer) =>
-    call('agent_permission_answer', { requestId, answer }),
+  agentPermissionAnswer: (requestId: number, conversationId: string, answer: PermissionAnswer) =>
+    call('agent_permission_answer', { requestId, conversationId, answer }),
   /** Turns of a chat that changed files, newest first. */
   agentCheckpoints: (workspace: string | null, conversationId: string) =>
     call('agent_checkpoints', { workspace, conversationId }),

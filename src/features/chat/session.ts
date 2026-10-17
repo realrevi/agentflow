@@ -67,7 +67,9 @@ export function createChatSession(options: ChatSessionOptions) {
   let firstDelta = true;
   let restTimer: number | undefined;
   let disposed = false;
-  const agent = createAgentTurn((phase) => state(phase === 'wait' ? 'idle' : phase));
+  const agent = createAgentTurn(options.conversationId, (phase) =>
+    state(phase === 'wait' ? 'idle' : phase),
+  );
 
   const state = (next: AgentState) => {
     window.clearTimeout(restTimer);

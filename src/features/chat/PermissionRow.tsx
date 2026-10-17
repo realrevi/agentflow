@@ -8,7 +8,7 @@ import { callTarget, statusText } from './agentTurn';
 
 export function PermissionRow(props: {
   request: PermissionRequest;
-  onAnswer: (answer: PermissionAnswer) => void;
+  onAnswer: (answer: PermissionAnswer, event: Event) => void;
 }) {
   const [denying, setDenying] = createSignal(false);
   const [reason, setReason] = createSignal('');
@@ -17,9 +17,9 @@ export function PermissionRow(props: {
     name: props.request.tool,
     input: props.request.input,
   });
-  const deny = () => {
+  const deny = (event: Event) => {
     const text = reason().trim();
-    props.onAnswer({ decision: 'deny', reason: text || null });
+    props.onAnswer({ decision: 'deny', reason: text || null }, event);
   };
 
   return (
@@ -56,7 +56,7 @@ export function PermissionRow(props: {
             <button
               type="button"
               class="af-button primary small"
-              onClick={() => props.onAnswer({ decision: 'allowOnce' })}
+              onClick={(event) => props.onAnswer({ decision: 'allowOnce' }, event)}
             >
               {t('agent.permission.allow')}
             </button>
@@ -64,7 +64,7 @@ export function PermissionRow(props: {
               type="button"
               class="af-button secondary small"
               title={t('agent.permission.allowConversationHint')}
-              onClick={() => props.onAnswer({ decision: 'allowConversation' })}
+              onClick={(event) => props.onAnswer({ decision: 'allowConversation' }, event)}
             >
               {t('agent.permission.allowConversation')}
             </button>
@@ -78,7 +78,7 @@ export function PermissionRow(props: {
           class="af-chat-permission-actions"
           onSubmit={(event) => {
             event.preventDefault();
-            deny();
+            deny(event);
           }}
         >
           <input
