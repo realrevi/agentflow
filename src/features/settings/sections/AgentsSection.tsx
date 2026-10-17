@@ -1,6 +1,6 @@
-// API agents: loop and tool limits, the default permission mode, the default system prompt
-// and per-model "supports tools" overrides (models the app learned to run without tools are
-// remembered by the backend, an override here wins).
+// API agents: loop and tool limits, the default permission mode, the default system prompt,
+// whether chats show reasoning and per-model "supports tools" overrides (models the app
+// learned to run without tools are remembered by the backend, an override here wins).
 import { For } from 'solid-js';
 import type { PermissionMode } from '../../../shared/types';
 import { t } from '../../i18n';
@@ -73,6 +73,20 @@ export function AgentsSection() {
         />
       </Row>
       <p class="af-settings-hint">{t('settings.agents.promptHint')}</p>
+      <Row label={t('settings.agents.reasoning')} for="af-agents-reasoning">
+        <input
+          id="af-agents-reasoning"
+          type="checkbox"
+          class="af-switch"
+          role="switch"
+          checked={settings.agent.showReasoning}
+          onChange={(event) => {
+            const on = event.currentTarget.checked;
+            updateSettings((s) => (s.agent.showReasoning = on));
+          }}
+        />
+      </Row>
+      <p class="af-settings-hint">{t('settings.agents.reasoningHint')}</p>
       {number(
         'af-agents-iterations',
         t('settings.agents.iterations'),

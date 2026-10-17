@@ -9,11 +9,13 @@ import type {
   IWatermarkRenderer,
 } from 'dockview-core';
 import { createSignal, lazy, Match, onCleanup, Show, Suspense, Switch, type JSX } from 'solid-js';
-import { FilesPanel } from '../files';
+import type { ChatHooks } from '../chat/agent/agentView';
+import { FilesPanel, markAgentChanged } from '../files';
 import { t } from '../i18n';
 import { settings } from '../settings/settingsStore';
 import { AddPanelButton } from './AddPanelButton';
-import { openEditor, renameEditors } from './editorPanels';
+import { currentWorkspace } from '../workspace';
+import { editorFileDirty, openEditor, renameEditors } from './editorPanels';
 import { consumeFreshPanel, openPanel, openPanels } from './layoutStore';
 import { createPanelTab } from './PanelTab';
 import { PANEL_TAB, parsePanelParams, type PanelParams } from './panels';
@@ -27,6 +29,18 @@ const TerminalPanel = lazy(() => import('../terminal/TerminalPanel'));
 const ChatPanel = lazy(() => import('../chat/ChatPanel'));
 const EditorPanel = lazy(() => import('../editor/EditorPanel'));
 const UsagePanel = lazy(() => import('../tokens/UsagePanel'));
+const DiffView = lazy(() => import('../editor/DiffView'));
+
+/** Chat panels open files, check unsaved edits, mark agent changes and show diffs. */
+const chatHooks: ChatHooks = {
+  openFile: openEditor,
+  isFileDirty: editorFileDirty,
+  filesChanged: (paths) => {
+    const root = currentWorkspace();
+    if (root) markAgentChanged(root, paths);
+  },
+  Diff: DiffView,
+};
 
 function Loading(): JSX.Element {
   return <div class="af-panel-loading">{t('panel.loading')}</div>;
@@ -79,7 +93,14 @@ function PanelView(props: { id: string; params: PanelParams; api: DockviewPanelA
           )}
         </Match>
         <Match when={params.kind === 'chat' && params}>
-          {(chat) => <ChatPanel panelId={props.id} config={chat().config} api={props.api} />}
+          {(chat) => (
+            <ChatPanel
+              panelId={props.id}
+              config={chat().config}
+              api={props.api}
+              hooks={chatHooks}
+            />
+          )}
         </Match>
         <Match when={params.kind === 'terminal' && params}>
           {(terminal) => (

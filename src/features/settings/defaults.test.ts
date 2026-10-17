@@ -71,6 +71,7 @@ describe('settings defaults mirror the Rust schema', () => {
     expect(num('tool_result_cap')).toBe(expected.toolResultCap);
     expect(num('command_timeout_secs')).toBe(expected.commandTimeoutSecs);
     expect(agent).toContain(`default_prompt: ${expected.defaultPrompt}`);
+    expect(agent).toContain(`show_reasoning: ${expected.showReasoning}`);
     expect(agent).toContain('default_mode: PermissionMode::Ask');
     expect(expected.defaultMode).toBe('ask');
     expect(expected.toolModels).toEqual([]);

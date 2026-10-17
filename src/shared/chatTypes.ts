@@ -8,6 +8,7 @@ import type {
   PermissionMode,
   PermissionRequest,
   ToolCall,
+  ToolResult,
 } from './agentTypes';
 
 export type ProviderKind = 'anthropic' | 'openai';
@@ -182,9 +183,9 @@ export type ChatEvent =
   | { type: 'delta'; text: string }
   | { type: 'reasoning'; text: string }
   | { type: 'usage'; usage: TokenUsage }
-  | { type: 'status'; phase: AgentPhase; text: string | null }
-  | { type: 'toolStart'; call: ToolCall; status: string }
-  | { type: 'toolEnd'; callId: string; ok: boolean; summary: string }
+  | { type: 'status'; phase: AgentPhase }
+  | { type: 'toolStart'; call: ToolCall }
+  | { type: 'toolEnd'; result: ToolResult }
   | { type: 'permission'; request: PermissionRequest }
   | { type: 'notice'; kind: 'toolsUnsupported' | 'maxIterations'; message: string }
   | { type: 'message'; message: ChatMessage }

@@ -50,6 +50,7 @@ export const DEFAULT_SETTINGS: Settings = {
     commandTimeoutSecs: 120,
     defaultMode: 'ask',
     defaultPrompt: true,
+    showReasoning: true,
     toolModels: [],
   },
   layout: null,

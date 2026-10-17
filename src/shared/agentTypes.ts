@@ -11,6 +11,27 @@ export interface ToolResult {
   callId: string;
   content: string;
   isError: boolean;
+  /** Missing = `ran`. */
+  outcome?: ToolOutcome;
+  /** How long the run took (missing when it never ran). */
+  durationMs?: number;
+  meta?: ToolMeta;
+}
+
+/** `denied`: the user said no; `skipped`: never ran (turn stopped, not in this mode). */
+export type ToolOutcome = 'ran' | 'denied' | 'skipped';
+
+/** Numbers the chat builds its summary lines from. */
+export interface ToolMeta {
+  /** Entries, files, matches, lines written or replacements, per tool. */
+  count?: number;
+  /** Files with matches (search). */
+  files?: number;
+  /** [first, last, total] lines (read_file). */
+  lines?: [number, number, number];
+  /** write_file created the file. */
+  created?: boolean;
+  exitCode?: number;
 }
 
 /** Reasoning kept for the provider (Anthropic signature, OpenRouter details). */
@@ -19,6 +40,8 @@ export interface Reasoning {
   signature: string | null;
   redacted: string | null;
   details: unknown;
+  /** How long the model thought. */
+  durationMs?: number;
 }
 
 /** A piece of an agent message. */
@@ -76,6 +99,8 @@ export interface CheckpointSummary {
   turn: string;
   at: number;
   files: string[];
+  /** When the turn was undone. */
+  revertedAt: number | null;
 }
 
 export interface RestoreReport {
@@ -95,6 +120,8 @@ export interface AgentSettings {
   commandTimeoutSecs: number;
   defaultMode: PermissionMode;
   defaultPrompt: boolean;
+  /** Show the model's reasoning in chats. */
+  showReasoning: boolean;
   /** Per-model "supports tools" overrides. */
   toolModels: ModelTools[];
 }

@@ -1,21 +1,24 @@
 // Provider + model pickers and the (collapsible) system prompt of one conversation.
 // Model ids come from the provider's model list or can be typed by hand. The agent's
-// permission mode and checkpoints sit at the end (AgentControls.tsx).
+// permission mode (ModePill) and the checkpoints menu sit at the end.
 import { createSignal, For, Show } from 'solid-js';
 import { ipc } from '../../shared/ipc';
-import type { Conversation, ConversationPatch } from '../../shared/types';
+import type { Conversation, ConversationPatch, PermissionMode } from '../../shared/types';
 import { refreshIcon } from '../../shared/ui/icons';
 import { PixelIcon } from '../../shared/ui/PixelIcon';
 import { reportError, t } from '../i18n';
 import { loadModels, modelsOf, providerName } from '../providers';
 import { settings } from '../settings/settingsStore';
-import { AgentControls } from './AgentControls';
+import { CheckpointMenu } from './agent/CheckpointMenu';
+import type { Checkpoints } from './agent/checkpoints';
+import { ModePill } from './agent/ModePill';
 
 interface ChatHeaderProps {
   panelId: string;
   workspace: string | null;
   conversation: Conversation;
   onChanged: (conversation: Conversation) => void;
+  checkpoints: Checkpoints;
 }
 
 export function ChatHeader(props: ChatHeaderProps) {
@@ -32,6 +35,17 @@ export function ChatHeader(props: ChatHeaderProps) {
     });
     try {
       await ipc.conversationUpdate(props.workspace, before.id, patch);
+    } catch (err) {
+      props.onChanged(before);
+      reportError('error.conversationUpdate', err);
+    }
+  };
+
+  const changeMode = async (mode: PermissionMode) => {
+    const before = props.conversation;
+    props.onChanged({ ...before, agent: { ...before.agent, permissionMode: mode } });
+    try {
+      await ipc.conversationUpdate(props.workspace, before.id, { permissionMode: mode });
     } catch (err) {
       props.onChanged(before);
       reportError('error.conversationUpdate', err);
@@ -111,12 +125,11 @@ export function ChatHeader(props: ChatHeaderProps) {
             <span class="af-chat-system-dot" aria-hidden="true" />
           </Show>
         </button>
-        <AgentControls
-          panelId={props.panelId}
-          workspace={props.workspace}
-          conversation={props.conversation}
-          onChanged={props.onChanged}
+        <ModePill
+          mode={props.conversation.agent.permissionMode ?? settings.agent.defaultMode}
+          onChange={(mode) => void changeMode(mode)}
         />
+        <CheckpointMenu checkpoints={props.checkpoints} disabled={!props.workspace} />
       </div>
       <Show when={modelsOf(providerId() ?? '').error}>
         {(error) => <p class="af-chat-header-error">{error()}</p>}
