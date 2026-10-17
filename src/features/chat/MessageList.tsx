@@ -5,13 +5,13 @@
 import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show } from 'solid-js';
 import { ipc } from '../../shared/ipc';
 import { showToast } from '../../shared/toast';
-import type { ChatError, ChatMessage } from '../../shared/types';
+import type { ChatError, ChatMessage, Compaction } from '../../shared/types';
 import { Menu } from '../../shared/ui/Menu';
 import { webUrl } from '../../shared/url';
 import { reportError, t } from '../i18n';
 import { estimateTokens } from './attachments';
 import { renderMarkdown } from './markdown';
-import { errorText, stopNote, usageText } from './messageText';
+import { cacheText, errorText, stopNote, usageText } from './messageText';
 import type { Streaming } from './session';
 import { splitStable } from './stableSplit';
 
@@ -21,6 +21,8 @@ interface MessageListProps {
   error: ChatError | null;
   canRetry: boolean;
   onRetry: () => void;
+  /** Older messages a Compact summarized (requests send the summary instead). */
+  compaction: Compaction | null;
 }
 
 /** Near the bottom: keep following new text. */
@@ -66,6 +68,16 @@ export function MessageList(props: MessageListProps) {
     event.preventDefault();
     setLinkMenu({ x: event.clientX, y: event.clientY, url: link.getAttribute('href') ?? '' });
   };
+
+  // For each attached path, the message that sent its latest copy (older copies are only
+  // referenced in requests: the backend sends a file once).
+  const latestCopy = createMemo(() => {
+    const latest = new Map<string, string>();
+    for (const message of props.messages) {
+      for (const file of message.attachments) latest.set(file.path, message.id);
+    }
+    return latest;
+  });
 
   const follow = () => {
     if (list && pinned) list.scrollTop = list.scrollHeight;
@@ -117,7 +129,16 @@ export function MessageList(props: MessageListProps) {
       <Show when={props.messages.length === 0 && !props.streaming}>
         <p class="af-chat-empty">{t('chat.empty')}</p>
       </Show>
-      <For each={props.messages}>{(message) => <MessageItem message={message} />}</For>
+      <For each={props.messages}>
+        {(message) => (
+          <>
+            <MessageItem message={message} latestCopy={latestCopy()} />
+            <Show when={props.compaction?.through === message.id && props.compaction}>
+              {(compaction) => <CompactDivider compaction={compaction()} />}
+            </Show>
+          </>
+        )}
+      </For>
       <Show when={props.streaming}>
         {(streaming) => <StreamingReply text={streaming().text} />}
       </Show>
@@ -135,7 +156,17 @@ export function MessageList(props: MessageListProps) {
   );
 }
 
-function MessageItem(props: { message: ChatMessage }) {
+function CompactDivider(props: { compaction: Compaction }) {
+  return (
+    <details class="af-chat-compacted">
+      <summary>{t('chat.compact.divider')}</summary>
+      <p class="af-chat-compacted-summary">{props.compaction.summary}</p>
+      <p class="af-chat-compacted-by">{t('chat.compact.by', { model: props.compaction.model })}</p>
+    </details>
+  );
+}
+
+function MessageItem(props: { message: ChatMessage; latestCopy: Map<string, string> }) {
   const html = createMemo(() =>
     props.message.role === 'assistant' ? renderMarkdown(props.message.content) : '',
   );
@@ -150,14 +181,25 @@ function MessageItem(props: { message: ChatMessage }) {
             <Show when={props.message.attachments.length > 0}>
               <div class="af-chips">
                 <For each={props.message.attachments}>
-                  {(file) => (
-                    <span class="af-chip" title={file.path}>
-                      {file.path.split('/').pop()}
-                      <span class="af-chip-tokens">
-                        {t('chat.attach.tokens', { count: estimateTokens(file.content) })}
+                  {(file) => {
+                    const replaced = () => props.latestCopy.get(file.path) !== props.message.id;
+                    return (
+                      <span
+                        class="af-chip"
+                        classList={{ 'sent-earlier': replaced() }}
+                        title={
+                          replaced() ? t('chat.attach.replaced', { path: file.path }) : file.path
+                        }
+                      >
+                        {file.path.split('/').pop()}
+                        <span class="af-chip-tokens">
+                          {replaced()
+                            ? t('chat.attach.sentEarlier')
+                            : t('chat.attach.tokens', { count: estimateTokens(file.content) })}
+                        </span>
                       </span>
-                    </span>
-                  )}
+                    );
+                  }}
                 </For>
               </div>
             </Show>
@@ -171,6 +213,13 @@ function MessageItem(props: { message: ChatMessage }) {
             {(error) => <span class="af-chat-meta-error">{error()}</span>}
           </Show>
           <Show when={usageText(props.message)}>{(usage) => <span>{usage()}</span>}</Show>
+          <Show when={cacheText(props.message)}>
+            {(cache) => (
+              <span class="af-chat-cache" classList={{ hit: cache().hit }}>
+                {cache().text}
+              </span>
+            )}
+          </Show>
         </div>
       </Show>
     </article>

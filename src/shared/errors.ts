@@ -10,6 +10,7 @@ const KINDS: readonly AppErrorKind[] = [
   'conflict',
   'tooLarge',
   'provider',
+  'budget',
   'internal',
 ];
 

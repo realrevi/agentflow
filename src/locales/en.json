@@ -250,7 +250,6 @@
   "chat.cutOff": "Cut off at the output token limit",
   "chat.declined": "The model declined to answer",
   "chat.usage": "{input} in · {output} out",
-  "chat.usage.cached": "{count} cached",
   "chat.error.auth": "The API key was rejected.",
   "chat.error.rateLimit": "Rate limited.",
   "chat.error.rateLimitWait": "Rate limited. Try again in {seconds} s.",

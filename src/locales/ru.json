@@ -250,7 +250,6 @@
   "chat.cutOff": "Обрезано на лимите токенов ответа",
   "chat.declined": "Модель отказалась отвечать",
   "chat.usage": "{input} вход · {output} выход",
-  "chat.usage.cached": "{count} из кэша",
   "chat.error.auth": "API-ключ отклонён.",
   "chat.error.rateLimit": "Превышен лимит запросов.",
   "chat.error.rateLimitWait": "Превышен лимит запросов. Повторите через {seconds} с.",

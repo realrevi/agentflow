@@ -250,7 +250,6 @@
   "chat.cutOff": "Çıktı token sınırında kesildi",
   "chat.declined": "Model yanıt vermeyi reddetti",
   "chat.usage": "{input} giriş · {output} çıkış",
-  "chat.usage.cached": "{count} önbellekten",
   "chat.error.auth": "API anahtarı reddedildi.",
   "chat.error.rateLimit": "Hız sınırına takıldı.",
   "chat.error.rateLimitWait": "Hız sınırına takıldı. {seconds} sn sonra yeniden deneyin.",

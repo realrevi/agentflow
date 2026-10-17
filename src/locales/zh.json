@@ -250,7 +250,6 @@
   "chat.cutOff": "已达到输出 token 上限而截断",
   "chat.declined": "模型拒绝回答",
   "chat.usage": "输入 {input} · 输出 {output}",
-  "chat.usage.cached": "{count} 缓存",
   "chat.error.auth": "API 密钥被拒绝。",
   "chat.error.rateLimit": "触发了速率限制。",
   "chat.error.rateLimitWait": "触发了速率限制。请在 {seconds} 秒后重试。",

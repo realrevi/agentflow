@@ -250,7 +250,6 @@
   "chat.cutOff": "Beim Ausgabe-Token-Limit abgeschnitten",
   "chat.declined": "Das Modell hat die Antwort verweigert",
   "chat.usage": "{input} ein · {output} aus",
-  "chat.usage.cached": "{count} aus dem Cache",
   "chat.error.auth": "Der API-Schlüssel wurde abgelehnt.",
   "chat.error.rateLimit": "Ratenlimit erreicht.",
   "chat.error.rateLimitWait": "Ratenlimit erreicht. In {seconds} s erneut versuchen.",

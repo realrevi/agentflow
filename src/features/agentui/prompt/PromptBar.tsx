@@ -37,6 +37,8 @@ interface PromptBarProps {
   ref: (handle: PromptBarHandle) => void;
   /** Shown while the bar is disabled (default: "start the agent"). */
   disabledPlaceholder?: string;
+  /** The text changed (typing, recall, insert, cleared after a send). */
+  onDraft?: (text: string) => void;
 }
 
 export function PromptBar(props: PromptBarProps) {
@@ -129,6 +131,7 @@ export function PromptBar(props: PromptBarProps) {
     input.setSelectionRange(text.length, text.length);
     grow();
     follow();
+    props.onDraft?.(text);
   };
 
   const send = () => {
@@ -238,6 +241,7 @@ export function PromptBar(props: PromptBarProps) {
           recall = recall.index === null ? recall : { ...recall, index: null };
           grow();
           typed();
+          props.onDraft?.(input?.value ?? '');
         }}
         onKeyDown={onKeyDown}
         onKeyUp={follow}
