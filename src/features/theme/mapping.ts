@@ -156,6 +156,17 @@ export const THEME_VARS: readonly VarSpec[] = [
     fallback: ref('selection'),
   },
   ...ANSI_SPECS,
+  // Diffs (agent permission cards): line backgrounds for added and removed text.
+  {
+    name: 'diff-inserted',
+    keys: ['diffEditor.insertedLineBackground', 'diffEditor.insertedTextBackground'],
+    fallback: d('#3fb95026', '#2ea04326'),
+  },
+  {
+    name: 'diff-removed',
+    keys: ['diffEditor.removedLineBackground', 'diffEditor.removedTextBackground'],
+    fallback: d('#f8514926', '#cf222e1f'),
+  },
   // Editor (phase 3). Background and text use `bg` / `fg` (editor.background/foreground).
   { name: 'editor-cursor', keys: ['editorCursor.foreground'], fallback: ref('accent') },
   {
