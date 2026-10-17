@@ -31,6 +31,8 @@ src-tauri/src/
   chat/               ChatManager (one stream per chat, cancel), request building (blocks, cache
                       breakpoints, attachment dedup), Compact, pre-send estimate, Channel events
   agent/              API agent loop, tools/, permissions, dangerous commands, checkpoints, prompt
+  agents/             installer: templates, renderers per tool, managed sections, plan/apply,
+                      registry, detectors, AgentFlow profiles, Create with AI, starters/
   tokens/             UsageTracker: JSONL ledger, buckets, prices, budgets, CLI log readers
   util/               atomic_write, run_blocking, lock/Signal, workspace_key, hex color, test_dir
 src/
@@ -49,7 +51,7 @@ src/
   features/i18n/      typed t(), lazy locale loading, reportError()
   features/settings/  settings store (debounced save) + lazy SettingsPanel and sections
   features/tokens/    usage store (one Channel), formats, badge, chart, Usage view + lazy panel
-  features/agents/, src-tauri/src/agents/: empty stubs (installer, library)
+  features/agents/    lazy Agents library panel (wizard/, installed list), profiles store
   shared/             ipc (+ ipcCommands), types (+ chat/usage/agentTypes), errors, toast, dialog, ui/
   locales/            en.json (source of truth), tr, de, zh, ru
 themes/               built-in theme JSON (embedded into the Rust binary via include_str!)
@@ -97,21 +99,17 @@ other. `layout` and the settings panel compose panel features; `app/` composes a
   `provider:<id>`; tests use `MemoryStore`), never in settings, logs, error text or IPC (the
   frontend gets `KeyStatus { hasKey, last4 }`). Errors are `redacted()`, redirects not followed,
   base URLs HTTPS (plain HTTP only for loopback, `url.rs`).
-- `chat_send(…, Channel)`: one turn per chat, `chat_cancel`, all cancelled on reload/exit; every
-  model call is saved with its usage. Rust tests use `providers/tests/mock.rs` (never real APIs
-  or keys; `refusing_port()` for dead servers). Reveal: `chat/reveal.ts`; Markdown: DOMPurify.
+- `chat_send(…, Channel)`: one turn per chat, all cancelled on reload/exit; every model call is
+  saved with its usage. Rust tests use `providers/tests/mock.rs` (never real APIs or keys).
 
 ## API agents (phase 7)
 
-- Loop (`agent/run.rs`), up to `agent.maxIterations` calls per prompt: model call (`step.rs`)
-  stored as an assistant message with `parts` (reasoning, text, toolCall) -> per call: permission
-  and run (`execute.rs`) -> ONE `tool` message with the results -> next call. Cancel ends the
-  stream, a permission wait and a running command (process tree killed); calls that never ran
-  get "not run" results. Tools rejected by the provider: model remembered (`model-tools.json`,
-  settings override wins), the chat goes on without tools + `notice`.
-- Conversations v2: `parts`, `prefix` (digest of system + tools; Anthropic thinking is replayed
-  only under the same prefix and never before a compaction), `agent` (mode, allowed tools, tools
-  off, the environment text, built once so the cached prefix stays stable).
+- Loop (`agent/run.rs`, up to `agent.maxIterations` calls): model call (`step.rs`, stored with
+  `parts`) -> per call permission + run (`execute.rs`) -> ONE `tool` message -> next call. Cancel
+  ends stream, permission wait and command (process tree); unrun calls get "not run" results.
+  Tools rejected by the provider: model remembered (`model-tools.json`), chat goes on without.
+- Conversations v2: `parts`, `prefix` (system + tools digest; Anthropic thinking replayed only
+  under the same prefix, never before a compaction), `agent` (mode, grants, profile, env text).
 - Tools (`agent/tools/`): an entry in `TOOLS` (name, read|write|command, JSON schema) + a fn.
   Paths only via `WorkspaceRoot`; output capped (`agent.toolResultCap`); writes go through
   `save()`, which checkpoints the original once per turn (`checkpoint.rs`). No network tools.
@@ -122,12 +120,26 @@ other. `layout` and the settings panel compose panel features; `app/` composes a
 - **Permission answers** come only from a trusted click/keypress on that request's card
   (`liveTurn.answer`: `isTrusted`, pending id) and carry the conversation id; the gate rejects
   unknown, answered or foreign ids. A turn that ends (cancel, panel close, reload) never allows.
-- Events: `reasoning`, `status { phase }` (character `wait` while asking), `toolStart`,
-  `toolEnd { result }` (every call, denials at once; results keep outcome, duration and
-  `meta` for summaries), `permission`, `notice`, `message` (a stored step).
+- Events: `reasoning`, `status { phase }` (`wait` while asking), `toolStart`, `toolEnd { result }`
+  (every call, denials at once; outcome, duration, `meta`), `permission`, `notice`, `message`.
 - UI (`chat/agent/`): `timeline.ts` turns messages into cards (reads grouped), `liveTurn.ts`
   holds what is in flight, summaries are localized from `meta` (`toolText.ts`). The layout
   lends chat panels `ChatHooks` (open file, dirty check, tree marks, the editor's lazy DiffView).
+
+## Agent installer (phase 8)
+
+- One template (`agents/template.rs`, schema 1; docs/agent-template.md + the JSON Schema in
+  `schemas/`, a test keeps them in step) -> `targets.rs` renders exact files per tool
+  (docs/agent-targets.md: Claude/Gemini subagent .md, Codex subagent .toml, Cursor .mdc,
+  `.agentflow/agents/<id>.md`). Placeholders are plain substitution; unknown ones are errors.
+- **Shared files** (CLAUDE.md, AGENTS.md, GEMINI.md) only get a section between
+  `<!-- agentflow:begin <id> -->` / `end` markers (`section.rs`): nothing outside is touched,
+  CRLF kept, idempotent. Every install is planned and previewed first (`plan.rs`); files we did
+  not create or that changed since (hash in `.agentflow/installed.json`) need a confirmation;
+  user scope only into documented home folders, after its own confirmation (`roots.rs`).
+- AgentFlow profiles: a chat stores a `ProfileSnapshot`; its tools only narrow the mode's
+  tools, its mode is never looser than the user's default. New tool format = a target fn +
+  snapshot test; new detector = a key in `DETECTORS` (+ schema enum).
 
 ## Usage tracking (phase 6)
 
@@ -135,9 +147,8 @@ other. `layout` and the settings panel compose panel features; `app/` composes a
   15-minute buckets for 62 days, cost at query time (`pricing.json`, OpenRouter cache,
   overrides; no price = "—"). Lock order: `cli` before `state`. CLI logs are tailed from saved
   byte offsets and watched with notify; `pty_spawn(panel)` matches CLI usage to its panel.
-- ONE `usage_subscribe` Channel (`tokens/usageStore.ts`): `changed { panels }`, `repriced`,
-  `budget { status }`. Hard stop = API chats only (kind `budget`, "Allow once" token -> resend).
-  Chat: debounced `usage_estimate`, Compact at the threshold; Anthropic cache: max 4 breakpoints.
+- ONE `usage_subscribe` Channel (`tokens/usageStore.ts`); hard stop = API chats only (kind
+  `budget`, "Allow once" token -> resend). Anthropic cache: max 4 breakpoints.
 
 ## Layout, characters & prompt bar
 
@@ -177,7 +188,7 @@ cargo build    # in src-tauri: compile check, no bundling
 5. [x] AI provider APIs (Anthropic + OpenAI-compatible, keychain keys) + API chat panels
 6. [x] Token & cost tracking (ledger, CLI log readers, prices, budgets, dashboard, Compact)
 7. [x] API agent tools + default system prompt (tool cards, diffs, permissions, undo)
-8. [ ] Agent installer wizard (per-AI formats/paths)
+8. [x] Agent installer wizard (per-AI formats/paths, templates, managed sections, detection)
 9. [ ] Community agent library from GitHub
 10. [ ] UI polish
 11. [ ] Cross-platform builds + CI

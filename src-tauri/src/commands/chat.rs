@@ -56,7 +56,7 @@ pub async fn chat_compact(
     compact(deps, request).await
 }
 
-async fn deps(
+pub(super) async fn deps(
     settings: &SettingsStore,
     store: &ConversationStore,
     vault: &KeyVault,

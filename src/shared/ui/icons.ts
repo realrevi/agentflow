@@ -36,6 +36,24 @@ export const agentsIcon: PixelArt = {
   ],
 };
 
+/** Agents library: a shelf of books. */
+export const libraryIcon: PixelArt = {
+  rows: [
+    '............',
+    '.##.##......',
+    '.##.##.##...',
+    '.##.##.##.#.',
+    '.##.##.##.#.',
+    '.##.##.##.#.',
+    '.##.##.##.#.',
+    '.##.##.##.#.',
+    '.##.##.##.#.',
+    '############',
+    '............',
+    '............',
+  ],
+};
+
 export const explorerIcon: PixelArt = {
   rows: [
     '............',

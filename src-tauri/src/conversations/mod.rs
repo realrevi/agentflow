@@ -12,6 +12,7 @@ mod tests;
 pub use checks::MAX_ATTACHMENT_BYTES;
 pub use model::{
     AgentState, Attachment, ChatMessage, Compaction, Conversation, ConversationPatch,
-    ConversationSummary, MessageStatus, PermissionMode, Role, UsageRecord, FORMAT_VERSION,
+    ConversationSummary, MessageStatus, PermissionMode, ProfileSnapshot, Role, UsageRecord,
+    FORMAT_VERSION,
 };
 pub use store::ConversationStore;

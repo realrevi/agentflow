@@ -1,11 +1,15 @@
 // Gives agent panels (terminal CLIs and API chats) their pixel character: auto-assigns an
 // unused one to every panel that wants one (shells only when the setting says so) and
-// changes it on request. The choice is stored in the panel's config, so it persists.
+// changes it on request. The choice is stored in the panel's config, so it persists; it is
+// also remembered per panel for the session, so a panel that loses it (e.g. a stale config
+// write) gets the same character back. Only genuinely new panels get a new pick.
 import type { DockviewApi, IDockviewPanel } from 'dockview-core';
 import { createSignal } from 'solid-js';
-import { loadCharacters, pickCharacter, type CharacterRef } from '../characters';
+// Plain modules (not the feature barrels, which also export components).
+import { loadCharacters, pickCharacter } from '../characters/catalog';
+import type { CharacterRef } from '../characters/types';
 import { settings } from '../settings/settingsStore';
-import { wantsCharacter } from '../terminal';
+import { wantsCharacter } from '../terminal/config';
 import { parsePanelParams, type PanelParams } from './panels';
 
 type AgentParams = Extract<PanelParams, { kind: 'terminal' | 'chat' }>;
@@ -29,6 +33,13 @@ export function characterOf(params: PanelParams | null): CharacterRef | null {
   return params.config.character;
 }
 
+const remembered = new Map<string, CharacterRef>();
+
+/** A panel was closed (or the layout cleared): its id may come back as a new panel. */
+export function forgetCharacter(panelId: string): void {
+  remembered.delete(panelId);
+}
+
 export function usedCharacters(dock: DockviewApi): string[] {
   return agentPanels(dock).flatMap(({ params }) =>
     params.config.character ? [params.config.character.id] : [],
@@ -47,9 +58,14 @@ export async function ensureCharacters(dock: DockviewApi): Promise<boolean> {
   const used = usedCharacters(dock);
   let changed = false;
   for (const { panel, params } of agentPanels(dock)) {
-    if (params.config.character || !wants(params)) continue;
-    const character = pickCharacter(all, used);
+    if (params.config.character) {
+      remembered.set(panel.id, params.config.character);
+      continue;
+    }
+    if (!wants(params)) continue;
+    const character = remembered.get(panel.id) ?? pickCharacter(all, used);
     if (!character) continue;
+    remembered.set(panel.id, character);
     used.push(character.id);
     panel.api.updateParameters(withCharacter(params, character));
     changed = true;
@@ -61,6 +77,7 @@ export function setCharacter(dock: DockviewApi, panelId: string, character: Char
   const panel = dock.getPanel(panelId);
   const params = panel ? parsePanelParams(panel.params) : null;
   if (!panel || (params?.kind !== 'terminal' && params?.kind !== 'chat')) return false;
+  remembered.set(panelId, character);
   panel.api.updateParameters(withCharacter(params, character));
   return true;
 }

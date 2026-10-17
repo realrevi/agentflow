@@ -58,9 +58,7 @@ export default function ChatPanel(props: ChatPanelProps) {
 
   const setTitle = (title: string) => {
     props.api.setTitle(chatTitle({ title }));
-    if (title === config().title) return;
-    const params = props.api.getParameters<Record<string, unknown>>();
-    props.api.updateParameters({ ...params, config: { ...config(), title } });
+    props.hooks.setTitle(props.panelId, title);
   };
   const session = createChatSession({
     panelId: props.panelId,

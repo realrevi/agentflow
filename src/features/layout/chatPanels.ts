@@ -1,7 +1,12 @@
 // API chat panels: start a new chat (creates the conversation), reopen one from the
 // sidebar (or focus the panel that shows it), and close panels of a deleted chat.
 import type { DockviewApi, IDockviewPanel } from 'dockview-core';
+import { ipc } from '../../shared/ipc';
+import { showToast } from '../../shared/toast';
+import type { AgentProfile } from '../../shared/types';
+import { loadCharacters } from '../characters';
 import { createConversation, newChatConfig, type ChatConfig } from '../chat';
+import { reportError, t } from '../i18n';
 import { settings } from '../settings/settingsStore';
 import { addPanel, assignCharacters, currentDock, nextIndex } from './layoutStore';
 import { parsePanelParams } from './panels';
@@ -37,9 +42,50 @@ export async function startChat(
   openChat(newChatConfig(conversation.id, settings.currentWorkspace), groupId);
 }
 
+/**
+ * "New API agent → <profile>": a chat with an installed AgentFlow agent. The provider is the
+ * profile's hint (provider id, preset or kind) when configured, else the first one.
+ */
+export async function openProfileChat(profile: AgentProfile, groupId?: string): Promise<void> {
+  const hint = profile.provider;
+  const entry =
+    settings.providers.find(
+      (p) => hint && (p.id === hint || p.preset === hint || p.kind === hint),
+    ) ?? settings.providers[0];
+  const model = profile.model ?? entry?.defaultModel ?? '';
+  if (!entry || !model.trim()) {
+    showToast({ kind: 'error', title: t('installer.profile.noProvider') });
+    return;
+  }
+  try {
+    const workspace = settings.currentWorkspace;
+    const conversation = await ipc.agentsProfileChat(workspace, profile.id, entry.id, model);
+    const sprite = (await loadCharacters()).find((sheet) => sheet.id === profile.character);
+    openChat(
+      {
+        ...newChatConfig(conversation.id, workspace),
+        title: conversation.title,
+        character: sprite ? { id: sprite.id, palette: 0 } : null,
+      },
+      groupId,
+    );
+  } catch (err) {
+    reportError('error.installerProfile', err);
+  }
+}
+
 /** Reopens a conversation of the current workspace from the sidebar. */
 export function reopenChat(conversationId: string, title: string): void {
   openChat({ ...newChatConfig(conversationId, settings.currentWorkspace), title });
+}
+
+/** A chat named itself: only `title` changes; the rest of the config (e.g. the character)
+ * comes from the panel's current parameters, never from a copy. */
+export function setChatTitle(panelId: string, title: string): void {
+  const panel = currentDock()?.getPanel(panelId);
+  const params = panel ? parsePanelParams(panel.params) : null;
+  if (!panel || params?.kind !== 'chat' || params.config.title === title) return;
+  panel.api.updateParameters({ ...params, config: { ...params.config, title } });
 }
 
 export function closeChatPanels(conversationId: string): void {

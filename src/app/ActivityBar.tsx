@@ -4,6 +4,7 @@ import {
   agentsIcon,
   charactersIcon,
   explorerIcon,
+  libraryIcon,
   logoIcon,
   settingsIcon,
   usageIcon,
@@ -52,6 +53,15 @@ export function ActivityBar() {
           );
         }}
       </For>
+      <button
+        type="button"
+        class="af-activity"
+        title={t('activity.library')}
+        aria-label={t('activity.library')}
+        onClick={() => openPanel('installer')}
+      >
+        <PixelIcon art={libraryIcon} />
+      </button>
       <div class="af-activitybar-spacer" />
       <button
         type="button"

@@ -8,7 +8,8 @@ import { PixelIcon } from '../../shared/ui/PixelIcon';
 import { NewChatPrompt } from '../chat';
 import { t } from '../i18n';
 import { AGENT_KINDS, cliFor, kindLabel, loadCliStatus, newTerminalConfig } from '../terminal';
-import { startChat } from './chatPanels';
+import { agentProfiles } from '../agents';
+import { openProfileChat, startChat } from './chatPanels';
 import { openPanel, openTerminal } from './layoutStore';
 import { groupRole } from './roles';
 
@@ -50,6 +51,23 @@ function AgentArea(props: { groupId: string }) {
           {t('panel.add.api')}
         </button>
       </div>
+      <Show when={agentProfiles().length > 0}>
+        <p class="af-watermark-hint">{t('agents.area.installed')}</p>
+        <div class="af-button-row">
+          <For each={agentProfiles()}>
+            {(profile) => (
+              <button
+                type="button"
+                class="af-button secondary"
+                title={profile.description}
+                onClick={() => void openProfileChat(profile, props.groupId)}
+              >
+                {profile.name}
+              </button>
+            )}
+          </For>
+        </div>
+      </Show>
       <Show when={asking() && apiButton}>
         {(anchor) => (
           <NewChatPrompt

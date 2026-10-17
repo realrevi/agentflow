@@ -1,0 +1,328 @@
+/* Agents library panel: wizard steps, starters, questions, preview, installed list. */
+.af-installer {
+  height: 100%;
+  padding: 16px 20px 32px;
+  overflow: auto;
+  color: var(--af-fg);
+}
+
+.af-installer-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  max-width: 900px;
+  margin-bottom: 12px;
+}
+
+.af-installer-head .af-installer-title {
+  margin: 0;
+}
+
+.af-wizard-steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  max-width: 900px;
+  margin: 0 0 16px;
+  padding: 0;
+  list-style: none;
+  color: var(--af-fg-muted);
+  font-size: 12px;
+  counter-reset: step;
+}
+
+.af-wizard-steps li {
+  counter-increment: step;
+}
+
+.af-wizard-steps li::before {
+  content: counter(step) '. ';
+}
+
+.af-wizard-steps li.active {
+  color: var(--af-accent);
+  font-weight: 600;
+}
+
+.af-wizard-steps li.done {
+  color: var(--af-fg);
+}
+
+.af-wizard-step {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 900px;
+}
+
+.af-wizard-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.af-wizard-actions.start {
+  justify-content: flex-start;
+}
+
+.af-starter-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 10px;
+}
+
+.af-starter {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  border: 1px solid var(--af-widget-border);
+  border-radius: 6px;
+  background: var(--af-widget-bg);
+  color: var(--af-fg);
+  font: inherit;
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.af-starter:hover,
+.af-starter:focus-visible {
+  border-color: var(--af-accent);
+}
+
+.af-starter strong {
+  font-size: 13px;
+}
+
+.af-starter-tags {
+  color: var(--af-fg-muted);
+}
+
+.af-create-ai,
+.af-question-group,
+.af-wizard-template,
+.af-installed,
+.af-uninstall {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--af-widget-border);
+  border-radius: 6px;
+  background: var(--af-widget-bg);
+}
+
+.af-question-group legend {
+  padding: 0 4px;
+  color: var(--af-fg-muted);
+  font-size: 12px;
+}
+
+.af-wizard-template {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.af-template-editor {
+  flex-basis: 100%;
+}
+
+.af-template-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.af-template-body {
+  font-family: var(--af-font-mono);
+  font-size: 12px;
+}
+
+.af-create-ai-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.af-create-ai-row .af-input {
+  flex: 1;
+  min-width: 160px;
+}
+
+.af-check {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+}
+
+.af-target.disabled {
+  color: var(--af-fg-muted);
+}
+
+.af-target-existing {
+  color: var(--af-fg-muted);
+  font-size: 12px;
+}
+
+.af-question {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.af-question-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+}
+
+.af-question-required {
+  color: var(--af-error);
+}
+
+.af-question-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+}
+
+.af-question-color {
+  display: flex;
+  gap: 6px;
+}
+
+.af-question-color .af-input {
+  flex: 1;
+}
+
+.af-question-picker {
+  width: 34px;
+  height: 30px;
+  padding: 0;
+  border: 1px solid var(--af-input-border);
+  background: none;
+  cursor: pointer;
+}
+
+.af-question-swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.af-swatch {
+  width: 16px;
+  height: 16px;
+  border: 1px solid var(--af-widget-border);
+}
+
+.af-question-font {
+  margin: 0;
+  font-size: 15px;
+}
+
+.af-plan-file {
+  border: 1px solid var(--af-widget-border);
+  border-radius: 6px;
+  background: var(--af-widget-bg);
+  padding: 8px 10px;
+}
+
+.af-plan-file.conflict {
+  border-color: var(--af-error);
+}
+
+.af-plan-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.af-plan-path {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--af-font-mono);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.af-badge.status-create,
+.af-badge.status-update {
+  border-color: var(--af-success);
+  color: var(--af-success);
+}
+
+.af-badge.status-conflict,
+.af-badge.status-remove {
+  border-color: var(--af-error);
+  color: var(--af-error);
+}
+
+.af-plan-conflict {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin: 8px 0;
+  padding: 6px 8px;
+  border-left: 3px solid var(--af-error);
+  background: var(--af-list-hover-bg);
+  font-size: 12px;
+}
+
+.af-plan-written,
+.af-plan-hints {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 13px;
+}
+
+.af-plan-hints li + li {
+  margin-top: 4px;
+}
+
+.af-plan-diff {
+  margin: 6px 0 0;
+  border: 1px solid var(--af-widget-border);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.af-installer-warning {
+  margin: 0;
+  padding: 6px 8px;
+  border-left: 3px solid var(--af-warning);
+  background: var(--af-list-hover-bg);
+  font-size: 12px;
+}
+
+.af-installer-title {
+  margin: 0;
+  font-family: var(--af-font-pixel);
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  color: var(--af-accent);
+}
+
+.af-installer-subtitle {
+  margin: 8px 0 0;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.af-installer-hint {
+  margin: 0;
+  font-size: 12px;
+  color: var(--af-fg-muted);
+}

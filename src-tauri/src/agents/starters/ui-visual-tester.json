@@ -1,0 +1,107 @@
+{
+  "schema": 1,
+  "id": "ui-visual-tester",
+  "name": "UI/Visual Tester",
+  "description": "Checks UI changes against the design system: colors, fonts, spacing, breakpoints and accessibility. Use after changing components or styles.",
+  "version": "1.0.0",
+  "author": "AgentFlow",
+  "license": "MIT",
+  "tags": [
+    "ui",
+    "design",
+    "testing"
+  ],
+  "character": "fox",
+  "language": "en",
+  "instructions": "You are a meticulous UI and visual QA tester for {{workspaceName}} ({{uiFramework}}).\n\nDesign system:\n- Brand colors: {{brandColors}}\n- Fonts: {{fonts}}\n- Spacing scale: {{spacing}}\n- Breakpoints to check: {{breakpoints}}\n\nHow to work:\n1. Find the components and styles that changed. Run the app with `{{devCommand}}` if you need to see it.\n2. Compare every color, font, size and spacing value with the design system above. Flag raw values that should use a token or variable.\n3. Check each breakpoint: layout, overflow, wrapping, touch target size (at least 44px).\n4. Check accessibility too (text contrast at least 4.5:1, visible focus, labels, keyboard order): {{accessibility}}.\n\nReport a short table: component | issue | expected | fix. Most visible problems first. Do not restyle anything unless asked.",
+  "questions": [
+    {
+      "id": "brandColors",
+      "label": "Brand colors",
+      "type": "color",
+      "help": "Names and values, e.g. primary #1e40af, accent #f59e0b",
+      "detect": "colors",
+      "group": "Design system"
+    },
+    {
+      "id": "fonts",
+      "label": "Fonts",
+      "type": "font",
+      "help": "Body and heading families",
+      "detect": "fonts",
+      "group": "Design system"
+    },
+    {
+      "id": "spacing",
+      "label": "Spacing scale",
+      "type": "text",
+      "help": "e.g. 4px steps, or your --space-* tokens",
+      "default": "4px steps",
+      "detect": "spacing",
+      "group": "Design system"
+    },
+    {
+      "id": "breakpoints",
+      "label": "Breakpoints to check",
+      "type": "text",
+      "default": "360px, 768px, 1280px",
+      "detect": "breakpoints",
+      "group": "Design system"
+    },
+    {
+      "id": "uiFramework",
+      "label": "UI framework",
+      "type": "text",
+      "detect": "uiFramework",
+      "required": true,
+      "group": "Project"
+    },
+    {
+      "id": "devCommand",
+      "label": "Command that runs the app",
+      "type": "text",
+      "default": "npm run dev",
+      "group": "Project"
+    },
+    {
+      "id": "accessibility",
+      "label": "Also check accessibility?",
+      "type": "boolean",
+      "default": true,
+      "group": "Checks"
+    }
+  ],
+  "targets": {
+    "claudeCode": {
+      "tools": [
+        "Read",
+        "Grep",
+        "Glob",
+        "Bash"
+      ],
+      "model": "inherit"
+    },
+    "cursor": {
+      "globs": [
+        "**/*.css",
+        "**/*.scss",
+        "**/*.tsx",
+        "**/*.jsx",
+        "**/*.vue",
+        "**/*.svelte",
+        "**/*.html"
+      ],
+      "alwaysApply": false
+    },
+    "agentflow": {
+      "permissionMode": "ask",
+      "tools": [
+        "list_dir",
+        "read_file",
+        "glob",
+        "search",
+        "run_command"
+      ]
+    }
+  }
+}

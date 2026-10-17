@@ -15,6 +15,7 @@ import { t } from '../i18n';
 import { settings } from '../settings/settingsStore';
 import { AddPanelButton } from './AddPanelButton';
 import { currentWorkspace } from '../workspace';
+import { setChatTitle } from './chatPanels';
 import { editorFileDirty, openEditor, renameEditors } from './editorPanels';
 import { consumeFreshPanel, openPanel, openPanels } from './layoutStore';
 import { createPanelTab } from './PanelTab';
@@ -30,6 +31,7 @@ const ChatPanel = lazy(() => import('../chat/ChatPanel'));
 const EditorPanel = lazy(() => import('../editor/EditorPanel'));
 const UsagePanel = lazy(() => import('../tokens/UsagePanel'));
 const DiffView = lazy(() => import('../editor/DiffView'));
+const InstallerPanel = lazy(() => import('../agents/InstallerPanel'));
 
 /** Chat panels open files, check unsaved edits, mark agent changes and show diffs. */
 const chatHooks: ChatHooks = {
@@ -40,6 +42,7 @@ const chatHooks: ChatHooks = {
     if (root) markAgentChanged(root, paths);
   },
   Diff: DiffView,
+  setTitle: setChatTitle,
 };
 
 function Loading(): JSX.Element {
@@ -76,6 +79,9 @@ function PanelView(props: { id: string; params: PanelParams; api: DockviewPanelA
             panelTitle={(id) => openPanels().find((panel) => panel.id === id)?.title}
             onOpenSettings={() => openPanel('settings')}
           />
+        </Match>
+        <Match when={params.kind === 'installer'}>
+          <InstallerPanel hooks={{ Diff: DiffView, openFile: openEditor }} />
         </Match>
         <Match when={params.kind === 'files'}>
           <FilesPanel onOpenFile={openEditor} onRenamed={renameEditors} />

@@ -63,6 +63,17 @@ export interface AgentState {
   toolsDisabled: boolean;
   /** The environment part of the default system prompt (built once). */
   context: string | null;
+  /** The installed AgentFlow agent this chat was opened with. */
+  profile?: ProfileSnapshot;
+}
+
+/** What a chat keeps of an AgentFlow agent profile. */
+export interface ProfileSnapshot {
+  id: string;
+  name: string;
+  instructions: string;
+  /** Only these tools (within what the permission mode allows). */
+  tools: string[] | null;
 }
 
 export type ToolCategory = 'read' | 'write' | 'command';

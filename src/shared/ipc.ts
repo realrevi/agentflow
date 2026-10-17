@@ -3,9 +3,15 @@
 import { Channel, invoke } from '@tauri-apps/api/core';
 import { readText, writeText } from '@tauri-apps/plugin-clipboard-manager';
 import { getCurrentWindow } from '@tauri-apps/api/window';
-import { open as openDialog } from '@tauri-apps/plugin-dialog';
+import { open as openDialog, save as saveDialog } from '@tauri-apps/plugin-dialog';
 import { openUrl as openWithOs } from '@tauri-apps/plugin-opener';
 import { AppError, toAppError } from './errors';
+import type {
+  AgentTemplate,
+  Confirmations,
+  GenerateRequest,
+  InstallRequest,
+} from './installerTypes';
 import type { Commands } from './ipcCommands';
 import { webUrl } from './url';
 import type {
@@ -157,6 +163,27 @@ async function pickFolder(title: string): Promise<string | null> {
   }
 }
 
+const JSON_FILES = [{ name: 'JSON', extensions: ['json'] }];
+
+/** Native file picker for one JSON file. Resolves `null` if cancelled. */
+async function pickJsonFile(title: string): Promise<string | null> {
+  try {
+    const picked = await openDialog({ multiple: false, title, filters: JSON_FILES });
+    return typeof picked === 'string' ? picked : null;
+  } catch (err) {
+    throw toAppError(err);
+  }
+}
+
+/** Native "save as" for a JSON file. Resolves `null` if cancelled. */
+async function pickJsonSavePath(title: string, defaultPath: string): Promise<string | null> {
+  try {
+    return await saveDialog({ title, defaultPath, filters: JSON_FILES });
+  } catch (err) {
+    throw toAppError(err);
+  }
+}
+
 /** Native clipboard (tauri-plugin-clipboard-manager): no webview permission prompts. */
 async function clipboard<T>(run: () => Promise<T>): Promise<T> {
   try {
@@ -231,6 +258,37 @@ export const ipc = {
   /** Undoes a turn's file changes (created files go to the OS trash). */
   agentCheckpointRestore: (workspace: string | null, conversationId: string, turn: string) =>
     call('agent_checkpoint_restore', { workspace, conversationId, turn }),
+  // Agent installer (phase 8).
+  agentsStarters: () => call('agents_starters', {}),
+  /** Problems with a template (empty = valid). */
+  agentsValidate: (template: unknown) => call('agents_validate', { template }),
+  agentsTemplateRead: (path: string) => call('agents_template_read', { path }),
+  agentsTemplateWrite: (path: string, template: AgentTemplate) =>
+    call('agents_template_write', { path, template }),
+  agentsDetect: (workspacePath: string | null) => call('agents_detect', { workspacePath }),
+  /** Every file the install would write, with before/after and conflicts. Writes nothing. */
+  agentsPlan: (workspacePath: string | null, request: InstallRequest) =>
+    call('agents_plan', { workspacePath, request }),
+  agentsInstall: (workspacePath: string | null, request: InstallRequest, confirm: Confirmations) =>
+    call('agents_install', { workspacePath, request, confirm }),
+  agentsInstalled: (workspacePath: string | null) => call('agents_installed', { workspacePath }),
+  agentsUninstallPlan: (workspacePath: string | null, id: string) =>
+    call('agents_uninstall_plan', { workspacePath, id }),
+  agentsUninstall: (
+    workspacePath: string | null,
+    id: string,
+    confirm: Confirmations,
+    keep: string[],
+  ) => call('agents_uninstall', { workspacePath, id, confirm, keep }),
+  agentsProfiles: (workspacePath: string | null) => call('agents_profiles', { workspacePath }),
+  /** A new API chat with an installed AgentFlow agent's role, tools and mode. */
+  agentsProfileChat: (
+    workspacePath: string | null,
+    profileId: string,
+    providerId: string,
+    model: string,
+  ) => call('agents_profile_chat', { workspacePath, profileId, providerId, model }),
+  agentsGenerate: (request: GenerateRequest) => call('agents_generate', { request }),
   /** Keys are write-only: the frontend only ever sees has-key + the last 4 characters. */
   providerKeyStatus: (providerId: string) => call('provider_key_status', { providerId }),
   providerSetKey: (providerId: string, key: string) =>
@@ -252,6 +310,8 @@ export const ipc = {
   usageCliStatus: () => call('usage_cli_status', {}),
   onWindowClose,
   pickFolder,
+  pickJsonFile,
+  pickJsonSavePath,
   readClipboard: () => clipboard(readText),
   writeClipboard: (text: string) => clipboard(() => writeText(text)),
   openUrl,

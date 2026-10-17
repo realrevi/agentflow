@@ -5,6 +5,7 @@ import type { AgentSettings } from './agentTypes';
 
 export type * from './agentTypes';
 export type * from './chatTypes';
+export type * from './installerTypes';
 export type * from './usageTypes';
 
 export type Locale = 'en' | 'tr' | 'de' | 'zh' | 'ru';

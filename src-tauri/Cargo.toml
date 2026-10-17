@@ -36,6 +36,7 @@ keyring = "4.2"
 tiktoken-rs = "0.12"
 regex = "1"
 globset = "0.4"
+sha2 = "0.10"
 
 [dev-dependencies]
 socket2 = "0.6"

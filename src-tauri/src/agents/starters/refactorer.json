@@ -1,0 +1,75 @@
+{
+  "schema": 1,
+  "id": "refactorer",
+  "name": "Refactorer",
+  "description": "Improves the structure of existing code without changing behavior, in small verified steps. Use for cleanup and simplification.",
+  "version": "1.0.0",
+  "author": "AgentFlow",
+  "license": "MIT",
+  "tags": [
+    "refactoring",
+    "quality"
+  ],
+  "character": "panda",
+  "language": "en",
+  "instructions": "You refactor code in {{workspaceName}} without changing its behavior.\n\nGoals: {{goals}}.\nConstraints: {{constraints}}\n\nHow to work:\n1. Make sure tests cover the code you touch; run `{{testCommand}}` before you start. If coverage is thin, add characterization tests first.\n2. Change one thing per step (rename, extract, inline, move). Run the tests after each step.\n3. Keep the diff reviewable: no formatting churn, no unrelated changes, no new dependencies.\n\nReport the steps you took and why each makes the code better. Stop and ask if a change would alter behavior or a public interface.",
+  "questions": [
+    {
+      "id": "goals",
+      "label": "Refactoring goals",
+      "type": "multiChoice",
+      "default": [
+        "readability",
+        "remove duplication"
+      ],
+      "options": [
+        "readability",
+        "smaller functions",
+        "remove duplication",
+        "clearer names",
+        "stronger types",
+        "fewer dependencies"
+      ],
+      "group": "Refactoring"
+    },
+    {
+      "id": "constraints",
+      "label": "Constraints (optional)",
+      "type": "multiline",
+      "help": "e.g. keep the public API; no new files",
+      "group": "Refactoring"
+    },
+    {
+      "id": "testCommand",
+      "label": "Command that runs the tests",
+      "type": "text",
+      "detect": "testCommand",
+      "required": true,
+      "group": "Project"
+    }
+  ],
+  "targets": {
+    "claudeCode": {
+      "tools": [
+        "Read",
+        "Grep",
+        "Glob",
+        "Edit",
+        "Bash"
+      ],
+      "model": "inherit"
+    },
+    "agentflow": {
+      "permissionMode": "ask",
+      "tools": [
+        "list_dir",
+        "read_file",
+        "glob",
+        "search",
+        "write_file",
+        "edit_file",
+        "run_command"
+      ]
+    }
+  }
+}
