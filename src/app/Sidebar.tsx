@@ -1,6 +1,8 @@
 import { Match, Switch } from 'solid-js';
 import { t, type I18nKey } from '../features/i18n';
+import { openPanel, openPanels } from '../features/layout';
 import { settings, updateSettings } from '../features/settings';
+import { UsageView } from '../features/tokens/UsageView';
 import { chevronLeftIcon } from '../shared/ui/icons';
 import { PixelIcon } from '../shared/ui/PixelIcon';
 import { SidebarSash } from './SidebarSash';
@@ -12,6 +14,7 @@ const TITLES: Record<string, I18nKey> = {
   agents: 'activity.agents',
   explorer: 'activity.explorer',
   characters: 'activity.characters',
+  usage: 'activity.usage',
 };
 
 export function Sidebar() {
@@ -36,6 +39,13 @@ export function Sidebar() {
           </Match>
           <Match when={settings.ui.activeView === 'characters'}>
             <CharactersView />
+          </Match>
+          <Match when={settings.ui.activeView === 'usage'}>
+            <UsageView
+              panelTitle={(id) => openPanels().find((panel) => panel.id === id)?.title}
+              onOpenPanel={() => openPanel('usage')}
+              onOpenSettings={() => openPanel('settings')}
+            />
           </Match>
         </Switch>
       </div>

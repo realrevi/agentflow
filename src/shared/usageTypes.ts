@@ -53,9 +53,15 @@ export interface Totals extends TokenUsage {
   cliCost: number;
 }
 
+export interface SourceTotals extends Totals {
+  source: UsageSource;
+}
+
 export interface UsageDay extends Totals {
   /** `YYYY-MM-DD`, local. */
   date: string;
+  /** The day split by source (sources without usage are left out). */
+  sources: SourceTotals[];
 }
 
 export interface UsageGroup extends Totals {

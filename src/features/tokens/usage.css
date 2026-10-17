@@ -1,0 +1,274 @@
+/* Usage dashboard (sidebar view and dock panel). Theme variables only. */
+.af-usage {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12px;
+}
+
+.af-usage-panel {
+  height: 100%;
+  overflow: auto;
+  padding: 14px 18px 24px;
+}
+
+.af-usage-panel .af-usage {
+  max-width: 760px;
+}
+
+.af-usage-muted {
+  color: var(--af-fg-muted);
+}
+
+.af-usage-muted.ok {
+  color: var(--af-success);
+}
+
+.af-usage-cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+.af-usage-card {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px 8px;
+  border: 1px solid var(--af-widget-border);
+  border-radius: 4px;
+  background: var(--af-widget-bg);
+  min-width: 0;
+}
+
+.af-usage-card-value {
+  font-family: var(--af-font-mono);
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+  color: var(--af-fg);
+  white-space: nowrap;
+}
+
+.af-usage-card-label {
+  font-size: 11px;
+  color: var(--af-fg-muted);
+  overflow-wrap: anywhere;
+}
+
+.af-usage-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin: 10px 2px 2px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--af-sidebar-header-fg, var(--af-fg-muted));
+}
+
+.af-usage-link {
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--af-link, var(--af-accent));
+  font: inherit;
+  font-weight: normal;
+  text-transform: none;
+  letter-spacing: normal;
+  cursor: pointer;
+}
+
+.af-usage-link:hover {
+  text-decoration: underline;
+}
+
+/* Chart */
+.af-usage-chart {
+  position: relative;
+}
+
+.af-usage-chart svg {
+  display: block;
+  width: 100%;
+  height: 96px;
+  border-bottom: 1px solid var(--af-border);
+}
+
+.af-usage.compact .af-usage-chart svg {
+  height: 72px;
+}
+
+.af-usage-chart-hit {
+  fill: transparent;
+}
+
+.af-usage-chart g:hover .af-usage-chart-hit {
+  fill: var(--af-list-hover-bg);
+}
+
+.af-usage-chart-axis {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 2px;
+  font-size: 10px;
+  color: var(--af-fg-muted);
+}
+
+.af-usage-tooltip {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 4px 8px;
+  border: 1px solid var(--af-widget-border);
+  border-radius: 4px;
+  background: var(--af-widget-bg);
+  box-shadow: 0 2px 8px var(--af-shadow);
+  font-size: 11px;
+  pointer-events: none;
+}
+
+.af-usage-tooltip-row,
+.af-usage-cli li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.af-usage-tooltip i,
+.af-usage-cli i {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  flex: none;
+}
+
+.af-usage-line {
+  margin: 2px;
+}
+
+.af-usage-line.ok {
+  color: var(--af-success);
+}
+
+/* Breakdown */
+.af-usage-tabs {
+  display: flex;
+  gap: 2px;
+  border-bottom: 1px solid var(--af-border);
+}
+
+.af-usage-tabs button {
+  padding: 3px 8px;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: none;
+  color: var(--af-fg-muted);
+  font: inherit;
+  cursor: pointer;
+}
+
+.af-usage-tabs button[aria-selected='true'] {
+  border-bottom-color: var(--af-accent);
+  color: var(--af-fg);
+}
+
+.af-usage-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.af-usage-table th,
+.af-usage-table td {
+  padding: 3px 4px;
+  border-bottom: 1px solid var(--af-border);
+  text-align: left;
+}
+
+.af-usage-table th:first-child,
+.af-usage-table td:first-child {
+  width: 46%;
+}
+
+.af-usage-table th button {
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--af-fg-muted);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.af-usage-table .numeric {
+  text-align: right;
+  font-family: var(--af-font-mono);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.af-usage-table th.numeric button {
+  width: 100%;
+  text-align: right;
+}
+
+.af-usage-name span,
+.af-usage-name small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.af-usage-name small {
+  color: var(--af-fg-muted);
+  font-size: 10px;
+}
+
+.af-usage.compact .af-usage-table th:first-child,
+.af-usage.compact .af-usage-table td:first-child {
+  width: auto;
+}
+
+.af-usage.compact .af-usage-tabs button {
+  padding: 3px 5px;
+  font-size: 11px;
+}
+
+.af-usage-equiv {
+  color: var(--af-fg-muted);
+}
+
+/* CLI readers */
+.af-usage-cli {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin: 0;
+  padding: 0 2px;
+  list-style: none;
+}
+
+.af-usage-cli-name {
+  min-width: 80px;
+}
+
+.af-usage-empty {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 2px;
+}
+
+.af-usage-empty p {
+  margin: 0;
+}
+
+.af-usage-open {
+  align-self: flex-start;
+  margin-top: 10px;
+}

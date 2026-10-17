@@ -1,9 +1,11 @@
 import { createSignal, Show } from 'solid-js';
 import { LOCALES, locale, t } from '../features/i18n';
 import { settings, updateSettings } from '../features/settings';
+import { openPanel } from '../features/layout';
 import { activeTheme, selectTheme, themes } from '../features/theme';
+import { costText, formatTokens, totalTokens, usageSummary } from '../features/tokens';
 import type { Locale } from '../shared/types';
-import { globeIcon, paletteIcon } from '../shared/ui/icons';
+import { globeIcon, paletteIcon, usageIcon } from '../shared/ui/icons';
 import { Menu, type MenuItem } from '../shared/ui/Menu';
 import { PixelIcon } from '../shared/ui/PixelIcon';
 import { WorkspaceStatus } from './WorkspaceStatus';
@@ -57,6 +59,19 @@ export function StatusBar() {
       </span>
       <WorkspaceStatus />
       <div class="af-statusbar-spacer" />
+      <Show when={usageSummary()?.today}>
+        {(today) => (
+          <button
+            type="button"
+            class="af-status-item"
+            title={t('status.usage', { tokens: formatTokens(totalTokens(today())) })}
+            onClick={() => openPanel('usage')}
+          >
+            <PixelIcon art={usageIcon} scale={1} />
+            {t('status.usageToday', { cost: costText(today()) })}
+          </button>
+        )}
+      </Show>
       <button
         ref={themeButton}
         type="button"

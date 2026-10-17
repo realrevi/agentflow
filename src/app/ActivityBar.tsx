@@ -6,6 +6,7 @@ import {
   explorerIcon,
   logoIcon,
   settingsIcon,
+  usageIcon,
 } from '../shared/ui/icons';
 import { PixelIcon, type PixelArt } from '../shared/ui/PixelIcon';
 import { t, type I18nKey } from '../features/i18n';
@@ -16,6 +17,7 @@ const VIEWS: readonly { id: SidebarView; icon: PixelArt; label: I18nKey }[] = [
   { id: 'agents', icon: agentsIcon, label: 'activity.agents' },
   { id: 'explorer', icon: explorerIcon, label: 'activity.explorer' },
   { id: 'characters', icon: charactersIcon, label: 'activity.characters' },
+  { id: 'usage', icon: usageIcon, label: 'activity.usage' },
 ];
 
 /** Clicking the active view toggles the sidebar, like VS Code. */

@@ -14,7 +14,7 @@ import { t } from '../i18n';
 import { settings } from '../settings/settingsStore';
 import { AddPanelButton } from './AddPanelButton';
 import { openEditor, renameEditors } from './editorPanels';
-import { consumeFreshPanel } from './layoutStore';
+import { consumeFreshPanel, openPanel, openPanels } from './layoutStore';
 import { createPanelTab } from './PanelTab';
 import { PANEL_TAB, parsePanelParams, type PanelParams } from './panels';
 import { createSolidPart } from './solidPart';
@@ -26,6 +26,7 @@ const SettingsPanel = lazy(() => import('../settings/SettingsPanel'));
 const TerminalPanel = lazy(() => import('../terminal/TerminalPanel'));
 const ChatPanel = lazy(() => import('../chat/ChatPanel'));
 const EditorPanel = lazy(() => import('../editor/EditorPanel'));
+const UsagePanel = lazy(() => import('../tokens/UsagePanel'));
 
 function Loading(): JSX.Element {
   return <div class="af-panel-loading">{t('panel.loading')}</div>;
@@ -55,6 +56,12 @@ function PanelView(props: { id: string; params: PanelParams; api: DockviewPanelA
       <Switch>
         <Match when={params.kind === 'settings'}>
           <SettingsPanel />
+        </Match>
+        <Match when={params.kind === 'usage'}>
+          <UsagePanel
+            panelTitle={(id) => openPanels().find((panel) => panel.id === id)?.title}
+            onOpenSettings={() => openPanel('settings')}
+          />
         </Match>
         <Match when={params.kind === 'files'}>
           <FilesPanel onOpenFile={openEditor} onRenamed={renameEditors} />
