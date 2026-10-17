@@ -1,7 +1,9 @@
 // Types shared with the Rust backend. Keep in sync with src-tauri/src/{settings,themes,error}.
 import type { ChatSettings, ProviderEntry } from './chatTypes';
 import type { UsageSettings } from './usageTypes';
+import type { AgentSettings } from './agentTypes';
 
+export type * from './agentTypes';
 export type * from './chatTypes';
 export type * from './usageTypes';
 
@@ -79,6 +81,8 @@ export interface Settings {
   chat: ChatSettings;
   /** Token & cost tracking: CLI readers, prices, budgets. */
   usage: UsageSettings;
+  /** API agents: loop and tool limits, permissions, the default system prompt. */
+  agent: AgentSettings;
   layout: SerializedLayout | null;
 }
 

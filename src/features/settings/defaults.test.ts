@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import agentRs from '../../../src-tauri/src/settings/agent.rs?raw';
 import chatRs from '../../../src-tauri/src/settings/chat.rs?raw';
 import modelRs from '../../../src-tauri/src/settings/model.rs?raw';
 import providersRs from '../../../src-tauri/src/settings/providers.rs?raw';
@@ -13,6 +14,7 @@ const RUST = {
   'providers.rs': providersRs,
   'chat.rs': chatRs,
   'usage.rs': usageRs,
+  'agent.rs': agentRs,
 };
 const rust = (file: keyof typeof RUST) => RUST[file];
 
@@ -58,6 +60,20 @@ describe('settings defaults mirror the Rust schema', () => {
       providers: [],
       hardStop: false,
     });
+  });
+
+  it('uses the Rust agent defaults', () => {
+    const agent = defaultImpl('agent.rs', 'AgentSettings');
+    const expected = DEFAULT_SETTINGS.agent;
+    const num = (field: string) =>
+      Number(new RegExp(`${field}: ([0-9_]+),`).exec(agent)?.[1]?.replaceAll('_', ''));
+    expect(num('max_iterations')).toBe(expected.maxIterations);
+    expect(num('tool_result_cap')).toBe(expected.toolResultCap);
+    expect(num('command_timeout_secs')).toBe(expected.commandTimeoutSecs);
+    expect(agent).toContain(`default_prompt: ${expected.defaultPrompt}`);
+    expect(agent).toContain('default_mode: PermissionMode::Ask');
+    expect(expected.defaultMode).toBe('ask');
+    expect(expected.toolModels).toEqual([]);
   });
 
   it('knows every sidebar view the backend accepts', () => {

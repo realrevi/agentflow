@@ -1,0 +1,105 @@
+/* Agent turns (phase 7A, plain): reasoning, tool lines, permission row, notices. */
+.af-chat-reasoning,
+.af-chat-tool {
+  max-width: 820px;
+  margin: 0 0 6px;
+  font-size: 12px;
+  color: var(--af-fg-muted);
+}
+
+.af-chat-reasoning summary,
+.af-chat-tool summary {
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+
+.af-chat-reasoning pre,
+.af-chat-tool pre,
+.af-chat-permission pre {
+  max-height: 240px;
+  margin: 4px 0 0;
+  padding: 6px 8px;
+  overflow: auto;
+  border: 1px solid var(--af-widget-border);
+  border-radius: 4px;
+  background: var(--af-input-bg);
+  color: var(--af-fg);
+  font-family: var(--af-font-mono);
+  font-size: 12px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.af-chat-tool-mark {
+  color: var(--af-success);
+}
+
+.af-chat-tool.running .af-chat-tool-mark {
+  color: var(--af-accent);
+}
+
+.af-chat-tool.failed .af-chat-tool-mark {
+  color: var(--af-error);
+}
+
+.af-chat-permission {
+  max-width: 820px;
+  margin: 4px 0 12px;
+  padding: 8px 10px;
+  border: 1px solid var(--af-accent);
+  border-radius: 6px;
+  background: var(--af-widget-bg);
+}
+
+.af-chat-permission.dangerous {
+  border-color: var(--af-error);
+}
+
+.af-chat-permission-title {
+  margin: 0 0 6px;
+  overflow-wrap: anywhere;
+}
+
+.af-chat-permission-danger {
+  margin: 6px 0;
+  color: var(--af-error);
+}
+
+.af-chat-permission-preview {
+  margin: 6px 0;
+  font-size: 12px;
+}
+
+.af-chat-permission-preview pre.before {
+  color: var(--af-fg-muted);
+}
+
+.af-chat-permission-new {
+  margin: 4px 0;
+  color: var(--af-fg-muted);
+}
+
+.af-chat-permission-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.af-chat-permission-actions .af-input {
+  flex: 1;
+  min-width: 160px;
+}
+
+.af-chat-notice {
+  max-width: 820px;
+  margin: 0 0 10px;
+  color: var(--af-warning);
+  font-size: 12px;
+}
+
+.af-chat-mode {
+  flex: none;
+  width: auto;
+  max-width: 150px;
+}

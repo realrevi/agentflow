@@ -1,7 +1,8 @@
 // One chat panel's live state: the stored messages, the reply streaming right now (revealed
 // smoothly on the shared animation loop), and the character's state: think on send, work on
 // the first delta, done on stop (idle 5 s later), error on error. Also the hard budget stop
-// (see budgetStop.ts) and Compact.
+// (see budgetStop.ts) and Compact. Agent turns (agentTurn.ts): each finished step arrives as a
+// stored message, then the next step streams.
 import { batch, createSignal } from 'solid-js';
 import { toAppError } from '../../shared/errors';
 import { ipc } from '../../shared/ipc';
@@ -17,6 +18,7 @@ import { clearAgentState, setAgentState } from '../agentui';
 import { reducedMotion, startAnimation, type AgentState } from '../characters';
 import { reportError } from '../i18n';
 import { settings } from '../settings/settingsStore';
+import { createAgentTurn, isAgentEvent } from './agentTurn';
 import { createBudgetStop, isBudgetError } from './budgetStop';
 import { RevealBuffer } from './reveal';
 
@@ -65,6 +67,7 @@ export function createChatSession(options: ChatSessionOptions) {
   let firstDelta = true;
   let restTimer: number | undefined;
   let disposed = false;
+  const agent = createAgentTurn((phase) => state(phase === 'wait' ? 'idle' : phase));
 
   const state = (next: AgentState) => {
     window.clearTimeout(restTimer);
@@ -100,6 +103,7 @@ export function createChatSession(options: ChatSessionOptions) {
     batch(() => {
       if (end.message) setMessages((list) => [...list, end.message as ChatMessage]);
       setStreaming(null);
+      agent.reset(true);
       if (end.type === 'error') setError(end.error);
     });
     if (end.type === 'error') state('error');
@@ -140,10 +144,25 @@ export function createChatSession(options: ChatSessionOptions) {
       case 'usage':
         setStreaming((current) => current && { ...current, usage: event.usage });
         break;
-      default:
+      case 'message':
+        // A finished step: its text is in the message, the next step starts empty.
+        if (reveal) reveal = new RevealBuffer();
+        stopAnimation?.();
+        stopAnimation = undefined;
+        batch(() => {
+          setMessages((list) => [...list, event.message]);
+          setStreaming((current) => current && { text: '', usage: null });
+          agent.stepStored();
+        });
+        break;
+      case 'stop':
+      case 'error':
         ending = event;
         if (reveal && reveal.backlog > 0) animate();
         else finish();
+        break;
+      default:
+        if (isAgentEvent(event)) agent.handle(event);
     }
   }
 
@@ -163,6 +182,7 @@ export function createChatSession(options: ChatSessionOptions) {
     reveal = settings.chat.smoothReveal && !reducedMotion() ? new RevealBuffer() : null;
     batch(() => {
       setError(null);
+      agent.reset();
       setStreaming({ text: '', usage: null });
       if (text === null) setMessages(withoutFailedTail);
     });
@@ -257,6 +277,7 @@ export function createChatSession(options: ChatSessionOptions) {
     compact,
     compacting,
     budget,
+    agent,
     canRetry,
     dispose,
   };

@@ -1,6 +1,15 @@
 // AI providers, API chats and conversations (phase 5). Mirrors src-tauri/src/{settings,
 // providers,conversations}. API keys never cross IPC: the frontend only sees KeyStatus.
 
+import type {
+  AgentPhase,
+  AgentState,
+  Part,
+  PermissionMode,
+  PermissionRequest,
+  ToolCall,
+} from './agentTypes';
+
 export type ProviderKind = 'anthropic' | 'openai';
 export type OpenAiPreset =
   'openai' | 'deepseek' | 'gemini' | 'openrouter' | 'groq' | 'ollama' | 'custom';
@@ -84,7 +93,8 @@ export interface Attachment {
   content: string;
 }
 
-export type MessageRole = 'user' | 'assistant';
+/** `tool`: the results of an agent step (sent to the model as the user's turn). */
+export type MessageRole = 'user' | 'assistant' | 'tool';
 export type MessageStatus = 'complete' | 'cancelled' | 'error';
 
 export interface ChatMessage {
@@ -97,6 +107,10 @@ export interface ChatMessage {
   stopReason: string | null;
   error: string | null;
   usage: UsageRecord | null;
+  /** Agent messages: reasoning, text and tool calls, or tool results. */
+  parts?: Part[];
+  /** Digest of the system prompt and tools an agent message was produced under. */
+  prefix?: string;
 }
 
 export interface ConversationSummary {
@@ -122,6 +136,7 @@ export interface Conversation {
   messages: ChatMessage[];
   /** Set by Compact: requests send the summary instead of the messages up to `through`. */
   compaction: Compaction | null;
+  agent: AgentState;
 }
 
 export interface Compaction {
@@ -138,6 +153,7 @@ export interface ConversationPatch {
   providerId?: string | null;
   model?: string;
   systemPrompt?: string;
+  permissionMode?: PermissionMode;
 }
 
 export type ChatErrorKind =
@@ -160,10 +176,18 @@ export interface ChatError {
   retryAfter: number | null;
 }
 
-/** Events of one streamed reply, in order: deltas and usage, then exactly one stop or error. */
+/** Events of one turn, in order: deltas, usage and agent steps, then exactly one stop or
+ * error. */
 export type ChatEvent =
   | { type: 'delta'; text: string }
+  | { type: 'reasoning'; text: string }
   | { type: 'usage'; usage: TokenUsage }
+  | { type: 'status'; phase: AgentPhase; text: string | null }
+  | { type: 'toolStart'; call: ToolCall; status: string }
+  | { type: 'toolEnd'; callId: string; ok: boolean; summary: string }
+  | { type: 'permission'; request: PermissionRequest }
+  | { type: 'notice'; kind: 'toolsUnsupported' | 'maxIterations'; message: string }
+  | { type: 'message'; message: ChatMessage }
   | { type: 'stop'; reason: string; message: ChatMessage | null }
   | { type: 'error'; error: ChatError; message: ChatMessage | null };
 

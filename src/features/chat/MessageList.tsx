@@ -1,17 +1,23 @@
 // The conversation: user prompts (plain text + attachment chips) and replies (sanitized
 // markdown). The streaming reply re-renders only its last block. Code copy buttons and
 // links are handled by delegation: http(s) links open in the system browser, right-click
-// offers "copy link"; nothing ever navigates inside the app.
+// offers "copy link"; nothing ever navigates inside the app. Agent turns add reasoning, tool
+// lines and the permission row (AgentParts.tsx, PermissionRow.tsx); `tool` messages render as
+// the results under their calls.
 import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show } from 'solid-js';
 import { ipc } from '../../shared/ipc';
 import { showToast } from '../../shared/toast';
-import type { ChatError, ChatMessage, Compaction } from '../../shared/types';
+import type { ChatError, ChatMessage, Compaction, ToolResult } from '../../shared/types';
 import { Menu } from '../../shared/ui/Menu';
 import { webUrl } from '../../shared/url';
 import { reportError, t } from '../i18n';
+import { MessageCalls, Notices, Reasoning, reasoningOf, resultsOf } from './AgentParts';
+import type { LiveTool } from './agentTurn';
+import type { AgentTurn } from './agentTurn';
 import { estimateTokens } from './attachments';
 import { renderMarkdown } from './markdown';
 import { cacheText, errorText, stopNote, usageText } from './messageText';
+import { PermissionRow } from './PermissionRow';
 import type { Streaming } from './session';
 import { splitStable } from './stableSplit';
 
@@ -23,6 +29,7 @@ interface MessageListProps {
   onRetry: () => void;
   /** Older messages a Compact summarized (requests send the summary instead). */
   compaction: Compaction | null;
+  agent: AgentTurn;
 }
 
 /** Near the bottom: keep following new text. */
@@ -79,12 +86,21 @@ export function MessageList(props: MessageListProps) {
     return latest;
   });
 
+  const results = createMemo(() => resultsOf(props.messages));
+  /** A tool runs, a permission waits or reasoning streams: no empty reply caret. */
+  const busy = () =>
+    Boolean(props.agent.permission() || props.agent.reasoning()) ||
+    props.agent.tools().some((tool) => tool.ok === null);
+
   const follow = () => {
     if (list && pinned) list.scrollTop = list.scrollHeight;
   };
   createEffect(() => {
     void props.messages.length;
     void props.streaming?.text;
+    void props.agent.tools().length;
+    void props.agent.reasoning();
+    void props.agent.permission();
     void props.error;
     queueMicrotask(follow);
   });
@@ -132,7 +148,14 @@ export function MessageList(props: MessageListProps) {
       <For each={props.messages}>
         {(message) => (
           <>
-            <MessageItem message={message} latestCopy={latestCopy()} />
+            <Show when={message.role !== 'tool'}>
+              <MessageItem
+                message={message}
+                latestCopy={latestCopy()}
+                results={results()}
+                live={props.agent.tools()}
+              />
+            </Show>
             <Show when={props.compaction?.through === message.id && props.compaction}>
               {(compaction) => <CompactDivider compaction={compaction()} />}
             </Show>
@@ -140,8 +163,21 @@ export function MessageList(props: MessageListProps) {
         )}
       </For>
       <Show when={props.streaming}>
-        {(streaming) => <StreamingReply text={streaming().text} />}
+        {(streaming) => (
+          <>
+            <Show when={props.agent.reasoning()}>{(text) => <Reasoning text={text()} live />}</Show>
+            <Show when={streaming().text || !busy()}>
+              <StreamingReply text={streaming().text} />
+            </Show>
+            <Show when={props.agent.permission()}>
+              {(request) => (
+                <PermissionRow request={request()} onAnswer={(a) => void props.agent.answer(a)} />
+              )}
+            </Show>
+          </>
+        )}
       </Show>
+      <Notices notices={props.agent.notices()} />
       <Show when={props.error}>{(error) => <p class="af-chat-error">{errorText(error())}</p>}</Show>
       <Show when={props.canRetry}>
         <button
@@ -166,7 +202,12 @@ function CompactDivider(props: { compaction: Compaction }) {
   );
 }
 
-function MessageItem(props: { message: ChatMessage; latestCopy: Map<string, string> }) {
+function MessageItem(props: {
+  message: ChatMessage;
+  latestCopy: Map<string, string>;
+  results: Map<string, ToolResult>;
+  live: readonly LiveTool[];
+}) {
   const html = createMemo(() =>
     props.message.role === 'assistant' ? renderMarkdown(props.message.content) : '',
   );
@@ -206,7 +247,11 @@ function MessageItem(props: { message: ChatMessage; latestCopy: Map<string, stri
           </>
         }
       >
-        <div class="af-md" innerHTML={html()} />
+        <Show when={reasoningOf(props.message)}>{(text) => <Reasoning text={text()} />}</Show>
+        <Show when={props.message.content.trim()}>
+          <div class="af-md" innerHTML={html()} />
+        </Show>
+        <MessageCalls message={props.message} results={props.results} live={props.live} />
         <div class="af-chat-meta">
           <Show when={stopNote(props.message)}>{(note) => <span>{note()}</span>}</Show>
           <Show when={props.message.status === 'error' && props.message.error}>

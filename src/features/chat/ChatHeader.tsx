@@ -1,5 +1,6 @@
 // Provider + model pickers and the (collapsible) system prompt of one conversation.
-// Model ids come from the provider's model list or can be typed by hand.
+// Model ids come from the provider's model list or can be typed by hand. The agent's
+// permission mode and checkpoints sit at the end (AgentControls.tsx).
 import { createSignal, For, Show } from 'solid-js';
 import { ipc } from '../../shared/ipc';
 import type { Conversation, ConversationPatch } from '../../shared/types';
@@ -8,6 +9,7 @@ import { PixelIcon } from '../../shared/ui/PixelIcon';
 import { reportError, t } from '../i18n';
 import { loadModels, modelsOf, providerName } from '../providers';
 import { settings } from '../settings/settingsStore';
+import { AgentControls } from './AgentControls';
 
 interface ChatHeaderProps {
   panelId: string;
@@ -109,6 +111,12 @@ export function ChatHeader(props: ChatHeaderProps) {
             <span class="af-chat-system-dot" aria-hidden="true" />
           </Show>
         </button>
+        <AgentControls
+          panelId={props.panelId}
+          workspace={props.workspace}
+          conversation={props.conversation}
+          onChanged={props.onChanged}
+        />
       </div>
       <Show when={modelsOf(providerId() ?? '').error}>
         {(error) => <p class="af-chat-header-error">{error()}</p>}

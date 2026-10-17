@@ -2,7 +2,7 @@ import type { Settings } from '../../shared/types';
 
 /** Used until the backend answers (and if it cannot). Mirrors `Settings::default()` in Rust. */
 export const DEFAULT_SETTINGS: Settings = {
-  version: 6,
+  version: 7,
   language: 'en',
   appearance: {
     themeId: 'agentflow-dark',
@@ -43,6 +43,14 @@ export const DEFAULT_SETTINGS: Settings = {
     freeProviders: [],
     prices: [],
     budgets: { daily: null, monthly: null, providers: [], hardStop: false },
+  },
+  agent: {
+    maxIterations: 25,
+    toolResultCap: 20_000,
+    commandTimeoutSecs: 120,
+    defaultMode: 'ask',
+    defaultPrompt: true,
+    toolModels: [],
   },
   layout: null,
 };

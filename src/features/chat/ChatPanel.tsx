@@ -2,8 +2,10 @@
 // Header (provider, model, system prompt), the messages, and the shared prompt bar with the
 // panel's character; files dragged from the tree onto the bottom area are attached. Phase 6:
 // the live estimate, the context strip with Compact (or auto-compact), the hard budget stop
-// with "Allow once", and the session usage on the corner badge.
+// with "Allow once", and the session usage on the corner badge. Phase 7: tool lines and
+// permission rows in the list, the current tool as the character's bubble.
 import './chat.css';
+import './agent.css';
 import type { DockviewPanelApi } from 'dockview-core';
 import { createEffect, createSignal, onCleanup, onMount, Show } from 'solid-js';
 import { FILE_PATH_MIME } from '../../shared/dnd';
@@ -192,6 +194,7 @@ export default function ChatPanel(props: ChatPanelProps) {
           canRetry={session.canRetry()}
           onRetry={() => void session.retry()}
           compaction={session.conversation()?.compaction ?? null}
+          agent={session.agent}
         />
         <Show when={character()}>
           {(ref) => (
@@ -204,6 +207,7 @@ export default function ChatPanel(props: ChatPanelProps) {
               history={history.entries()}
               onPickPrompt={(text) => bar?.insert(text)}
               usage={usage()}
+              status={session.agent.status()}
             />
           )}
         </Show>
