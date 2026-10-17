@@ -42,6 +42,15 @@ export function reopenChat(conversationId: string, title: string): void {
   openChat({ ...newChatConfig(conversationId, settings.currentWorkspace), title });
 }
 
+/** A chat named itself: only `title` changes; the rest of the config (e.g. the character)
+ * comes from the panel's current parameters, never from a copy. */
+export function setChatTitle(panelId: string, title: string): void {
+  const panel = currentDock()?.getPanel(panelId);
+  const params = panel ? parsePanelParams(panel.params) : null;
+  if (!panel || params?.kind !== 'chat' || params.config.title === title) return;
+  panel.api.updateParameters({ ...params, config: { ...params.config, title } });
+}
+
 export function closeChatPanels(conversationId: string): void {
   const dock = currentDock();
   if (!dock) return;

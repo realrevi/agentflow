@@ -11,6 +11,8 @@ export interface ChatHooks {
   isFileDirty: (path: string) => boolean;
   filesChanged: (paths: readonly string[]) => void;
   Diff: Component<DiffViewProps>;
+  /** Stores a chat's new title in its panel (merged into the current parameters). */
+  setTitle: (panelId: string, title: string) => void;
 }
 
 export interface AgentView {

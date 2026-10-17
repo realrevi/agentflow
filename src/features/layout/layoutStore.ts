@@ -10,7 +10,13 @@ import { confirmEditorClose, dirtyEditorCount } from '../editor';
 import { locale, reportError, t } from '../i18n';
 import { saveLayout, savedLayout, settings } from '../settings/settingsStore';
 import type { TerminalConfig } from '../terminal';
-import { characterOf, ensureCharacters, setCharacter, trackFocusedAgent } from './characters';
+import {
+  characterOf,
+  ensureCharacters,
+  forgetCharacter,
+  setCharacter,
+  trackFocusedAgent,
+} from './characters';
 import { buildDefaultLayout } from './defaultLayout';
 import {
   panelOptions,
@@ -72,7 +78,9 @@ export function attachLayout(dock: DockviewApi): () => void {
       ensureRole(panel.group);
       syncOpenPanels();
     }),
-    dock.onDidRemovePanel(() => {
+    // Moves between groups fire no add/remove: only closed (or cleared) panels end here.
+    dock.onDidRemovePanel((panel) => {
+      forgetCharacter(panel.id);
       trackFocusedAgent(dock);
       syncOpenPanels();
     }),

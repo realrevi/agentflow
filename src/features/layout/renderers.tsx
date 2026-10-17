@@ -15,6 +15,7 @@ import { t } from '../i18n';
 import { settings } from '../settings/settingsStore';
 import { AddPanelButton } from './AddPanelButton';
 import { currentWorkspace } from '../workspace';
+import { setChatTitle } from './chatPanels';
 import { editorFileDirty, openEditor, renameEditors } from './editorPanels';
 import { consumeFreshPanel, openPanel, openPanels } from './layoutStore';
 import { createPanelTab } from './PanelTab';
@@ -40,6 +41,7 @@ const chatHooks: ChatHooks = {
     if (root) markAgentChanged(root, paths);
   },
   Diff: DiffView,
+  setTitle: setChatTitle,
 };
 
 function Loading(): JSX.Element {
