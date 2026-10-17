@@ -4,8 +4,9 @@
 mod decoders;
 mod http;
 pub(crate) mod mock;
+mod tools;
 
-use super::types::{EventSink, StreamEvent, TokenUsage};
+use super::types::{EventSink, Reasoning, StreamEvent, TokenUsage, ToolCall};
 
 /// Collects what an adapter reports.
 #[derive(Default)]
@@ -13,6 +14,10 @@ pub struct Collect {
     pub text: String,
     pub usage: Vec<TokenUsage>,
     pub flushes: usize,
+    /// Streamed reasoning text.
+    pub reasoning_text: String,
+    pub reasoning: Vec<Reasoning>,
+    pub calls: Vec<ToolCall>,
 }
 
 impl EventSink for Collect {
@@ -20,6 +25,9 @@ impl EventSink for Collect {
         match event {
             StreamEvent::Delta(text) => self.text.push_str(&text),
             StreamEvent::Usage(usage) => self.usage.push(usage),
+            StreamEvent::ReasoningDelta(text) => self.reasoning_text.push_str(&text),
+            StreamEvent::Reasoning(reasoning) => self.reasoning.push(reasoning),
+            StreamEvent::ToolCall(call) => self.calls.push(call),
         }
     }
 

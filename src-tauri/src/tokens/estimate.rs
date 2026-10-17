@@ -6,7 +6,7 @@
 
 use serde::Serialize;
 
-use crate::providers::{ChatRequest, ChatTurn};
+use crate::providers::{ChatRequest, ChatTurn, Part, TurnBlock};
 
 const PER_MESSAGE: u64 = 4;
 const REPLY_PRIMING: u64 = 3;
@@ -30,11 +30,16 @@ pub fn is_exact(preset: &str, model: &str) -> bool {
 }
 
 pub fn turn_tokens(turn: &ChatTurn) -> u64 {
-    turn.blocks
-        .iter()
-        .map(|block| count(&block.text))
-        .sum::<u64>()
-        + PER_MESSAGE
+    turn.blocks.iter().map(block_tokens).sum::<u64>() + PER_MESSAGE
+}
+
+fn block_tokens(block: &TurnBlock) -> u64 {
+    match &block.part {
+        Part::Text { text } => count(text),
+        Part::Reasoning(reasoning) => count(&reasoning.text),
+        Part::ToolCall(call) => count(&call.name) + count(&call.input.to_string()),
+        Part::ToolResult(result) => count(&result.content),
+    }
 }
 
 /// Input tokens of a whole request (system prompt, history, attachments, new prompt).
@@ -44,7 +49,12 @@ pub fn request_tokens(chat: &ChatRequest) -> u64 {
     } else {
         count(&chat.system) + PER_MESSAGE
     };
-    system + chat.turns.iter().map(turn_tokens).sum::<u64>() + REPLY_PRIMING
+    let tools: u64 = chat
+        .tools
+        .iter()
+        .map(|tool| count(&tool.name) + count(&tool.description) + count(&tool.schema.to_string()))
+        .sum();
+    system + tools + chat.turns.iter().map(turn_tokens).sum::<u64>() + REPLY_PRIMING
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize)]
@@ -86,6 +96,7 @@ mod tests {
             max_tokens: 16,
             temperature: None,
             caching: false,
+            tools: Vec::new(),
         };
         assert_eq!(request_tokens(&chat), (2 + 4) + (4 + 4) + 3);
         assert!(is_exact("openai", "gpt-5"));

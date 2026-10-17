@@ -2,15 +2,47 @@
 
 use serde::{Deserialize, Serialize};
 
-use crate::providers::TokenUsage;
+use crate::providers::{Part, TokenUsage};
 
-pub const FORMAT_VERSION: u32 = 1;
+/// v2 (phase 7): messages may carry `parts` (reasoning, tool calls, tool results), a `tool`
+/// role and the agent state. v1 files load unchanged (the new fields default).
+pub const FORMAT_VERSION: u32 = 2;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum Role {
     User,
     Assistant,
+    /// Tool results of an agent step (sent to the model as the user's turn).
+    Tool,
+}
+
+/// What an agent may do without asking (per conversation).
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum PermissionMode {
+    /// Reads run, writes and commands ask.
+    #[default]
+    Ask,
+    /// Reads and writes run, commands ask.
+    AutoEdit,
+    /// Only read tools are offered.
+    ReadOnly,
+}
+
+/// The agent's state in one conversation.
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+pub struct AgentState {
+    /// `None` = the default from settings.
+    pub permission_mode: Option<PermissionMode>,
+    /// Tools the user allowed "for this conversation" (dangerous commands still ask).
+    pub allowed_tools: Vec<String>,
+    /// The provider rejected tools for this chat's model: it continues as a plain chat.
+    pub tools_disabled: bool,
+    /// The environment part of the default system prompt, built once so the prompt (and
+    /// the cached prefix) stays the same for the whole conversation.
+    pub context: Option<String>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -45,7 +77,7 @@ pub struct UsageRecord {
     pub tokens: TokenUsage,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ChatMessage {
     pub id: String,
@@ -61,9 +93,17 @@ pub struct ChatMessage {
     pub error: Option<String>,
     #[serde(default)]
     pub usage: Option<UsageRecord>,
+    /// Agent messages: reasoning, text and tool calls (assistant) or tool results (tool).
+    /// Empty for plain chat messages, whose text is `content`.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub parts: Vec<Part>,
+    /// Assistant messages of an agent: a digest of the system prompt and tools they were
+    /// produced under (Anthropic thinking is only replayed under the same prefix).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub prefix: Option<String>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", default)]
 pub struct Conversation {
     pub version: u32,
@@ -80,6 +120,17 @@ pub struct Conversation {
     pub messages: Vec<ChatMessage>,
     /// Set by Compact: requests send `summary` instead of the messages up to `through`.
     pub compaction: Option<Compaction>,
+    pub agent: AgentState,
+}
+
+impl Conversation {
+    /// Brings an older file up to `FORMAT_VERSION` (v1 -> v2 only adds defaults).
+    pub fn migrated(mut self) -> Self {
+        if self.version < FORMAT_VERSION {
+            self.version = FORMAT_VERSION;
+        }
+        self
+    }
 }
 
 /// A summary of the older part of a conversation (phase 6). The messages stay in the file
@@ -110,6 +161,7 @@ impl Default for Conversation {
             updated_at: 0,
             messages: Vec::new(),
             compaction: None,
+            agent: AgentState::default(),
         }
     }
 }
@@ -150,6 +202,8 @@ pub struct ConversationPatch {
     pub provider_id: Option<Option<String>>,
     pub model: Option<String>,
     pub system_prompt: Option<String>,
+    /// The agent's permission mode for this chat.
+    pub permission_mode: Option<PermissionMode>,
 }
 
 /// Tells a missing field (`None`) apart from an explicit `null` (`Some(None)`).

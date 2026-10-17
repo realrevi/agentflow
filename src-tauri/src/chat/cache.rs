@@ -9,7 +9,7 @@
 //! (a stable read point, one block from the previous request's breakpoint, so the 20-block
 //! lookback always finds it) and the newest attachment. The adapter marks the system prompt.
 
-use crate::providers::ChatRequest;
+use crate::providers::{ChatRequest, TurnBlock};
 
 pub const MAX_BREAKPOINTS: usize = 4;
 
@@ -35,7 +35,7 @@ pub fn place_breakpoints(chat: &mut ChatRequest, attachments: &[BlockRef]) {
         attachments
             .iter()
             .rev()
-            .find(|b| is_text(chat, **b))
+            .find(|b| is_cacheable(chat, **b))
             .copied(),
     ];
     for candidate in candidates.into_iter().flatten() {
@@ -55,20 +55,21 @@ fn last_block(chat: &ChatRequest, turn: usize) -> Option<BlockRef> {
     (0..blocks.len())
         .rev()
         .map(|block| BlockRef { turn, block })
-        .find(|b| is_text(chat, *b))
+        .find(|b| is_cacheable(chat, *b))
 }
 
-fn is_text(chat: &ChatRequest, at: BlockRef) -> bool {
+/// Text, tool calls and tool results can carry a breakpoint; thinking and empty text not.
+fn is_cacheable(chat: &ChatRequest, at: BlockRef) -> bool {
     chat.turns
         .get(at.turn)
         .and_then(|t| t.blocks.get(at.block))
-        .is_some_and(|b| !b.text.is_empty())
+        .is_some_and(TurnBlock::cacheable)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::providers::{ChatRole, ChatTurn, TurnBlock};
+    use crate::providers::{ChatRole, ChatTurn};
 
     fn turn(role: ChatRole, texts: &[&str]) -> ChatTurn {
         ChatTurn {
@@ -85,6 +86,7 @@ mod tests {
             max_tokens: 64,
             temperature: None,
             caching: true,
+            tools: Vec::new(),
         }
     }
 

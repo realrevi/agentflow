@@ -44,6 +44,8 @@ pub fn estimate(
         stop_reason: None,
         error: None,
         usage: None,
+        parts: Vec::new(),
+        prefix: None,
     });
     let chat = build_request(&draft, entry, false)?;
     let tokens = request_tokens(&chat);

@@ -32,6 +32,8 @@ fn reply(id: &str, input: u64) -> ChatMessage {
         status: MessageStatus::Complete,
         stop_reason: None,
         error: None,
+        parts: Vec::new(),
+        prefix: None,
         usage: Some(conversations::UsageRecord {
             provider_id: "p1".into(),
             preset: "anthropic".into(),

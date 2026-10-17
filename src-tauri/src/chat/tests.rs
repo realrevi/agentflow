@@ -6,6 +6,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use super::*;
+use crate::agent::{AgentServices, CheckpointStore, ModelCapabilities, PermissionGate};
 use crate::conversations::{ConversationStore, MessageStatus};
 use crate::providers::tests::mock::{MockServer, Reply};
 use crate::providers::{ErrorKind, Http, KeyVault, MemoryStore};
@@ -13,6 +14,7 @@ use crate::settings::{ProviderEntry, Settings};
 use crate::tokens::{CliRoots, UsageTracker};
 use crate::util::test_dir::TestDir;
 
+mod agent;
 mod compact;
 mod usage;
 
@@ -25,6 +27,7 @@ struct Setup {
     vault: KeyVault,
     manager: ChatManager,
     tracker: UsageTracker,
+    agent: AgentServices,
     settings: Settings,
     conversation: String,
 }
@@ -49,9 +52,15 @@ fn setup(base: &str, kind: &str, preset: &str) -> Setup {
         .expect("create")
         .id;
     let tracker = UsageTracker::new(dir.path().join("usage"), CliRoots::default());
+    let agent = AgentServices {
+        gate: PermissionGate::new(),
+        checkpoints: CheckpointStore::new(dir.path().join("checkpoints")),
+        capabilities: ModelCapabilities::load(dir.path().join("model-tools.json")),
+    };
     Setup {
         _dir: dir,
         tracker,
+        agent,
         store,
         vault,
         manager: ChatManager::with_http(Http::for_tests(Duration::from_secs(5))),
@@ -61,15 +70,22 @@ fn setup(base: &str, kind: &str, preset: &str) -> Setup {
 }
 
 impl Setup {
-    fn send(&self, text: Option<&str>) -> (AppResult<ChatStarted>, mpsc::Receiver<ChatEvent>) {
-        let (tx, rx) = mpsc::channel();
-        let deps = ChatDeps {
+    fn deps(&self) -> ChatDeps {
+        ChatDeps {
             settings: self.settings.clone(),
             store: self.store.clone(),
             vault: self.vault.clone(),
             manager: self.manager.clone(),
             tracker: self.tracker.clone(),
-        };
+            gate: self.agent.gate.clone(),
+            checkpoints: self.agent.checkpoints.clone(),
+            capabilities: self.agent.capabilities.clone(),
+        }
+    }
+
+    fn send(&self, text: Option<&str>) -> (AppResult<ChatStarted>, mpsc::Receiver<ChatEvent>) {
+        let (tx, rx) = mpsc::channel();
+        let deps = self.deps();
         let request = ChatSendRequest {
             workspace: WS.map(str::to_owned),
             conversation_id: self.conversation.clone(),

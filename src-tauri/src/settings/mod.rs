@@ -1,5 +1,6 @@
 //! User settings: a versioned JSON file in the OS app config dir, written atomically.
 
+mod agent;
 mod chat;
 mod io;
 mod migrate;
@@ -9,6 +10,7 @@ mod providers;
 mod store;
 mod usage;
 
+pub use agent::{AgentSettings, ModelTools};
 pub use chat::{ChatSettings, ModelWindow, DEFAULT_CONTEXT_WINDOW};
 pub use io::{load_from_file, save_to_file};
 pub use migrate::migrate;

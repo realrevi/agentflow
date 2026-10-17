@@ -1,6 +1,7 @@
 use tauri::ipc::Channel;
 use tauri::State;
 
+use crate::agent::AgentServices;
 use crate::chat::{
     compact, start_chat, ChatDeps, ChatEvent, ChatManager, ChatSendRequest, ChatStarted,
     CompactRequest, CompactResult,
@@ -15,16 +16,18 @@ use crate::tokens::UsageTracker;
 /// `on_event`. Returns at once; the reply arrives on the channel. A hard budget stop fails
 /// with kind `budget` unless `request.allowOnce` carries a token from `usage_allow_once`.
 #[tauri::command]
+#[allow(clippy::too_many_arguments)] // managed state, one argument each
 pub async fn chat_send(
     settings: State<'_, SettingsStore>,
     store: State<'_, ConversationStore>,
     vault: State<'_, KeyVault>,
     manager: State<'_, ChatManager>,
     tracker: State<'_, UsageTracker>,
+    agent: State<'_, AgentServices>,
     request: ChatSendRequest,
     on_event: Channel<ChatEvent>,
 ) -> AppResult<ChatStarted> {
-    let deps = deps(&settings, &store, &vault, &manager, &tracker).await;
+    let deps = deps(&settings, &store, &vault, &manager, &tracker, &agent).await;
     start_chat(deps, request, move |event| {
         // The panel may be gone (closed or reloaded); the reply is stored anyway.
         let _ = on_event.send(event);
@@ -46,9 +49,10 @@ pub async fn chat_compact(
     vault: State<'_, KeyVault>,
     manager: State<'_, ChatManager>,
     tracker: State<'_, UsageTracker>,
+    agent: State<'_, AgentServices>,
     request: CompactRequest,
 ) -> AppResult<CompactResult> {
-    let deps = deps(&settings, &store, &vault, &manager, &tracker).await;
+    let deps = deps(&settings, &store, &vault, &manager, &tracker, &agent).await;
     compact(deps, request).await
 }
 
@@ -58,6 +62,7 @@ async fn deps(
     vault: &KeyVault,
     manager: &ChatManager,
     tracker: &UsageTracker,
+    agent: &AgentServices,
 ) -> ChatDeps {
     ChatDeps {
         settings: settings.get().await,
@@ -65,5 +70,8 @@ async fn deps(
         vault: vault.clone(),
         manager: manager.clone(),
         tracker: tracker.clone(),
+        gate: agent.gate.clone(),
+        checkpoints: agent.checkpoints.clone(),
+        capabilities: agent.capabilities.clone(),
     }
 }

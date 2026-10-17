@@ -9,7 +9,10 @@ use crate::providers::sse::SseParser;
 use crate::providers::types::TokenUsage;
 
 /// Feeds a whole stream (split at awkward points) and returns the reply and how it ended.
-fn decode(decoder: &mut dyn Decoder, stream: &str) -> (Collect, Result<String, ProviderError>) {
+pub(super) fn decode(
+    decoder: &mut dyn Decoder,
+    stream: &str,
+) -> (Collect, Result<String, ProviderError>) {
     let mut sink = Collect::default();
     let mut parser = SseParser::new();
     let bytes = stream.as_bytes();
@@ -29,7 +32,7 @@ fn decode(decoder: &mut dyn Decoder, stream: &str) -> (Collect, Result<String, P
             Err(err) => return (sink, Err(err)),
         }
     }
-    let end = decoder.finish();
+    let end = decoder.finish(&mut sink);
     (sink, end)
 }
 

@@ -1,5 +1,6 @@
 //! AgentFlow backend: wires the Tauri app, managed state and IPC commands.
 
+mod agent;
 mod agents;
 pub mod chat;
 mod commands;
@@ -19,6 +20,7 @@ use std::path::Path;
 use tauri::webview::PageLoadEvent;
 use tauri::{Manager, RunEvent};
 
+use crate::agent::{AgentServices, CheckpointStore, ModelCapabilities, PermissionGate};
 use crate::chat::ChatManager;
 use crate::conversations::ConversationStore;
 use crate::fs::FsState;
@@ -34,6 +36,8 @@ const THEMES_DIR: &str = "themes";
 const PROMPT_HISTORY_DIR: &str = "prompt-history";
 const CONVERSATIONS_DIR: &str = "conversations";
 const USAGE_DIR: &str = "usage";
+const CHECKPOINTS_DIR: &str = "checkpoints";
+const MODEL_TOOLS_FILE: &str = "model-tools.json";
 
 /// Starts the desktop app. Called from `main.rs`.
 pub fn run() {
@@ -95,6 +99,9 @@ pub fn run() {
             commands::chat::chat_send,
             commands::chat::chat_cancel,
             commands::chat::chat_compact,
+            commands::agent::agent_permission_answer,
+            commands::agent::agent_checkpoints,
+            commands::agent::agent_checkpoint_restore,
             commands::providers::provider_key_status,
             commands::providers::provider_set_key,
             commands::providers::provider_delete_key,
@@ -151,6 +158,11 @@ fn manage_stores(app: &tauri::App, config_dir: &Path, data_dir: &Path) {
     app.manage(ConversationStore::new(data_dir.join(CONVERSATIONS_DIR)));
     app.manage(KeyVault::new(std::sync::Arc::new(OsKeychain)));
     app.manage(ChatManager::new());
+    app.manage(AgentServices {
+        gate: PermissionGate::new(),
+        checkpoints: CheckpointStore::new(data_dir.join(CHECKPOINTS_DIR)),
+        capabilities: ModelCapabilities::load(data_dir.join(MODEL_TOOLS_FILE)),
+    });
     start_usage(app, &snapshot, data_dir);
 }
 

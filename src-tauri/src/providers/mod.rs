@@ -3,11 +3,15 @@
 //! only in the OS keychain.
 
 mod anthropic;
+mod anthropic_request;
+mod anthropic_stream;
 mod cancel;
 mod error;
 mod http;
 mod keys;
 mod openai;
+mod openai_request;
+mod openai_stream;
 mod provider;
 mod sse;
 #[cfg(test)]
@@ -23,6 +27,6 @@ pub use keys::MemoryStore;
 pub use keys::{KeyStatus, KeyVault, OsKeychain, SecretStore};
 pub use provider::{build_provider, Provider};
 pub use types::{
-    ChatRequest, ChatRole, ChatTurn, EventSink, ModelInfo, StreamEnd, StreamEvent, TokenUsage,
-    TurnBlock,
+    ChatRequest, ChatRole, ChatTurn, EventSink, ModelInfo, Part, Reasoning, StreamEnd, StreamEvent,
+    TokenUsage, ToolCall, ToolResult, ToolSpec, TurnBlock,
 };

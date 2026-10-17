@@ -19,6 +19,8 @@ mod shell;
 mod tests;
 
 pub use cli::{CliDetector, CliStatus};
+pub(crate) use env_path::search_path;
 pub use launch::{resolve_launch, Launch};
 pub use manager::PtyManager;
 pub use model::{ExitInfo, OutputSink, PtyKind, PtyOutput, SessionId, SessionInfo, TermSize};
+pub(crate) use shell::default_shell;
