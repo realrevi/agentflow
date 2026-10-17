@@ -1,6 +1,7 @@
-// The panel's character in its top-right corner: animated avatar, a badge with the AI name
-// and state, and a speech bubble. While output streams it may ride above the terminal
-// cursor (an overlay only: output is never delayed or re-rendered). Click: prompt history.
+// The panel's character in its top-right corner: animated avatar, a badge with the AI name,
+// state and session usage, and a speech bubble. While output streams it may ride above the
+// terminal cursor (an overlay only: output is never delayed or re-rendered). Click: prompt
+// history.
 import './agent.css';
 import { createEffect, createMemo, createSignal, on, onCleanup, Show } from 'solid-js';
 import type { PromptEntry } from '../../../shared/types';
@@ -52,6 +53,8 @@ interface AgentOverlayProps {
   lastPrompt: { text: string; at: number } | null;
   history: readonly PromptEntry[];
   onPickPrompt: (text: string) => void;
+  /** Session usage for the badge ("12.4k · $0.08"), once there is any. */
+  usage?: string | null;
   /** Terminal panels only: the cursor the avatar rides above while output streams. */
   cursor?: () => CursorCell | null;
   onCursorChange?: (listener: () => void) => () => void;
@@ -198,6 +201,13 @@ export function AgentOverlay(props: AgentOverlayProps) {
       <div class="af-agent-badge">
         <span class="af-agent-name">{props.aiName}</span>
         <span class={`af-agent-state ${props.state}`}>{t(STATE_LABEL[props.state])}</span>
+        <Show when={props.usage}>
+          {(usage) => (
+            <span class="af-agent-usage" title={t('usage.badge.title')}>
+              {usage()}
+            </span>
+          )}
+        </Show>
       </div>
       <Show when={settings.characters.bubble && bubble()}>
         {(text) => (

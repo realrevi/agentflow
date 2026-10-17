@@ -4,4 +4,4 @@
 // lazy panels import.
 export type { CursorCell } from './overlay/follow';
 export type { PromptHistory } from './prompt/history';
-export { agentState, clearAgentState, setAgentState } from './state';
+export { agentState, clearAgentState, flashAgentState, setAgentState } from './state';
