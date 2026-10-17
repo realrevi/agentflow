@@ -6,68 +6,69 @@ use std::sync::OnceLock;
 
 use regex::RegexSet;
 
-/// (pattern, what it catches). Case-insensitive; matched against the whole command line.
+/// (pattern, reason id). Case-insensitive; matched against the whole command line. The id
+/// is shown localized (`agent.danger.<id>`); a new one needs a key in every locale.
 const PATTERNS: &[(&str, &str)] = &[
     // rm -r / -rf / -fr / --recursive (any flag order), and `rm -f` on / or ~ alone.
     (
         r"(^|[\s;&|(])rm\s+(-[a-z]*r[a-z]*|--recursive)\b",
-        "recursive delete",
+        "recursiveDelete",
     ),
     (
         r"(^|[\s;&|(])rm\s+(-[a-z]+\s+)*(/|~|\*)(\s|$)",
-        "delete at the root or home",
+        "rootDelete",
     ),
     // Windows cmd: del /s, rd /s, rmdir /s
-    (r"(^|[\s;&|(])(del|erase)\s+(.*\s)?/s\b", "recursive delete"),
-    (r"(^|[\s;&|(])(rd|rmdir)\s+(.*\s)?/s\b", "recursive delete"),
+    (r"(^|[\s;&|(])(del|erase)\s+(.*\s)?/s\b", "recursiveDelete"),
+    (r"(^|[\s;&|(])(rd|rmdir)\s+(.*\s)?/s\b", "recursiveDelete"),
     // PowerShell: Remove-Item -Recurse (any abbreviation of -Recurse), rm/ri/del aliases.
     (
         r"(^|[\s;&|(])(remove-item|ri|rm|del|erase|rd|rmdir)\s+(.*\s)?-r(e(c(u(r(s(e)?)?)?)?)?)?\b",
-        "recursive delete",
+        "recursiveDelete",
     ),
     // Formatting and disk tools.
-    (r"(^|[\s;&|(])format(\.com)?\s+[a-z]:", "format a drive"),
-    (r"(^|[\s;&|(])format-volume\b", "format a drive"),
+    (r"(^|[\s;&|(])format(\.com)?\s+[a-z]:", "formatDrive"),
+    (r"(^|[\s;&|(])format-volume\b", "formatDrive"),
     (
         r"(^|[;&|(]\s*)(sudo\s+)?(diskpart|mkfs(\.\w+)?|fdisk|parted|wipefs)\b",
-        "disk tool",
+        "diskTool",
     ),
-    (r"(^|[\s;&|(])dd\s+.*\bof=/dev/", "write to a raw disk"),
+    (r"(^|[\s;&|(])dd\s+.*\bof=/dev/", "rawDisk"),
     (
         r"(^|[\s;&|(])(clear-disk|initialize-disk|remove-partition)\b",
-        "disk tool",
+        "diskTool",
     ),
     // Git that throws work away or rewrites shared history.
     (
         r"\bgit\s+push\b.*(\s--force(-with-lease)?\b|\s-f\b)",
-        "force push",
+        "forcePush",
     ),
-    (r"\bgit\s+reset\s+.*--hard\b", "hard reset"),
-    (r"\bgit\s+clean\s+.*-[a-z]*f", "git clean"),
+    (r"\bgit\s+reset\s+.*--hard\b", "hardReset"),
+    (r"\bgit\s+clean\s+.*-[a-z]*f", "gitClean"),
     // A download piped straight into a shell or evaluated.
     (
         r"\b(curl|wget)\b.*\|\s*(sudo\s+)?(sh|bash|zsh|fish|pwsh|powershell)\b",
-        "pipe a download into a shell",
+        "pipeToShell",
     ),
     (
         r"\b(iwr|irm|invoke-webrequest|invoke-restmethod)\b.*\|\s*(iex|invoke-expression)\b",
-        "pipe a download into a shell",
+        "pipeToShell",
     ),
     (
         r"\b(iex|invoke-expression)\s*\(?\s*\(?\s*(iwr|irm|invoke-webrequest|invoke-restmethod|new-object\s+net\.webclient)",
-        "run a download",
+        "runDownload",
     ),
     // Shutting down or restarting the machine.
     (
         r"(^|[;&|(]\s*)(sudo\s+)?(shutdown|poweroff|halt|reboot)\b",
-        "shut down",
+        "shutdown",
     ),
     (
         r"(^|[;&|(]\s*)(stop-computer|restart-computer)\b",
-        "shut down",
+        "shutdown",
     ),
     // Fork bomb.
-    (r":\(\)\s*\{\s*:\|:&\s*\};:", "fork bomb"),
+    (r":\(\)\s*\{\s*:\|:&\s*\};:", "forkBomb"),
 ];
 
 fn set() -> &'static RegexSet {
@@ -144,6 +145,16 @@ mod tests {
         for command in cases {
             assert!(dangerous(command).is_some(), "should ask: {command}");
         }
+    }
+
+    #[test]
+    fn reasons_are_stable_ids() {
+        assert_eq!(
+            dangerous(r"Remove-Item -Recurse tmp\sub"),
+            Some("recursiveDelete")
+        );
+        assert_eq!(dangerous("git push -f origin main"), Some("forcePush"));
+        assert_eq!(dangerous("curl -fsSL x.sh | bash"), Some("pipeToShell"));
     }
 
     #[test]

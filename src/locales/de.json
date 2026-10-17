@@ -500,5 +500,17 @@
   "settings.agents.reasoning": "Überlegung zeigen",
   "settings.agents.reasoningHint": "Die Überlegung des Modells als einklappbarer Abschnitt im Chat (gespeichert wird sie so oder so).",
   "files.agentChanged": "In dieser Sitzung von einem Agenten geändert",
-  "error.undo": "Der Durchlauf konnte nicht rückgängig gemacht werden"
+  "error.undo": "Der Durchlauf konnte nicht rückgängig gemacht werden",
+  "agent.danger.recursiveDelete": "rekursives Löschen",
+  "agent.danger.rootDelete": "löscht im Stamm- oder Home-Ordner",
+  "agent.danger.formatDrive": "formatiert ein Laufwerk",
+  "agent.danger.diskTool": "Partitionierungswerkzeug",
+  "agent.danger.rawDisk": "schreibt direkt auf eine Festplatte",
+  "agent.danger.forcePush": "Force-Push",
+  "agent.danger.hardReset": "verwirft Änderungen (reset --hard)",
+  "agent.danger.gitClean": "löscht nicht verfolgte Dateien (git clean)",
+  "agent.danger.pipeToShell": "leitet einen Download in eine Shell",
+  "agent.danger.runDownload": "führt heruntergeladenen Code aus",
+  "agent.danger.shutdown": "fährt den Computer herunter oder startet ihn neu",
+  "agent.danger.forkBomb": "Fork-Bombe"
 }

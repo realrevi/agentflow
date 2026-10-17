@@ -500,5 +500,17 @@
   "settings.agents.reasoning": "Показывать размышления",
   "settings.agents.reasoningHint": "Размышления модели как сворачиваемый раздел в чате (сохраняются в любом случае).",
   "files.agentChanged": "Изменено агентом в этом сеансе",
-  "error.undo": "Не удалось отменить ход"
+  "error.undo": "Не удалось отменить ход",
+  "agent.danger.recursiveDelete": "рекурсивное удаление",
+  "agent.danger.rootDelete": "удаление в корне или домашней папке",
+  "agent.danger.formatDrive": "форматирует диск",
+  "agent.danger.diskTool": "инструмент разметки диска",
+  "agent.danger.rawDisk": "запись напрямую на диск",
+  "agent.danger.forcePush": "принудительный push",
+  "agent.danger.hardReset": "отбрасывает изменения (reset --hard)",
+  "agent.danger.gitClean": "удаляет неотслеживаемые файлы (git clean)",
+  "agent.danger.pipeToShell": "передаёт загрузку прямо в оболочку",
+  "agent.danger.runDownload": "запускает загруженный код",
+  "agent.danger.shutdown": "выключает или перезагружает компьютер",
+  "agent.danger.forkBomb": "fork-бомба"
 }

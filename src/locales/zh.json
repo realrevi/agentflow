@@ -500,5 +500,17 @@
   "settings.agents.reasoning": "显示思考过程",
   "settings.agents.reasoningHint": "在对话中以可折叠区域显示模型的思考（无论如何都会保存）。",
   "files.agentChanged": "本次会话中由智能体更改",
-  "error.undo": "无法撤销此轮"
+  "error.undo": "无法撤销此轮",
+  "agent.danger.recursiveDelete": "递归删除",
+  "agent.danger.rootDelete": "在根目录或主目录中删除",
+  "agent.danger.formatDrive": "格式化驱动器",
+  "agent.danger.diskTool": "磁盘分区工具",
+  "agent.danger.rawDisk": "直接写入磁盘",
+  "agent.danger.forcePush": "强制推送",
+  "agent.danger.hardReset": "丢弃更改（reset --hard）",
+  "agent.danger.gitClean": "删除未跟踪的文件（git clean）",
+  "agent.danger.pipeToShell": "将下载内容直接交给 shell",
+  "agent.danger.runDownload": "运行下载的代码",
+  "agent.danger.shutdown": "关闭或重启计算机",
+  "agent.danger.forkBomb": "fork 炸弹"
 }

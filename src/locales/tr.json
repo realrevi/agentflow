@@ -500,5 +500,17 @@
   "settings.agents.reasoning": "Düşünmeyi göster",
   "settings.agents.reasoningHint": "Modelin düşünmesi sohbetlerde katlanabilir bir bölüm olarak (her durumda kaydedilir).",
   "files.agentChanged": "Bu oturumda bir ajan tarafından değiştirildi",
-  "error.undo": "Tur geri alınamadı"
+  "error.undo": "Tur geri alınamadı",
+  "agent.danger.recursiveDelete": "özyinelemeli silme",
+  "agent.danger.rootDelete": "kök ya da ev klasöründe silme",
+  "agent.danger.formatDrive": "sürücüyü biçimlendirir",
+  "agent.danger.diskTool": "disk bölümleme aracı",
+  "agent.danger.rawDisk": "ham diske yazar",
+  "agent.danger.forcePush": "zorla push",
+  "agent.danger.hardReset": "değişiklikleri atar (reset --hard)",
+  "agent.danger.gitClean": "izlenmeyen dosyaları siler (git clean)",
+  "agent.danger.pipeToShell": "indirilen içeriği kabuğa aktarır",
+  "agent.danger.runDownload": "indirilen kodu çalıştırır",
+  "agent.danger.shutdown": "bilgisayarı kapatır veya yeniden başlatır",
+  "agent.danger.forkBomb": "fork bombası"
 }

@@ -500,5 +500,17 @@
   "settings.agents.reasoning": "Show reasoning",
   "settings.agents.reasoningHint": "The model's thinking as a collapsible section in chats (it is stored either way).",
   "files.agentChanged": "Changed by an agent in this session",
-  "error.undo": "Could not undo the turn"
+  "error.undo": "Could not undo the turn",
+  "agent.danger.recursiveDelete": "recursive delete",
+  "agent.danger.rootDelete": "deletes at the root or home folder",
+  "agent.danger.formatDrive": "formats a drive",
+  "agent.danger.diskTool": "disk partitioning tool",
+  "agent.danger.rawDisk": "writes to a raw disk",
+  "agent.danger.forcePush": "force push",
+  "agent.danger.hardReset": "discards changes (reset --hard)",
+  "agent.danger.gitClean": "deletes untracked files (git clean)",
+  "agent.danger.pipeToShell": "pipes a download into a shell",
+  "agent.danger.runDownload": "runs downloaded code",
+  "agent.danger.shutdown": "shuts down or restarts the computer",
+  "agent.danger.forkBomb": "fork bomb"
 }

@@ -7,6 +7,7 @@ import { createSignal, Show, Suspense, type Component } from 'solid-js';
 import type { PermissionAnswer, PermissionRequest } from '../../../shared/types';
 import { PixelIcon } from '../../../shared/ui/PixelIcon';
 import { t, type I18nKey } from '../../i18n';
+import { dangerText } from './danger';
 import { toolIcon } from './toolIcons';
 import { activeText, durationText, toolTarget } from './toolText';
 
@@ -60,7 +61,9 @@ export function PermissionCard(props: PermissionCardProps) {
         <span class="af-badge">{t(CATEGORY[props.request.category])}</span>
         <Show when={props.request.dangerous}>
           {(why) => (
-            <span class="af-badge danger">{t('agent.permission.dangerous', { why: why() })}</span>
+            <span class="af-badge danger">
+              {t('agent.permission.dangerous', { why: dangerText(why()) })}
+            </span>
           )}
         </Show>
       </header>
