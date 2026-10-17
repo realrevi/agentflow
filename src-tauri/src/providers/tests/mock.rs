@@ -125,6 +125,23 @@ impl MockServer {
     }
 }
 
+/// A local port that refuses connections for as long as the socket lives: bound but never
+/// listening. Binding a listener and dropping it would free the port, and a mock server of
+/// a parallel test could be given it (then it would answer this test's request instead).
+pub fn refusing_port() -> (socket2::Socket, u16) {
+    use socket2::{Domain, Socket, Type};
+    let socket = Socket::new(Domain::IPV4, Type::STREAM, None).expect("socket");
+    let addr: std::net::SocketAddr = "127.0.0.1:0".parse().expect("addr");
+    socket.bind(&addr.into()).expect("bind");
+    let port = socket
+        .local_addr()
+        .ok()
+        .and_then(|a| a.as_socket())
+        .expect("bound address")
+        .port();
+    (socket, port)
+}
+
 fn read_request(stream: &TcpStream) -> Option<Recorded> {
     let mut reader = BufReader::new(stream.try_clone().ok()?);
     let mut line = String::new();

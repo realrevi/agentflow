@@ -35,6 +35,9 @@ rustls = { version = "0.23", default-features = false, features = ["ring", "std"
 keyring = "4.2"
 tiktoken-rs = "0.12"
 
+[dev-dependencies]
+socket2 = "0.6"
+
 [target.'cfg(unix)'.dependencies]
 libc = "0.2"
 
