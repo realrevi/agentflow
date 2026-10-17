@@ -28,7 +28,9 @@ src-tauri/src/
   prompts/            prompt history per workspace (app data dir)
   providers/          Provider trait, Anthropic + OpenAI-compatible adapters, SSE, keys, errors
   conversations/      API chats per workspace (app data dir, one JSON file per conversation)
-  chat/               ChatManager (one stream per chat, cancel), request building, Channel events
+  chat/               ChatManager (one stream per chat, cancel), request building (blocks, cache
+                      breakpoints, attachment dedup), Compact, pre-send estimate, Channel events
+  tokens/             UsageTracker: JSONL ledger, buckets, prices, budgets, CLI log readers
   util/               atomic_write, run_blocking, lock/Signal, workspace_key, hex color, test_dir
 src/
   main.tsx, App.tsx   entry: bootstrap (settings -> locale -> theme -> workspace fs), then render
@@ -45,8 +47,8 @@ src/
   features/theme/     VS Code -> --af-* mapping (+ syntax vars), user overrides, engine, store
   features/i18n/      typed t(), lazy locale loading, reportError()
   features/settings/  settings store (debounced save) + lazy SettingsPanel and sections
-  features/{tokens,agents}/, src-tauri/src/{tokens,agents}/: empty stubs
-  shared/             ipc (+ ipcCommands), types (+ chatTypes), errors, toast, dialog, dnd, ui/
+  features/{tokens,agents}/, src-tauri/src/agents/: empty stubs (tokens UI: phase 6B)
+  shared/             ipc (+ ipcCommands), types (+ chat/usageTypes), errors, toast, dialog, dnd, ui/
   locales/            en.json (source of truth), tr, de, zh, ru
 themes/               built-in theme JSON (embedded into the Rust binary via include_str!)
 ```
@@ -105,6 +107,27 @@ other. `layout` and the settings panel compose panel features; `app/` composes a
   animator, ≤ ~300 ms behind, instant when `chat.smoothReveal` is off. Markdown: `markdown.ts`
   (raw HTML escaped, DOMPurify allowlist).
 
+## Usage tracking (phase 6)
+
+- `tokens/tracker.rs` (+ `queries.rs`): one `UsageTracker` in managed state. Ledger =
+  `<app data>/usage/YYYY-MM.jsonl`, append-only, malformed lines skipped; records dedup by
+  `id` (`chat:<conversation>:<message>`, CLI message/response ids). Totals live in 15-minute
+  buckets for 62 days; costs are computed at query time (`pricing.rs`: `pricing.json` with
+  source + date, OpenRouter prices from its models endpoint, user overrides, free providers;
+  no price = "—", never guessed). Lock order: `cli` before `state`.
+- Start (background thread): load ledger, backfill once from conversations (`.backfill`
+  marker), read CLI logs changed in the last 62 days, watch the roots (notify). CLI readers
+  (`tokens/cli/`) are read-only, tail from stored byte offsets (`cli-offsets.json`, saved only
+  after the records are in the ledger). `pty_spawn(panel)` registers agent CLIs so usage
+  matches a panel by CLI + cwd + time window (`panels.rs`), else its workspace.
+- Frontend gets live changes on the Channel of `usage_subscribe` (`changed { panels }`,
+  `repriced`, `budget { status }`); the usage commands take the local UTC offset. The hard
+  budget stop blocks API chat sends only (`AppError::Budget`, kind `budget`);
+  `usage_allow_once` returns a single-use token for `chat_send`'s `allowOnce`.
+- Anthropic prompt caching (`chat/cache.rs`): at most 4 breakpoints (system prompt, end of
+  request, end of the history before the newest prompt, newest attachment); keep the 20-block
+  lookback in mind when adding blocks.
+
 ## Layout roles
 
 - Groups have a role (`layout/roles.ts`): `agents` (center: agent CLIs, API chats, editors,
@@ -132,7 +155,7 @@ other. `layout` and the settings panel compose panel features; `app/` composes a
   hard-code colors. Overrides (text, accent, agent bold `#F5C542`, `--af-glow`): `overrides.ts`.
 - Flat dotted keys in `src/locales/en.json`; `I18nKey = keyof typeof en`; every visible string
   uses `t('key', { param })`. New keys go into **all five** locales (typecheck + tests check).
-- Rust owns `settings.json` (v5, adds `providers` and `chat`): bump `CURRENT_VERSION` + add a
+- Rust owns `settings.json` (v6, adds `usage` and the token options in `chat`): bump `CURRENT_VERSION` + add a
   `migrate.rs` step when the shape changes; `normalized()` repairs values; `defaults.test.ts`
   checks the TS defaults against Rust. The frontend uses `updateSettings()` (300 ms debounce).
 
@@ -145,16 +168,18 @@ cd src-tauri && cargo fmt --check && cargo clippy --all-targets -- -D warnings &
 cargo build    # in src-tauri: compile check, no bundling
 ```
 
-## Roadmap (9 phases)
+## Roadmap (11 phases)
 
 1. [x] Skeleton, theme engine, i18n, dockable layout
 2. [x] PTY + multi terminal panels (xterm.js WebGL, portable-pty)
 3. [x] Workspace file tree (notify + ignore) + CodeMirror 6 viewer/editor
 4. [x] Pixel character system (15 characters, 16x16 JSON sprites scaled, typewriter speech bar)
 5. [x] AI provider APIs (Anthropic + OpenAI-compatible, keychain keys) + API chat panels
-6. [ ] Token & cost tracking (usage records are already stored per assistant message)
-7. [ ] Agent installer wizard (per-AI formats/paths)
-8. [ ] Community agent library from GitHub
-9. [ ] Cross-platform builds + CI
+6. [ ] Token & cost tracking (6A backend + IPC done; 6B: usage dashboard, badges, budgets UI)
+7. [ ] API agent tools + default system prompt
+8. [ ] Agent installer wizard (per-AI formats/paths)
+9. [ ] Community agent library from GitHub
+10. [ ] UI polish
+11. [ ] Cross-platform builds + CI
 
 Only build what the current phase lists; leave future modules as empty stubs.
