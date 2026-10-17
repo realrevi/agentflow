@@ -10,7 +10,7 @@ use crate::providers::anthropic::API_VERSION;
 use crate::providers::error::ErrorKind;
 use crate::providers::keys::{KeyVault, MemoryStore};
 use crate::providers::{
-    build_provider, cancel_pair, ChatRequest, ChatRole, ChatTurn, Http, Provider, StreamEnd,
+    build_provider, cancel_pair, ChatRequest, ChatTurn, Http, Provider, StreamEnd,
 };
 use crate::settings::ProviderEntry;
 
@@ -43,12 +43,10 @@ fn chat() -> ChatRequest {
     ChatRequest {
         model: "model-x".into(),
         system: "Be brief.".into(),
-        turns: vec![ChatTurn {
-            role: ChatRole::User,
-            content: "Hi".into(),
-        }],
+        turns: vec![ChatTurn::user("Hi")],
         max_tokens: 512,
         temperature: None,
+        caching: false,
     }
 }
 

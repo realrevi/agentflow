@@ -133,9 +133,11 @@ fn a_reply_streams_and_is_stored_with_usage() {
     assert_eq!(usage.tokens.output_tokens, 42);
     assert!(usage.at > 0);
 
-    // The provider got the stored history.
+    // The provider got the stored history, with a prompt-cache breakpoint at its end.
     let body = server.requests()[0].json();
-    assert_eq!(body["messages"][0]["content"], "Hello there");
+    let content = &body["messages"][0]["content"];
+    assert_eq!(content[0]["text"], "Hello there");
+    assert_eq!(content[0]["cache_control"]["type"], "ephemeral");
 }
 
 #[test]

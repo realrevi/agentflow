@@ -107,7 +107,8 @@ where
         }
     };
     let title = conversation.title.clone();
-    let chat = match build_request(&conversation, &entry) {
+    let caching = settings.chat.prompt_caching && entry.kind == "anthropic";
+    let chat = match build_request(&conversation, &entry, caching) {
         Ok(chat) => chat,
         Err(err) => {
             manager.finish(request_id);
@@ -208,12 +209,10 @@ pub fn tiny_request(model: &str) -> ChatRequest {
     ChatRequest {
         model: model.to_owned(),
         system: String::new(),
-        turns: vec![crate::providers::ChatTurn {
-            role: crate::providers::ChatRole::User,
-            content: "Reply with OK.".into(),
-        }],
+        turns: vec![crate::providers::ChatTurn::user("Reply with OK.")],
         max_tokens: 16,
         temperature: None,
+        caching: false,
     }
 }
 

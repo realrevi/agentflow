@@ -9,7 +9,7 @@ mod tests;
 
 pub use checks::MAX_ATTACHMENT_BYTES;
 pub use model::{
-    Attachment, ChatMessage, Conversation, ConversationPatch, ConversationSummary, MessageStatus,
-    Role, UsageRecord,
+    Attachment, ChatMessage, Compaction, Conversation, ConversationPatch, ConversationSummary,
+    MessageStatus, Role, UsageRecord,
 };
 pub use store::ConversationStore;
