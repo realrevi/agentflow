@@ -6,7 +6,7 @@ side in a VS Code-style dockable layout, watched over by cute pixel-art agent ch
 AgentFlow is a lightweight desktop app (Tauri 2 + Rust + SolidJS) for Windows, macOS and Linux.
 The goals are low RAM, a fast UI, a clean codebase, and a fun look.
 
-> **Status:** early development. Phases 1–8 of 11 are done: app shell, themes, languages,
+> **Status:** early development. Phases 1–8 of 12 are done: app shell, themes, languages,
 > dockable layout, real terminal panels, the workspace file tree, a code editor, pixel
 > characters with a prompt bar, API agents with tools, token and cost tracking, and an agent
 > installer. See the [roadmap](#roadmap).
@@ -119,9 +119,10 @@ Planned:
 | 6     | Token and cost tracking (API chats + agent CLI logs, budgets)          | Done   |
 | 7     | API agent tools + default system prompt                                | Done   |
 | 8     | Agent installer wizard (per-AI formats and paths)                      | Done   |
-| 9     | Community agent library from GitHub                                    |        |
-| 10    | UI polish                                                              |        |
-| 11    | Cross-platform builds + CI                                             |        |
+| 9     | Manager–worker workstreams + the Agent Stage                           |        |
+| 10    | Community agent library from GitHub                                    |        |
+| 11    | UI polish                                                              |        |
+| 12    | Cross-platform builds + CI                                             |        |
 
 ## Keyboard shortcuts
 

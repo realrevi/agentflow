@@ -179,7 +179,7 @@ cd src-tauri && cargo fmt --check && cargo clippy --all-targets -- -D warnings &
 cargo build    # in src-tauri: compile check, no bundling
 ```
 
-## Roadmap (11 phases)
+## Roadmap (12 phases)
 
 1. [x] Skeleton, theme engine, i18n, dockable layout
 2. [x] PTY + multi terminal panels (xterm.js WebGL, portable-pty)
@@ -189,8 +189,9 @@ cargo build    # in src-tauri: compile check, no bundling
 6. [x] Token & cost tracking (ledger, CLI log readers, prices, budgets, dashboard, Compact)
 7. [x] API agent tools + default system prompt (tool cards, diffs, permissions, undo)
 8. [x] Agent installer wizard (per-AI formats/paths, templates, managed sections, detection)
-9. [ ] Community agent library from GitHub
-10. [ ] UI polish
-11. [ ] Cross-platform builds + CI
+9. [ ] Manager–worker workstreams + the Agent Stage
+10. [ ] Community agent library from GitHub
+11. [ ] UI polish
+12. [ ] Cross-platform builds + CI
 
 Only build what the current phase lists; leave future modules as empty stubs.
