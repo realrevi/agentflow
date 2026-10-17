@@ -11,5 +11,5 @@ export {
   loadCharacters,
   pickCharacter,
 } from './catalog';
-export { AgentStateTracker, type AgentState } from './stateMachine';
+export { AgentStateTracker, spriteFor, type AgentState } from './stateMachine';
 export type { CharacterRef, SpriteSheet, SpriteState } from './types';

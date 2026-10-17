@@ -16,6 +16,20 @@ export function Toasts() {
                 <span class="af-toast-detail">{toast.detail}</span>
               </Show>
             </div>
+            <Show when={toast.action}>
+              {(action) => (
+                <button
+                  type="button"
+                  class="af-button secondary small"
+                  onClick={() => {
+                    dismissToast(toast.id);
+                    action().run();
+                  }}
+                >
+                  {action().label}
+                </button>
+              )}
+            </Show>
             <button
               type="button"
               class="af-icon-btn"

@@ -8,6 +8,7 @@ import type { PromptEntry } from '../../../shared/types';
 import {
   Avatar,
   reducedMotion,
+  spriteFor,
   startAnimation,
   type AgentState,
   type CharacterRef,
@@ -29,6 +30,7 @@ const STATE_LABEL: Record<AgentState, I18nKey> = {
   done: 'characters.state.done',
   sleep: 'characters.state.sleep',
   error: 'characters.state.error',
+  wait: 'characters.state.wait',
 };
 
 const BUBBLE: Partial<Record<AgentState, I18nKey>> = {
@@ -37,6 +39,7 @@ const BUBBLE: Partial<Record<AgentState, I18nKey>> = {
   done: 'characters.bubble.done',
   sleep: 'characters.bubble.sleep',
   error: 'characters.bubble.error',
+  wait: 'characters.bubble.wait',
 };
 
 export interface AgentOverlayHandle {
@@ -79,7 +82,7 @@ export function AgentOverlay(props: AgentOverlayProps) {
     receive: () => setReceiving(true),
   });
 
-  const sprite = () => (receiving() ? 'receive' : props.state);
+  const sprite = () => (receiving() ? 'receive' : spriteFor(props.state));
 
   // The bubble shows the start of a new prompt for a moment, then the state.
   let promptTimer: number | undefined;
