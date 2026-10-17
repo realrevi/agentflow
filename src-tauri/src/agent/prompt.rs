@@ -6,7 +6,7 @@
 use std::fmt::Write as _;
 use std::path::Path;
 
-use crate::conversations::PermissionMode;
+use crate::conversations::{PermissionMode, ProfileSnapshot};
 use crate::fs::walker;
 use crate::providers::ToolSpec;
 
@@ -103,10 +103,31 @@ pub fn system_prompt(
     mode: PermissionMode,
     user_prompt: &str,
     default_prompt: bool,
+    profile: Option<&ProfileSnapshot>,
 ) -> String {
     let user_prompt = user_prompt.trim();
+    let role = profile
+        .filter(|p| !p.instructions.trim().is_empty())
+        .map(|p| {
+            format!(
+                "## Your role: {}
+
+{}",
+                p.name.trim(),
+                p.instructions.trim()
+            )
+        });
     if !default_prompt {
-        return user_prompt.to_owned();
+        return [role.as_deref(), Some(user_prompt)]
+            .into_iter()
+            .flatten()
+            .filter(|part| !part.is_empty())
+            .collect::<Vec<_>>()
+            .join(
+                "
+
+",
+            );
     }
     let mut out = String::from(
         "You are an AI agent running inside AgentFlow, a desktop app for coding with AI \
@@ -135,6 +156,10 @@ pub fn system_prompt(
     }
     out.push('\n');
     out.push_str(RULES);
+    if let Some(role) = role {
+        out.push_str("\n\n");
+        out.push_str(&role);
+    }
     if !user_prompt.is_empty() {
         out.push_str("\n\n## The user's instructions\n");
         out.push_str(user_prompt);
@@ -175,14 +200,66 @@ mod tests {
         assert!(env.contains("Shell for run_command: pwsh"));
         assert!(env.contains("## Project instructions (CLAUDE.md)\nUse tabs."));
         let tools = crate::agent::tools::specs(PermissionMode::ReadOnly);
-        let prompt = system_prompt(&env, &tools, PermissionMode::ReadOnly, "Be brief.", true);
+        let prompt = system_prompt(
+            &env,
+            &tools,
+            PermissionMode::ReadOnly,
+            "Be brief.",
+            true,
+            None,
+        );
         assert!(prompt.starts_with("You are an AI agent running inside AgentFlow"));
         assert!(prompt.contains("- read_file:") && !prompt.contains("- write_file:"));
         assert!(prompt.contains("Permission mode: Read-only"));
         assert!(prompt.ends_with("## The user's instructions\nBe brief."));
         assert_eq!(
-            system_prompt(&env, &tools, PermissionMode::Ask, " Be brief. ", false),
+            system_prompt(
+                &env,
+                &tools,
+                PermissionMode::Ask,
+                " Be brief. ",
+                false,
+                None
+            ),
             "Be brief."
+        );
+        // An agent profile adds its role after the rules, before the user's instructions.
+        let profile = crate::conversations::ProfileSnapshot {
+            id: "code-reviewer".into(),
+            name: "Code Reviewer".into(),
+            instructions: "Review diffs.".into(),
+            tools: None,
+        };
+        let with_role = system_prompt(
+            &env,
+            &tools,
+            PermissionMode::ReadOnly,
+            "Be brief.",
+            true,
+            Some(&profile),
+        );
+        assert!(with_role.ends_with(
+            "## Your role: Code Reviewer
+
+Review diffs.
+
+## The user's instructions
+Be brief."
+        ));
+        assert_eq!(
+            system_prompt(
+                &env,
+                &tools,
+                PermissionMode::Ask,
+                "Be brief.",
+                false,
+                Some(&profile)
+            ),
+            "## Your role: Code Reviewer
+
+Review diffs.
+
+Be brief."
         );
     }
 }

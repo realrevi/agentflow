@@ -161,6 +161,17 @@ fn object(properties: Value, required: &[&str]) -> Value {
 }
 
 /// The tools offered in `mode` (Read-only offers the read tools only).
+/// Every tool name (agent profiles may only list these).
+pub const TOOL_NAMES: [&str; 7] = [
+    "list_dir",
+    "read_file",
+    "glob",
+    "search",
+    "write_file",
+    "edit_file",
+    "run_command",
+];
+
 pub fn specs(mode: PermissionMode) -> Vec<ToolSpec> {
     TOOLS
         .iter()

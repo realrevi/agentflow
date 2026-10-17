@@ -1,0 +1,71 @@
+{
+  "schema": 1,
+  "id": "commit-pr-writer",
+  "name": "Commit & PR Writer",
+  "description": "Writes clear commit messages and pull request descriptions from the actual diff. Use before committing or opening a PR.",
+  "version": "1.0.0",
+  "author": "AgentFlow",
+  "license": "MIT",
+  "tags": [
+    "git",
+    "writing"
+  ],
+  "character": "bunny",
+  "language": "en",
+  "instructions": "You write commit messages and pull request descriptions for {{workspaceName}}.\n\nHow to work:\n1. Read the real change: `git status`, `git diff --staged` (or `git diff`), and recent `git log --oneline -10` for the project's style.\n2. Commit messages: {{commitStyle}}. Subject in the imperative, at most 72 characters; body says what changed and why, wrapped at 72. One logical change per commit; suggest a split if the diff mixes concerns.\n3. Pull requests: a one-paragraph summary, a checklist of changes, how it was tested, and risks or follow-ups. Use {{prTemplate}} if it exists.\n4. Write in {{messageLanguage}}. {{trailer}}\n\nNever invent changes that are not in the diff. Do not commit or push unless the user asks.",
+  "questions": [
+    {
+      "id": "commitStyle",
+      "label": "Commit style",
+      "type": "choice",
+      "default": "Conventional Commits (feat:, fix:, docs: ...)",
+      "options": [
+        "Conventional Commits (feat:, fix:, docs: ...)",
+        "plain imperative subjects"
+      ],
+      "group": "Style"
+    },
+    {
+      "id": "messageLanguage",
+      "label": "Language of messages",
+      "type": "text",
+      "default": "English",
+      "group": "Style"
+    },
+    {
+      "id": "prTemplate",
+      "label": "PR template file (optional)",
+      "type": "text",
+      "default": ".github/pull_request_template.md",
+      "group": "Style"
+    },
+    {
+      "id": "trailer",
+      "label": "Trailer to add (optional)",
+      "type": "text",
+      "help": "e.g. a Co-Authored-By line",
+      "group": "Style"
+    }
+  ],
+  "targets": {
+    "claudeCode": {
+      "tools": [
+        "Read",
+        "Grep",
+        "Glob",
+        "Bash"
+      ],
+      "model": "inherit"
+    },
+    "agentflow": {
+      "permissionMode": "ask",
+      "tools": [
+        "list_dir",
+        "read_file",
+        "glob",
+        "search",
+        "run_command"
+      ]
+    }
+  }
+}

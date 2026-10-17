@@ -80,8 +80,12 @@ async fn run(
         && turn
             .capabilities
             .supports_tools(agent, &turn.entry.id, &conversation.model);
+    let profile = conversation.agent.profile.clone();
+    // An agent profile's tool list only narrows what the mode offers.
     let mut offered: Vec<ToolSpec> = if tools_on {
-        tools::specs(mode)
+        let mut specs = tools::specs(mode);
+        specs.retain(|spec| profile.as_ref().is_none_or(|p| p.allows(&spec.name)));
+        specs
     } else {
         Vec::new()
     };
@@ -108,6 +112,7 @@ async fn run(
             mode,
             &conversation.system_prompt,
             agent.default_prompt,
+            profile.as_ref(),
         );
         send(ChatEvent::Status {
             phase: Phase::Think,
@@ -160,6 +165,7 @@ async fn run(
             env: env.as_ref(),
             mode,
             allowed: &mut allowed,
+            profile: profile.as_ref(),
         };
         let mut results = Vec::with_capacity(step.calls.len());
         for call in &step.calls {

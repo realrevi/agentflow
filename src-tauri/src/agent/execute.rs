@@ -8,7 +8,7 @@ use super::permissions::{decide, Category, Decision, PermissionAnswer, Permissio
 use super::run::Turn;
 use super::tools::{self, ToolEnv, ToolOutput};
 use crate::chat::{ChatEvent, Phase};
-use crate::conversations::PermissionMode;
+use crate::conversations::{PermissionMode, ProfileSnapshot};
 use crate::providers::{ToolCall, ToolOutcome, ToolResult};
 use crate::util::run_blocking;
 
@@ -18,6 +18,8 @@ pub struct CallContext<'a> {
     pub mode: PermissionMode,
     /// Tools allowed "for this conversation" (grows when the user picks that).
     pub allowed: &'a mut Vec<String>,
+    /// The chat's agent profile: tools outside its list are refused.
+    pub profile: Option<&'a ProfileSnapshot>,
 }
 
 pub async fn execute(
@@ -54,6 +56,10 @@ async fn decide_and_run(
     let skipped = |output| (output, ToolOutcome::Skipped, None);
     if turn.cancel.is_cancelled() {
         return skipped(cancelled());
+    }
+    if context.profile.is_some_and(|p| !p.allows(&call.name)) {
+        let message = format!("The tool \"{}\" is not available to this agent.", call.name);
+        return skipped(ToolOutput::error(message));
     }
     let (Some(env), Some(category)) = (context.env, tools::category(&call.name)) else {
         let message = format!("The tool \"{}\" is not available here.", call.name);

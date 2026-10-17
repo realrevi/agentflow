@@ -43,6 +43,46 @@ pub struct AgentState {
     /// The environment part of the default system prompt, built once so the prompt (and
     /// the cached prefix) stays the same for the whole conversation.
     pub context: Option<String>,
+    /// The AgentFlow agent this chat was opened with (a snapshot of its profile).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub profile: Option<ProfileSnapshot>,
+}
+
+/// An installed AgentFlow agent as a chat uses it: its role and an optional tool allowlist
+/// that only narrows what the permission mode allows.
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+pub struct ProfileSnapshot {
+    pub id: String,
+    pub name: String,
+    pub instructions: String,
+    pub tools: Option<Vec<String>>,
+}
+
+impl ProfileSnapshot {
+    /// Whether this agent may use `tool` (no allowlist = every tool of the mode).
+    pub fn allows(&self, tool: &str) -> bool {
+        self.tools
+            .as_ref()
+            .is_none_or(|tools| tools.iter().any(|t| t == tool))
+    }
+}
+
+impl PermissionMode {
+    /// The stricter of two modes (Read-only > Ask > Auto-edit): a profile never loosens
+    /// the user's default.
+    pub fn stricter(self, other: Self) -> Self {
+        let rank = |mode: Self| match mode {
+            Self::AutoEdit => 0,
+            Self::Ask => 1,
+            Self::ReadOnly => 2,
+        };
+        if rank(other) > rank(self) {
+            other
+        } else {
+            self
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]

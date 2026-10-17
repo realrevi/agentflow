@@ -16,6 +16,7 @@ use crate::util::test_dir::TestDir;
 
 mod agent;
 mod agent_permissions;
+mod agent_profile;
 mod compact;
 mod usage;
 
