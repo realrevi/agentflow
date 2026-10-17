@@ -164,7 +164,7 @@ pub fn request_body(chat: &ChatRequest, preset: Preset) -> Value {
             ChatRole::User => "user",
             ChatRole::Assistant => "assistant",
         };
-        messages.push(json!({ "role": role, "content": turn.content }));
+        messages.push(json!({ "role": role, "content": turn.content() }));
     }
     let mut body = json!({
         "model": chat.model,
@@ -200,13 +200,15 @@ pub fn parse_models(list: &Value, preset: Preset) -> Vec<ModelInfo> {
                 .model_prefix()
                 .and_then(|prefix| raw.strip_prefix(prefix))
                 .unwrap_or(raw);
-            Some(ModelInfo {
-                id: id.to_owned(),
-                name: model["name"]
-                    .as_str()
-                    .filter(|n| *n != id)
-                    .map(str::to_owned),
-            })
+            let name = model["name"]
+                .as_str()
+                .filter(|n| *n != id)
+                .map(str::to_owned);
+            let mut info = ModelInfo::named(id, name);
+            // OpenRouter lists `context_length` and per-token `pricing`.
+            info.context_window = model["context_length"].as_u64();
+            info.pricing = model.get("pricing").filter(|p| p.is_object()).cloned();
+            Some(info)
         })
         .collect();
     models.sort_by(|a, b| a.id.cmp(&b.id));

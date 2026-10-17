@@ -4,13 +4,13 @@
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
-use super::mock::{MockServer, Reply};
+use super::mock::{refusing_port, MockServer, Reply};
 use super::Collect;
 use crate::providers::anthropic::API_VERSION;
 use crate::providers::error::ErrorKind;
 use crate::providers::keys::{KeyVault, MemoryStore};
 use crate::providers::{
-    build_provider, cancel_pair, ChatRequest, ChatRole, ChatTurn, Http, Provider, StreamEnd,
+    build_provider, cancel_pair, ChatRequest, ChatTurn, Http, Provider, StreamEnd,
 };
 use crate::settings::ProviderEntry;
 
@@ -43,12 +43,10 @@ fn chat() -> ChatRequest {
     ChatRequest {
         model: "model-x".into(),
         system: "Be brief.".into(),
-        turns: vec![ChatTurn {
-            role: ChatRole::User,
-            content: "Hi".into(),
-        }],
+        turns: vec![ChatTurn::user("Hi")],
         max_tokens: 512,
         temperature: None,
+        caching: false,
     }
 }
 
@@ -304,11 +302,7 @@ fn stalls_time_out_and_dead_servers_fail_fast() {
     let (_, end) = run(&*stalled, &Http::for_tests(Duration::from_millis(300)));
     assert_eq!(end.expect_err("timeout").kind, ErrorKind::Timeout);
 
-    let port = std::net::TcpListener::bind("127.0.0.1:0")
-        .expect("bind")
-        .local_addr()
-        .expect("addr")
-        .port();
+    let (_reserved, port) = refusing_port();
     let dead = provider(
         &entry(
             "anthropic",

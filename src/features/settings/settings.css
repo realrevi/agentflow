@@ -296,3 +296,66 @@
 .af-test-result.error {
   color: var(--af-error);
 }
+
+/* Usage & budgets */
+.af-settings-table {
+  width: 100%;
+  margin: 6px 0 10px;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.af-settings-table th,
+.af-settings-table td {
+  padding: 3px 6px 3px 0;
+  text-align: left;
+  vertical-align: middle;
+}
+
+.af-settings-table th {
+  color: var(--af-fg-muted);
+  font-weight: 600;
+}
+
+.af-settings-table .numeric {
+  font-family: var(--af-font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.af-input-money {
+  width: 84px;
+}
+
+.af-price-table .af-input-money {
+  width: 70px;
+}
+
+.af-price-list {
+  max-height: 320px;
+  overflow: auto;
+  border: 1px solid var(--af-border);
+  border-radius: 4px;
+  margin-top: 6px;
+  padding: 0 6px;
+}
+
+.af-settings-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 0;
+  font-size: 13px;
+}
+
+.af-settings-link {
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--af-link, var(--af-accent));
+  font: inherit;
+  cursor: pointer;
+}
+
+.af-settings-link:hover {
+  text-decoration: underline;
+}

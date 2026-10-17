@@ -6,7 +6,7 @@ import { parseTerminalConfig, terminalTitle, type TerminalConfig } from '../term
 import { t } from '../i18n';
 import { baseName } from '../workspace';
 
-export type PanelKind = 'terminal' | 'chat' | 'editor' | 'files' | 'settings';
+export type PanelKind = 'terminal' | 'chat' | 'editor' | 'files' | 'settings' | 'usage';
 
 export type PanelParams =
   | { kind: 'terminal'; index: number; config: TerminalConfig }
@@ -15,9 +15,11 @@ export type PanelParams =
   /** `root` is the workspace folder the file belongs to; `path` is relative to it. */
   | { kind: 'editor'; index: number; root: string; path: string }
   | { kind: 'files' }
-  | { kind: 'settings' };
+  | { kind: 'settings' }
+  /** The token & cost dashboard. */
+  | { kind: 'usage' };
 
-export type SingletonKind = 'files' | 'settings';
+export type SingletonKind = 'files' | 'settings' | 'usage';
 
 function isIndex(value: unknown): value is number {
   return typeof value === 'number' && Number.isInteger(value) && value > 0;
@@ -30,7 +32,7 @@ function isText(value: unknown): value is string {
 export function parsePanelParams(raw: unknown): PanelParams | null {
   if (typeof raw !== 'object' || raw === null) return null;
   const { kind, index, config, root, path } = raw as Record<string, unknown>;
-  if (kind === 'files' || kind === 'settings') return { kind };
+  if (kind === 'files' || kind === 'settings' || kind === 'usage') return { kind };
   if (kind === 'editor') {
     return isIndex(index) && isText(root) && isText(path) ? { kind, index, root, path } : null;
   }
@@ -61,6 +63,8 @@ export function panelTitle(params: PanelParams): string {
       return t('panel.files.title');
     case 'settings':
       return t('panel.settings.title');
+    case 'usage':
+      return t('panel.usage.title');
   }
 }
 

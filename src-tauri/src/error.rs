@@ -27,6 +27,9 @@ pub enum AppError {
     /// A provider request failed or is not set up; the message is redacted and readable.
     #[error("{0}")]
     Provider(String),
+    /// A hard budget stop refused an API chat send ("allow once" lets one through).
+    #[error("{0}")]
+    Budget(String),
     #[error("internal error: {0}")]
     Internal(String),
 }
@@ -44,6 +47,7 @@ impl AppError {
             Self::Conflict(_) => "conflict",
             Self::TooLarge { .. } => "tooLarge",
             Self::Provider(_) => "provider",
+            Self::Budget(_) => "budget",
             Self::Internal(_) => "internal",
         }
     }

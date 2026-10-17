@@ -3,15 +3,17 @@
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use super::providers::{ChatSettings, ProviderEntry};
+use super::chat::ChatSettings;
+use super::providers::ProviderEntry;
+use super::usage::UsageSettings;
 
 /// Bump when the on-disk shape changes and add a step in `migrate.rs`.
-pub const CURRENT_VERSION: u32 = 5;
+pub const CURRENT_VERSION: u32 = 6;
 pub const SUPPORTED_LANGUAGES: [&str; 5] = ["en", "tr", "de", "zh", "ru"];
 pub const DEFAULT_LANGUAGE: &str = "en";
 pub const DEFAULT_THEME_ID: &str = "agentflow-dark";
 pub const DEFAULT_BOLD_COLOR: &str = "#F5C542";
-pub const SIDEBAR_VIEWS: [&str; 3] = ["agents", "explorer", "characters"];
+pub const SIDEBAR_VIEWS: [&str; 4] = ["agents", "explorer", "characters", "usage"];
 pub const MAX_RECENT_WORKSPACES: usize = 10;
 pub const CURSOR_STYLES: [&str; 3] = ["block", "underline", "bar"];
 pub const AVATAR_SCALES: [u8; 3] = [2, 3, 4];
@@ -34,6 +36,8 @@ pub struct Settings {
     /// AI providers for API chat panels (keys are in the OS keychain, never here).
     pub providers: Vec<ProviderEntry>,
     pub chat: ChatSettings,
+    /// Token & cost tracking: CLI readers, prices, budgets (phase 6).
+    pub usage: UsageSettings,
     /// Opaque dockview layout owned by the frontend. `None` means "use the default layout".
     pub layout: Option<Value>,
 }
@@ -118,6 +122,7 @@ impl Default for Settings {
             characters: CharacterSettings::default(),
             providers: Vec::new(),
             chat: ChatSettings::default(),
+            usage: UsageSettings::default(),
             layout: None,
         }
     }

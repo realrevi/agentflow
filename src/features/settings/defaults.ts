@@ -2,7 +2,7 @@ import type { Settings } from '../../shared/types';
 
 /** Used until the backend answers (and if it cannot). Mirrors `Settings::default()` in Rust. */
 export const DEFAULT_SETTINGS: Settings = {
-  version: 5,
+  version: 6,
   language: 'en',
   appearance: {
     themeId: 'agentflow-dark',
@@ -26,7 +26,24 @@ export const DEFAULT_SETTINGS: Settings = {
     onShells: false,
   },
   providers: [],
-  chat: { smoothReveal: true },
+  chat: {
+    smoothReveal: true,
+    promptCaching: true,
+    defaultContextWindow: 128_000,
+    contextWindows: [],
+    compactThreshold: 0.7,
+    compactKeepTurns: 4,
+    compactProviderId: null,
+    compactModel: '',
+    autoCompact: false,
+  },
+  usage: {
+    trackCli: true,
+    cliSubscription: false,
+    freeProviders: [],
+    prices: [],
+    budgets: { daily: null, monthly: null, providers: [], hardStop: false },
+  },
   layout: null,
 };
 

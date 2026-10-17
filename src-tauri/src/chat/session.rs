@@ -15,6 +15,7 @@ use crate::providers::{
     build_provider, ChatRequest, Http, KeyVault, Provider, ProviderError, StreamEnd,
 };
 use crate::settings::{ProviderEntry, Settings};
+use crate::tokens::{chat_record, UsageTracker};
 use crate::util::{now_ms, run_blocking};
 
 #[derive(Debug, Clone, Deserialize)]
@@ -26,6 +27,12 @@ pub struct ChatSendRequest {
     pub text: Option<String>,
     #[serde(default)]
     pub attachments: Vec<Attachment>,
+    /// The chat panel, for per-panel usage.
+    #[serde(default)]
+    pub panel: Option<String>,
+    /// A token from `usage_allow_once`: lets this send through a hard budget stop.
+    #[serde(default)]
+    pub allow_once: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -43,6 +50,7 @@ pub struct ChatDeps {
     pub store: ConversationStore,
     pub vault: KeyVault,
     pub manager: ChatManager,
+    pub tracker: UsageTracker,
 }
 
 pub async fn start_chat<F>(
@@ -58,6 +66,7 @@ where
         store,
         vault,
         manager,
+        tracker,
     } = deps;
     let workspace = request.workspace.clone();
     let id = request.conversation_id.clone();
@@ -74,6 +83,7 @@ where
     if conversation.model.trim().is_empty() {
         return Err(AppError::Provider("Choose a model for this chat.".into()));
     }
+    tracker.check_send(&entry.id, request.allow_once.as_deref())?;
     let key = {
         let (vault, provider_id) = (vault.clone(), entry.id.clone());
         run_blocking(move || vault.get(&provider_id)).await?
@@ -84,6 +94,7 @@ where
 
     let qualified = format!("{}|{id}", workspace.as_deref().unwrap_or(""));
     let (request_id, cancel) = manager.register(qualified)?;
+    let panel = request.panel.clone();
     let stored = {
         let (store, workspace, id) = (store.clone(), workspace.clone(), id.clone());
         let ChatSendRequest {
@@ -107,7 +118,8 @@ where
         }
     };
     let title = conversation.title.clone();
-    let chat = match build_request(&conversation, &entry) {
+    let caching = settings.chat.prompt_caching && entry.kind == "anthropic";
+    let chat = match build_request(&conversation, &entry, caching) {
         Ok(chat) => chat,
         Err(err) => {
             manager.finish(request_id);
@@ -117,6 +129,8 @@ where
 
     let job = Job {
         workspace,
+        panel,
+        tracker,
         conversation_id: id,
         entry,
         secret,
@@ -136,6 +150,8 @@ where
 
 struct Job {
     workspace: Option<String>,
+    panel: Option<String>,
+    tracker: UsageTracker,
     conversation_id: String,
     entry: ProviderEntry,
     /// Only to redact it from error messages.
@@ -184,6 +200,9 @@ impl Job {
             error,
             usage,
         });
+        if let Some(message) = &message {
+            self.record_usage(message).await;
+        }
         if let Some(message) = message.clone() {
             let (workspace, id) = (self.workspace.clone(), self.conversation_id.clone());
             let saved =
@@ -203,17 +222,33 @@ impl Job {
     }
 }
 
+impl Job {
+    /// Writes the reply's usage (partial replies too) to the usage ledger.
+    async fn record_usage(&self, message: &ChatMessage) {
+        let Some(usage) = &message.usage else { return };
+        let record = chat_record(
+            &self.conversation_id,
+            &message.id,
+            self.workspace.as_deref(),
+            self.panel.as_deref(),
+            usage,
+        );
+        let tracker = self.tracker.clone();
+        if let Err(err) = run_blocking(move || tracker.record(vec![record])).await {
+            tracing::warn!("could not record usage: {err}");
+        }
+    }
+}
+
 /// For "Test connection": a one-line reply proves the key, URL and model work.
 pub fn tiny_request(model: &str) -> ChatRequest {
     ChatRequest {
         model: model.to_owned(),
         system: String::new(),
-        turns: vec![crate::providers::ChatTurn {
-            role: crate::providers::ChatRole::User,
-            content: "Reply with OK.".into(),
-        }],
+        turns: vec![crate::providers::ChatTurn::user("Reply with OK.")],
         max_tokens: 16,
         temperature: None,
+        caching: false,
     }
 }
 

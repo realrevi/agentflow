@@ -14,8 +14,8 @@ use super::checks::{
     is_valid_id, new_id, MAX_TITLE_CHARS,
 };
 use super::model::{
-    Attachment, ChatMessage, Conversation, ConversationPatch, ConversationSummary, MessageStatus,
-    Role, FORMAT_VERSION,
+    Attachment, ChatMessage, Compaction, Conversation, ConversationPatch, ConversationSummary,
+    MessageStatus, Role, FORMAT_VERSION,
 };
 use crate::error::{AppError, AppResult};
 use crate::util::{lock, now_ms, workspace_key, write_atomic};
@@ -186,6 +186,28 @@ impl ConversationStore {
             Ok(())
         })
         .map(|_| ())
+    }
+
+    /// Stores a Compact summary; the message it ends at must still exist.
+    pub fn set_compaction(
+        &self,
+        workspace: Option<&str>,
+        id: &str,
+        compaction: Compaction,
+    ) -> AppResult<Conversation> {
+        self.modify(workspace, id, move |conversation| {
+            if !conversation
+                .messages
+                .iter()
+                .any(|m| m.id == compaction.through)
+            {
+                return Err(AppError::InvalidInput(
+                    "the chat changed; compact again".into(),
+                ));
+            }
+            conversation.compaction = Some(compaction);
+            Ok(())
+        })
     }
 
     fn modify(

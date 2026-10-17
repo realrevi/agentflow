@@ -52,6 +52,15 @@
   color: var(--af-fg-muted);
 }
 
+.af-agent-usage {
+  padding-left: 6px;
+  border-left: 1px solid var(--af-widget-border);
+  color: var(--af-fg-muted);
+  font-family: var(--af-font-mono);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
 .af-agent-state::before {
   content: '';
   display: inline-block;

@@ -1,7 +1,9 @@
 // One chat panel's live state: the stored messages, the reply streaming right now (revealed
 // smoothly on the shared animation loop), and the character's state: think on send, work on
-// the first delta, done on stop (idle 5 s later), error on error.
+// the first delta, done on stop (idle 5 s later), error on error. Also the hard budget stop
+// (see budgetStop.ts) and Compact.
 import { batch, createSignal } from 'solid-js';
+import { toAppError } from '../../shared/errors';
 import { ipc } from '../../shared/ipc';
 import type {
   Attachment,
@@ -15,6 +17,7 @@ import { clearAgentState, setAgentState } from '../agentui';
 import { reducedMotion, startAnimation, type AgentState } from '../characters';
 import { reportError } from '../i18n';
 import { settings } from '../settings/settingsStore';
+import { createBudgetStop, isBudgetError } from './budgetStop';
 import { RevealBuffer } from './reveal';
 
 const REST_MS = 5000;
@@ -48,6 +51,11 @@ export function createChatSession(options: ChatSessionOptions) {
   const [messages, setMessages] = createSignal<readonly ChatMessage[]>([]);
   const [streaming, setStreaming] = createSignal<Streaming | null>(null);
   const [error, setError] = createSignal<ChatError | null>(null);
+  const [compacting, setCompacting] = createSignal(false);
+  const budget = createBudgetStop({
+    allowOnce: (providerId) => ipc.usageAllowOnce(providerId),
+    resend: (text, attachments, token) => send(text, attachments, token),
+  });
   let requestId: number | null = null;
   let stopWanted = false;
   let detach: (() => void) | null = null;
@@ -139,9 +147,16 @@ export function createChatSession(options: ChatSessionOptions) {
     }
   }
 
-  /** Sends a prompt (`text: null` = retry). Resolves false if it could not be sent. */
-  async function send(text: string | null, attachments: Attachment[]): Promise<boolean> {
-    if (streaming() || disposed) return false;
+  /**
+   * Sends a prompt (`text: null` = retry). Resolves false if it could not be sent; a hard
+   * budget stop keeps it in `budget.blocked()` instead of showing an error toast.
+   */
+  async function send(
+    text: string | null,
+    attachments: Attachment[],
+    allowOnce: string | null = null,
+  ): Promise<boolean> {
+    if (streaming() || compacting() || disposed) return false;
     firstDelta = true;
     stopWanted = false;
     ending = null;
@@ -158,6 +173,8 @@ export function createChatSession(options: ChatSessionOptions) {
         conversationId: options.conversationId,
         text,
         attachments,
+        panel: options.panelId,
+        allowOnce,
       };
       const { started, detach: stopListening } = await ipc.chatSend(request, onEvent);
       if (!ending) {
@@ -172,8 +189,37 @@ export function createChatSession(options: ChatSessionOptions) {
     } catch (err) {
       setStreaming(null);
       state('idle');
-      reportError('error.chatSend', err);
+      if (isBudgetError(err)) {
+        const providerId = conversation()?.providerId ?? '';
+        budget.block({ text, attachments, providerId, message: toAppError(err).message });
+      } else {
+        reportError('error.chatSend', err);
+      }
       return false;
+    }
+  }
+
+  /** Summarizes the older turns (the last `chat.compactKeepTurns` stay verbatim). */
+  async function compact(): Promise<boolean> {
+    if (compacting() || streaming() || disposed) return false;
+    setCompacting(true);
+    state('think');
+    try {
+      const result = await ipc.chatCompact({
+        workspace: options.workspace,
+        conversationId: options.conversationId,
+        panel: options.panelId,
+      });
+      if (disposed) return true;
+      setConversation((current) => current && { ...current, compaction: result.compaction });
+      state('done');
+      return true;
+    } catch (err) {
+      state('error');
+      reportError('error.compact', err);
+      return false;
+    } finally {
+      setCompacting(false);
     }
   }
 
@@ -208,6 +254,9 @@ export function createChatSession(options: ChatSessionOptions) {
     send,
     stop,
     retry: () => send(null, []),
+    compact,
+    compacting,
+    budget,
     canRetry,
     dispose,
   };

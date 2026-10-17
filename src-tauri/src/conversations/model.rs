@@ -78,6 +78,22 @@ pub struct Conversation {
     pub created_at: u64,
     pub updated_at: u64,
     pub messages: Vec<ChatMessage>,
+    /// Set by Compact: requests send `summary` instead of the messages up to `through`.
+    pub compaction: Option<Compaction>,
+}
+
+/// A summary of the older part of a conversation (phase 6). The messages stay in the file
+/// (the panel still shows them); only requests replace them with the summary.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Compaction {
+    pub summary: String,
+    /// Id of the last message the summary covers.
+    pub through: String,
+    pub at: u64,
+    /// Provider entry and model that wrote the summary.
+    pub provider_id: String,
+    pub model: String,
 }
 
 impl Default for Conversation {
@@ -93,6 +109,7 @@ impl Default for Conversation {
             created_at: 0,
             updated_at: 0,
             messages: Vec::new(),
+            compaction: None,
         }
     }
 }

@@ -1,6 +1,7 @@
-// Small labels for messages: errors by kind, stop reasons, usage.
+// Small labels for messages: errors by kind, stop reasons, usage, prompt-cache hit/miss.
 import type { ChatError, ChatErrorKind, ChatMessage } from '../../shared/types';
 import { t, type I18nKey } from '../i18n';
+import { formatTokens } from '../tokens';
 
 const ERROR_LABEL: Record<ChatErrorKind, I18nKey> = {
   auth: 'chat.error.auth',
@@ -45,11 +46,26 @@ export function usageText(message: ChatMessage): string | null {
   const usage = message.usage;
   if (!usage) return null;
   const input = usage.inputTokens + usage.cacheReadTokens + usage.cacheWriteTokens;
-  const base = t('chat.usage', {
+  return t('chat.usage', {
     input: number.format(input),
     output: number.format(usage.outputTokens),
   });
-  return usage.cacheReadTokens > 0
-    ? `${base} · ${t('chat.usage.cached', { count: number.format(usage.cacheReadTokens) })}`
-    : base;
+}
+
+/** "cache hit · 12.4k" when the prompt cache was read, "cache miss · 3k written" when it
+ * was only written; nothing when the reply used no cache at all. */
+export function cacheText(message: ChatMessage): { text: string; hit: boolean } | null {
+  const usage = message.usage;
+  if (!usage) return null;
+  const read = usage.cacheReadTokens;
+  const written = usage.cacheWriteTokens;
+  if (read > 0) {
+    const hit = t('chat.cache.hit', { count: formatTokens(read) });
+    const text =
+      written > 0 ? `${hit} · ${t('chat.cache.written', { count: formatTokens(written) })}` : hit;
+    return { text, hit: true };
+  }
+  if (written > 0)
+    return { text: t('chat.cache.miss', { count: formatTokens(written) }), hit: false };
+  return null;
 }

@@ -30,10 +30,42 @@ pub enum ChatRole {
     Assistant,
 }
 
+/// A piece of a turn's text. `cache` marks an Anthropic prompt-cache breakpoint at its end
+/// (adapters without explicit caching ignore it and just concatenate the text).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TurnBlock {
+    pub text: String,
+    pub cache: bool,
+}
+
+impl TurnBlock {
+    pub fn text(text: impl Into<String>) -> Self {
+        Self {
+            text: text.into(),
+            cache: false,
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ChatTurn {
     pub role: ChatRole,
-    pub content: String,
+    /// Concatenated in order; separators are part of the text.
+    pub blocks: Vec<TurnBlock>,
+}
+
+impl ChatTurn {
+    pub fn user(text: impl Into<String>) -> Self {
+        Self {
+            role: ChatRole::User,
+            blocks: vec![TurnBlock::text(text)],
+        }
+    }
+
+    /// The whole text of the turn.
+    pub fn content(&self) -> String {
+        self.blocks.iter().map(|b| b.text.as_str()).collect()
+    }
 }
 
 /// One streaming chat call, already validated (turns alternate and start with the user).
@@ -46,6 +78,8 @@ pub struct ChatRequest {
     pub max_tokens: u32,
     /// `None` = the provider's default (newer models reject anything else).
     pub temperature: Option<f64>,
+    /// Anthropic: a cache breakpoint on the system prompt.
+    pub caching: bool,
 }
 
 /// What an adapter reports while a reply streams.
@@ -65,12 +99,29 @@ pub enum StreamEnd {
     Cancelled,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ModelInfo {
     pub id: String,
     /// A display name, when the provider has one.
     pub name: Option<String>,
+    /// Max input tokens, when the models endpoint says (Anthropic `max_input_tokens`,
+    /// OpenRouter `context_length`).
+    pub context_window: Option<u64>,
+    /// OpenRouter's raw `pricing` object (USD per token, as strings); not sent to the UI.
+    #[serde(skip)]
+    pub pricing: Option<serde_json::Value>,
+}
+
+impl ModelInfo {
+    pub fn named(id: impl Into<String>, name: Option<String>) -> Self {
+        Self {
+            id: id.into(),
+            name,
+            context_window: None,
+            pricing: None,
+        }
+    }
 }
 
 /// Receives stream events. `flush` is called after each network chunk, so a sink can

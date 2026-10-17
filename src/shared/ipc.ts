@@ -4,19 +4,25 @@ import { Channel, invoke } from '@tauri-apps/api/core';
 import { readText, writeText } from '@tauri-apps/plugin-clipboard-manager';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { open as openDialog } from '@tauri-apps/plugin-dialog';
-import { toAppError } from './errors';
+import { openUrl as openWithOs } from '@tauri-apps/plugin-opener';
+import { AppError, toAppError } from './errors';
 import type { Commands } from './ipcCommands';
+import { webUrl } from './url';
 import type {
   ChatEvent,
   ChatSendRequest,
+  CompactRequest,
+  EstimateRequest,
   ChatStarted,
   ConversationPatch,
   EntryKind,
   FsChanges,
   PtyMessage,
+  PriceOverride,
   PtySpawnRequest,
   SessionInfo,
   Settings,
+  UsageEvent,
 } from './types';
 
 async function call<K extends keyof Commands>(
@@ -101,6 +107,29 @@ async function chatSend(
   }
 }
 
+/** The local UTC offset in minutes east of UTC, as the usage commands expect it. */
+function utcOffsetMinutes(): number {
+  return -new Date().getTimezoneOffset();
+}
+
+/**
+ * Live usage changes (new usage per panel, repricing, budget warnings). One subscriber at a
+ * time: a new subscribe replaces the old channel. `detach()` stops delivery.
+ */
+async function usageSubscribe(onEvent: (event: UsageEvent) => void): Promise<{ detach(): void }> {
+  const channel = new Channel<UsageEvent>(onEvent);
+  const detach = () => {
+    channel.onmessage = () => {};
+  };
+  try {
+    await call('usage_subscribe', { offsetMinutes: utcOffsetMinutes(), onEvent: channel });
+    return { detach };
+  } catch (err) {
+    detach();
+    throw err;
+  }
+}
+
 /**
  * Asks `guard` before the window closes; it resolves `false` to keep the window open. A guard
  * that throws lets the window close, so a bug can never trap the user. Returns an unlisten fn.
@@ -131,6 +160,17 @@ async function pickFolder(title: string): Promise<string | null> {
 async function clipboard<T>(run: () => Promise<T>): Promise<T> {
   try {
     return await run();
+  } catch (err) {
+    throw toAppError(err);
+  }
+}
+
+/** Opens an http(s) URL in the system browser (tauri-plugin-opener); other schemes are refused. */
+async function openUrl(href: string): Promise<void> {
+  const url = webUrl(href);
+  if (!url) throw new AppError('invalidInput', href);
+  try {
+    await openWithOs(url);
   } catch (err) {
     throw toAppError(err);
   }
@@ -179,6 +219,8 @@ export const ipc = {
     call('conversation_delete', { workspace, id }),
   chatSend,
   chatCancel: (requestId: number) => call('chat_cancel', { requestId }),
+  /** Summarizes the older turns (the last `chat.compactKeepTurns` stay verbatim). */
+  chatCompact: (request: CompactRequest) => call('chat_compact', { request }),
   /** Keys are write-only: the frontend only ever sees has-key + the last 4 characters. */
   providerKeyStatus: (providerId: string) => call('provider_key_status', { providerId }),
   providerSetKey: (providerId: string, key: string) =>
@@ -186,8 +228,21 @@ export const ipc = {
   providerDeleteKey: (providerId: string) => call('provider_delete_key', { providerId }),
   providerModels: (providerId: string) => call('provider_models', { providerId }),
   providerTest: (providerId: string) => call('provider_test', { providerId }),
+  usageSubscribe,
+  usageSummary: () => call('usage_summary', { offsetMinutes: utcOffsetMinutes() }),
+  /** One panel's totals since `since` (ms). */
+  usagePanelTotals: (panel: string, since: number) => call('usage_panel_totals', { panel, since }),
+  usageEstimate: (request: EstimateRequest) => call('usage_estimate', { request }),
+  usageBudgets: () => call('usage_budgets', { offsetMinutes: utcOffsetMinutes() }),
+  /** A single-use token for `chatSend` (`allowOnce`) past a hard budget stop. */
+  usageAllowOnce: (providerId: string) => call('usage_allow_once', { providerId }),
+  usagePrices: () => call('usage_prices', {}),
+  /** Saves price overrides; use `setPriceOverrides()` from the settings store. */
+  usageSetPrices: (prices: PriceOverride[]) => call('usage_set_prices', { prices }),
+  usageCliStatus: () => call('usage_cli_status', {}),
   onWindowClose,
   pickFolder,
   readClipboard: () => clipboard(readText),
   writeClipboard: (text: string) => clipboard(() => writeText(text)),
+  openUrl,
 };

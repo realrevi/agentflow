@@ -384,3 +384,102 @@
   font-family: var(--af-font-pixel);
   pointer-events: none;
 }
+
+/* Phase 6: usage notices, estimate, compaction, cache labels */
+.af-chat-notice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px 12px;
+  margin-bottom: 6px;
+  padding: 6px 10px;
+  border: 1px solid var(--af-widget-border);
+  border-left-width: 3px;
+  border-radius: 4px;
+  background: var(--af-widget-bg);
+  font-size: 12px;
+}
+
+.af-chat-notice.warning {
+  border-left-color: var(--af-warning);
+}
+
+.af-chat-notice.danger {
+  border-left-color: var(--af-error);
+}
+
+.af-chat-notice-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.af-chat-notice-hint {
+  color: var(--af-fg-muted);
+  font-size: 11px;
+}
+
+.af-chat-notice-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.af-chat-estimate {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 3px;
+  font-size: 11px;
+  color: var(--af-fg-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.af-chat-compacted {
+  max-width: 820px;
+  margin: 4px 0 14px;
+  padding: 4px 0;
+  border-top: 1px dashed var(--af-border);
+  border-bottom: 1px dashed var(--af-border);
+  font-size: 12px;
+  color: var(--af-fg-muted);
+}
+
+.af-chat-compacted summary {
+  cursor: pointer;
+  text-align: center;
+}
+
+.af-chat-compacted-summary {
+  margin: 6px 0;
+  white-space: pre-wrap;
+  color: var(--af-fg);
+}
+
+.af-chat-compacted-by {
+  margin: 0;
+  font-size: 11px;
+}
+
+.af-chat-cache {
+  color: var(--af-fg-muted);
+}
+
+.af-chat-cache.hit {
+  color: var(--af-success);
+}
+
+.af-chip.sent-earlier {
+  opacity: 0.6;
+}
+
+.af-chip.sent-before {
+  border-style: dashed;
+}
+
+.af-chip-note {
+  color: var(--af-fg-muted);
+  font-size: 10px;
+}

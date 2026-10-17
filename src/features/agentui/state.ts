@@ -21,3 +21,20 @@ export function clearAgentState(panelId: string): void {
     }),
   );
 }
+
+const FLASH_MS = 1600;
+const flashes = new Map<string, { timer: number; before: AgentState }>();
+
+/** Plays `state` for a moment (e.g. "error" on a budget alert), then returns to what the
+ * panel showed before, unless its state changed meanwhile. */
+export function flashAgentState(panelId: string, state: AgentState): void {
+  const running = flashes.get(panelId);
+  window.clearTimeout(running?.timer);
+  const before = running?.before ?? agentState(panelId);
+  setAgentState(panelId, state);
+  const timer = window.setTimeout(() => {
+    flashes.delete(panelId);
+    if (agentState(panelId) === state) setAgentState(panelId, before);
+  }, FLASH_MS);
+  flashes.set(panelId, { timer, before });
+}

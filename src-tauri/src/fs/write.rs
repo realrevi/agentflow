@@ -196,11 +196,16 @@ mod tests {
         assert!(!path.exists());
         #[cfg(any(target_os = "linux", windows))]
         {
-            let parent = dir.path().canonicalize().expect("canonical");
+            // Windows canonical paths are verbatim (`\\?\C:\...`); the trash lists plain ones.
+            let plain = |path: &Path| {
+                let text = path.to_string_lossy().to_lowercase();
+                text.strip_prefix(r"\\?\").unwrap_or(&text).to_owned()
+            };
+            let parent = plain(&dir.path().canonicalize().expect("canonical"));
             let items = trash::os_limited::list().expect("list trash");
             let ours: Vec<_> = items
                 .into_iter()
-                .filter(|item| item.original_parent == parent)
+                .filter(|item| plain(&item.original_parent) == parent)
                 .collect();
             assert_eq!(ours.len(), 1, "the file is in the trash");
             trash::os_limited::purge_all(ours).expect("clean up the trash");

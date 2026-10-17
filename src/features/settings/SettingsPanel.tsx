@@ -7,6 +7,7 @@ import { LanguageSection } from './sections/LanguageSection';
 import { LayoutSection } from './sections/LayoutSection';
 import { ProvidersSection } from './sections/ProvidersSection';
 import { TerminalSection } from './sections/TerminalSection';
+import { UsageSection } from './sections/UsageSection';
 
 export default function SettingsPanel() {
   return (
@@ -15,6 +16,7 @@ export default function SettingsPanel() {
       <TerminalSection />
       <CharactersSection />
       <ProvidersSection />
+      <UsageSection />
       <FilesSection />
       <LanguageSection />
       <LayoutSection />

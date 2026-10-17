@@ -34,12 +34,13 @@ export function AddPanelButton(props: { groupId: string }) {
     { id: 'custom', label: t('terminal.add.custom') },
     { id: 'api', label: t('panel.add.api') },
     { id: 'files', label: t('panel.add.files'), heading: t('panel.add.panels') },
+    { id: 'usage', label: t('panel.add.usage') },
     { id: 'settings', label: t('panel.add.settings') },
   ];
 
   const select = (id: string) => {
     if (id === 'custom' || id === 'api') setMode(id);
-    else if (id === 'files' || id === 'settings') openPanel(id, props.groupId);
+    else if (id === 'files' || id === 'settings' || id === 'usage') openPanel(id, props.groupId);
     else if (id === 'shell' || (AGENT_KINDS as readonly string[]).includes(id)) {
       openTerminal(newTerminalConfig(id as PtyKind), props.groupId);
     }

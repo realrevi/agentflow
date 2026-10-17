@@ -87,10 +87,10 @@ impl Anthropic {
             let page = read_json(response).await?;
             for model in page["data"].as_array().into_iter().flatten() {
                 if let Some(id) = model["id"].as_str() {
-                    models.push(ModelInfo {
-                        id: id.to_owned(),
-                        name: model["display_name"].as_str().map(str::to_owned),
-                    });
+                    let mut info =
+                        ModelInfo::named(id, model["display_name"].as_str().map(str::to_owned));
+                    info.context_window = model["max_input_tokens"].as_u64();
+                    models.push(info);
                 }
             }
             match (page["has_more"].as_bool(), page["last_id"].as_str()) {
@@ -121,6 +121,33 @@ impl Provider for Anthropic {
     }
 }
 
+/// Prompt-cache breakpoint (5-minute TTL). The API allows at most 4 per request; the chat
+/// request builder places them (see `chat/cache.rs`).
+fn cache_control() -> Value {
+    json!({ "type": "ephemeral" })
+}
+
+/// A turn without breakpoints is a plain string; with breakpoints, a list of text blocks
+/// (a breakpoint marks the end of its block).
+fn content(turn: &crate::providers::ChatTurn) -> Value {
+    if !turn.blocks.iter().any(|b| b.cache) {
+        return json!(turn.content());
+    }
+    let blocks: Vec<Value> = turn
+        .blocks
+        .iter()
+        .filter(|b| !b.text.is_empty())
+        .map(|b| {
+            let mut block = json!({ "type": "text", "text": b.text });
+            if b.cache {
+                block["cache_control"] = cache_control();
+            }
+            block
+        })
+        .collect();
+    json!(blocks)
+}
+
 pub fn request_body(chat: &ChatRequest) -> Value {
     let messages: Vec<Value> = chat
         .turns
@@ -130,7 +157,7 @@ pub fn request_body(chat: &ChatRequest) -> Value {
                 ChatRole::User => "user",
                 ChatRole::Assistant => "assistant",
             };
-            json!({ "role": role, "content": turn.content })
+            json!({ "role": role, "content": content(turn) })
         })
         .collect();
     let mut body = json!({
@@ -140,7 +167,11 @@ pub fn request_body(chat: &ChatRequest) -> Value {
         "stream": true,
     });
     if !chat.system.is_empty() {
-        body["system"] = json!(chat.system);
+        body["system"] = if chat.caching {
+            json!([{ "type": "text", "text": chat.system, "cache_control": cache_control() }])
+        } else {
+            json!(chat.system)
+        };
     }
     if let Some(temperature) = chat.temperature {
         body["temperature"] = json!(temperature);

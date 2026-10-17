@@ -3,6 +3,7 @@ export {
   loadSettings,
   saveLayout,
   savedLayout,
+  setPriceOverrides,
   settings,
   updateSettings,
 } from './settingsStore';

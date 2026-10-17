@@ -99,6 +99,9 @@ mod tests {
         move |path| paths.iter().any(|p| Path::new(p) == path)
     }
 
+    // `/usr/bin/zsh` is not an absolute path on Windows (no drive), where this resolver
+    // is never used anyway.
+    #[cfg(unix)]
     #[test]
     fn unix_prefers_existing_shell_env() {
         let shell = resolve_unix_shell(Some("/usr/bin/zsh".into()), only(&["/usr/bin/zsh"]));

@@ -7,7 +7,8 @@ import { createEffect, createSignal, onCleanup, onMount, Show, untrack } from 's
 import { reducedMotion } from '../characters';
 import { settings } from '../settings/settingsStore';
 import { themeVars } from '../theme/themeStore';
-import { agentState } from '../agentui';
+import { agentState, flashAgentState } from '../agentui';
+import { budgetCovers, cliKeyOf, createPanelUsage, onBudgetAlert } from '../tokens';
 import {
   AgentOverlay,
   createPromptHistory,
@@ -56,7 +57,19 @@ export default function TerminalPanel(props: TerminalPanelProps) {
 
   const agentUi = hasAgentUi(props.config.kind);
   const activity = new AgentActivity(props.panelId);
+  // Agent CLIs: session usage on the badge; a budget alert for this CLI flashes "error"
+  // (CLI agents can only be warned, never stopped).
+  const cliKey = cliKeyOf(props.config.kind);
+  const usage = cliKey ? createPanelUsage(props.panelId) : () => null;
+  if (cliKey) {
+    onCleanup(
+      onBudgetAlert((status) => {
+        if (budgetCovers(status.scope, cliKey)) flashAgentState(props.panelId, 'error');
+      }),
+    );
+  }
   const controller = new TerminalController({
+    panelId: props.panelId,
     config: props.config,
     activity: {
       start: () => activity.start(),
@@ -153,6 +166,7 @@ export default function TerminalPanel(props: TerminalPanelProps) {
               lastPrompt={lastPrompt()}
               history={history?.entries() ?? []}
               onPickPrompt={(text) => bar?.insert(text)}
+              usage={usage()}
               cursor={() => controller.cursor()}
               onCursorChange={(listener) => {
                 const subscription = controller.onCursorChange(listener);

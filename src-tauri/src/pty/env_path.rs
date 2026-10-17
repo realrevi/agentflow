@@ -5,6 +5,8 @@
 use std::ffi::{OsStr, OsString};
 use std::sync::OnceLock;
 
+// Only the unix login-shell probe (and the tests) use the marker helpers.
+#[cfg_attr(not(any(unix, test)), allow(dead_code))]
 const MARKER: &str = "__AGENTFLOW_PATH__";
 
 static SEARCH_PATH: OnceLock<Option<OsString>> = OnceLock::new();
@@ -24,6 +26,7 @@ pub fn search_path() -> Option<OsString> {
 }
 
 /// The text between the two markers, ignoring anything rc files print around it.
+#[cfg_attr(not(any(unix, test)), allow(dead_code))]
 fn extract(output: &str) -> Option<&str> {
     let start = output.find(MARKER)? + MARKER.len();
     let len = output[start..].find(MARKER)?;

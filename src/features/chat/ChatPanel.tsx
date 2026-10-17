@@ -1,6 +1,8 @@
 // Lazy-loaded dock panel for one API chat (see layout/renderers.tsx). Default export.
 // Header (provider, model, system prompt), the messages, and the shared prompt bar with the
-// panel's character; files dragged from the tree onto the bottom area are attached.
+// panel's character; files dragged from the tree onto the bottom area are attached. Phase 6:
+// the live estimate, the context strip with Compact (or auto-compact), the hard budget stop
+// with "Allow once", and the session usage on the corner badge.
 import './chat.css';
 import type { DockviewPanelApi } from 'dockview-core';
 import { createEffect, createSignal, onCleanup, onMount, Show } from 'solid-js';
@@ -21,11 +23,13 @@ import { reportError, t } from '../i18n';
 import { providerName } from '../providers';
 import { settings } from '../settings/settingsStore';
 import { AttachmentChips } from './AttachmentChips';
+import { BudgetNotice, ContextStrip, EstimateLine } from './ComposeNotices';
 import { readAttachment, withAttachment } from './attachments';
 import { ChatHeader } from './ChatHeader';
 import { chatTitle, parseChatConfig, type ChatConfig } from './config';
 import { listedTitle, refreshConversations } from './conversationsStore';
 import { MessageList } from './MessageList';
+import { createChatUsage } from './chatUsage';
 import { createChatSession } from './session';
 
 export interface ChatPanelProps {
@@ -41,6 +45,7 @@ export default function ChatPanel(props: ChatPanelProps) {
   const [files, setFiles] = createSignal<readonly Attachment[]>([]);
   const [dropping, setDropping] = createSignal(false);
   const [lastPrompt, setLastPrompt] = createSignal<{ text: string; at: number } | null>(null);
+  const [draft, setDraft] = createSignal('');
   let root: HTMLDivElement | undefined;
   let overlay: AgentOverlayHandle | undefined;
   let bar: PromptBarHandle | undefined;
@@ -73,6 +78,34 @@ export default function ChatPanel(props: ChatPanelProps) {
     return session.conversation()?.model || (entry ? providerName(entry) : t('chat.untitled'));
   };
 
+  const { usage, estimate, nearLimit, sentBefore } = createChatUsage({
+    panelId: props.panelId,
+    workspace: props.config.workspace,
+    conversationId: props.config.conversationId,
+    session,
+    draft,
+    files,
+    ready,
+  });
+
+  const allowOnce = async () => {
+    const blocked = session.budget.blocked();
+    if (!blocked) return;
+    if (await session.budget.allow()) {
+      if (blocked.text) history.add(blocked.text);
+    } else if (!session.budget.blocked()) {
+      restore(blocked.text, blocked.attachments);
+    }
+  };
+  const cancelBlocked = () => {
+    const blocked = session.budget.dismiss();
+    if (blocked) restore(blocked.text, blocked.attachments);
+  };
+  const restore = (text: string | null, attached: readonly Attachment[]) => {
+    if (text) bar?.insert(text);
+    setFiles(attached);
+  };
+
   // A rename in the sidebar reaches the open panel.
   createEffect(() => {
     const listed = listedTitle(props.config.conversationId);
@@ -86,10 +119,8 @@ export default function ChatPanel(props: ChatPanelProps) {
     setLastPrompt({ text, at: Date.now() });
     void session.send(text, attached).then((ok) => {
       if (ok) history.add(text);
-      else {
-        bar?.insert(text);
-        setFiles(attached);
-      }
+      // A hard budget stop keeps the prompt in its notice until "Allow once" or cancel.
+      else if (!session.budget.blocked()) restore(text, attached);
     });
     return true;
   };
@@ -160,6 +191,7 @@ export default function ChatPanel(props: ChatPanelProps) {
           error={session.error()}
           canRetry={session.canRetry()}
           onRetry={() => void session.retry()}
+          compaction={session.conversation()?.compaction ?? null}
         />
         <Show when={character()}>
           {(ref) => (
@@ -171,6 +203,7 @@ export default function ChatPanel(props: ChatPanelProps) {
               lastPrompt={lastPrompt()}
               history={history.entries()}
               onPickPrompt={(text) => bar?.insert(text)}
+              usage={usage()}
             />
           )}
         </Show>
@@ -187,8 +220,28 @@ export default function ChatPanel(props: ChatPanelProps) {
         onDragLeave={() => setDropping(false)}
         onDrop={(event) => void onDrop(event)}
       >
+        <Show when={session.budget.blocked()}>
+          {(blocked) => (
+            <BudgetNotice
+              blocked={blocked()}
+              allowing={session.budget.allowing()}
+              onAllow={() => void allowOnce()}
+              onCancel={cancelBlocked}
+            />
+          )}
+        </Show>
+        <Show when={nearLimit() && estimate()}>
+          {(current) => (
+            <ContextStrip
+              estimate={current()}
+              compacting={session.compacting()}
+              onCompact={() => void session.compact()}
+            />
+          )}
+        </Show>
         <AttachmentChips
           files={files()}
+          sentBefore={sentBefore}
           onRemove={(path) => setFiles((list) => list.filter((file) => file.path !== path))}
         />
         <div class="af-chat-row">
@@ -201,6 +254,7 @@ export default function ChatPanel(props: ChatPanelProps) {
               disabledPlaceholder={t('chat.notReady')}
               onSend={send}
               onSent={flyPacket}
+              onDraft={setDraft}
             />
           </div>
           <Show when={session.streaming()}>
@@ -213,6 +267,7 @@ export default function ChatPanel(props: ChatPanelProps) {
             </button>
           </Show>
         </div>
+        <EstimateLine estimate={estimate()} />
         <Show when={dropping()}>
           <div class="af-chat-drop">{t('chat.attach.drop')}</div>
         </Show>

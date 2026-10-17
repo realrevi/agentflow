@@ -7,6 +7,7 @@ use crate::error::AppResult;
 use crate::fs::{
     EntryKind, FileContent, FileStat, FsChanges, FsEntry, FsState, QuickOpenMatch, Workspace,
 };
+use crate::tokens::UsageTracker;
 use crate::util::run_blocking;
 
 /// Opens (or switches to) the workspace folder and starts watching it. Debounced change
@@ -14,11 +15,14 @@ use crate::util::run_blocking;
 #[tauri::command]
 pub async fn fs_open_workspace(
     state: State<'_, FsState>,
+    tracker: State<'_, UsageTracker>,
     root: String,
     show_hidden: bool,
     on_event: Channel<FsChanges>,
 ) -> AppResult<()> {
     let ticket = state.ticket();
+    // CLI usage in this folder counts under this workspace.
+    tracker.note_workspace(&root);
     let workspace = run_blocking(move || {
         Workspace::open(Path::new(&root), show_hidden, move |changes| {
             // The frontend may be reloading; nothing to do then.

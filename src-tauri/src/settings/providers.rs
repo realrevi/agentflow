@@ -1,5 +1,5 @@
-//! AI provider entries and chat options (phase 5). API keys are never part of settings:
-//! they live in the OS keychain (`crate::providers::keys`), keyed by the entry id.
+//! AI provider entries (phase 5). API keys are never part of settings: they live in the OS
+//! keychain (`crate::providers::keys`), keyed by the entry id.
 
 use serde::{Deserialize, Serialize};
 
@@ -56,21 +56,6 @@ impl Default for ProviderEntry {
             default_model: String::new(),
             max_tokens: DEFAULT_MAX_TOKENS,
             temperature: None,
-        }
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase", default)]
-pub struct ChatSettings {
-    /// Streamed text is revealed smoothly; off = shown as it arrives.
-    pub smooth_reveal: bool,
-}
-
-impl Default for ChatSettings {
-    fn default() -> Self {
-        Self {
-            smooth_reveal: true,
         }
     }
 }
