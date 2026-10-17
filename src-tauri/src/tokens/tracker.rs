@@ -189,6 +189,12 @@ impl UsageTracker {
 
     /// An agent CLI started in a panel (call before spawning, so a fast exit finds it).
     pub fn panel_started(&self, panel: &str, kind: CliKind, cwd: &Path) {
+        let tracking = lock(&self.inner.state).usage.track_cli;
+        if tracking && lock(&self.inner.cli).watch.is_none() {
+            // Nothing could be watched at start (not even a parent folder): try again now
+            // that a CLI is about to run.
+            self.set_cli_tracking(true);
+        }
         lock(&self.inner.state).panels.start(PanelSession {
             panel: panel.to_owned(),
             kind,

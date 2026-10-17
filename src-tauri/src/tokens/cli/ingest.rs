@@ -66,11 +66,16 @@ impl CliReaders {
         let mut out = Vec::new();
         for kind in CliKind::ALL {
             if let Some(root) = self.roots.root(kind) {
-                collect(root, kind, since_ms, 0, &mut out);
+                files_under(root, kind, since_ms, &mut out);
             }
         }
         out
     }
+}
+
+/// `kind`'s session files under `root` changed since `since_ms` (0 = all).
+pub(super) fn files_under(root: &Path, kind: CliKind, since_ms: u64, out: &mut Vec<PathBuf>) {
+    collect(root, kind, since_ms, 0, out);
 }
 
 fn collect(dir: &Path, kind: CliKind, since_ms: u64, depth: usize, out: &mut Vec<PathBuf>) {
