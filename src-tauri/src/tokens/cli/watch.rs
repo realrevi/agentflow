@@ -1,5 +1,6 @@
 //! Watches the CLI session folders with `notify` (no polling) and hands over the changed
-//! session files in batches, once writes pause for `QUIET` (at most every `MAX_WAIT`).
+//! session files in batches, once writes pause for `Pace::quiet` (at most every
+//! `Pace::max_wait`).
 //! A folder that does not exist yet (the CLI was never used) is waited for by watching its
 //! nearest existing ancestor non-recursively; once it appears it is watched recursively and
 //! the files already in it are handed over too.
@@ -14,8 +15,23 @@ use notify::{Event, EventKind, RecommendedWatcher, RecursiveMode, Watcher};
 use super::ingest::files_under;
 use super::{CliKind, CliRoots};
 
-const QUIET: Duration = Duration::from_millis(500);
-const MAX_WAIT: Duration = Duration::from_secs(3);
+/// How changes are batched: usage can wait; live activity (turn detection) cannot.
+#[derive(Debug, Clone, Copy)]
+pub struct Pace {
+    pub quiet: Duration,
+    pub max_wait: Duration,
+}
+
+impl Pace {
+    pub const USAGE: Pace = Pace {
+        quiet: Duration::from_millis(500),
+        max_wait: Duration::from_secs(3),
+    };
+    pub const LIVE: Pace = Pace {
+        quiet: Duration::from_millis(120),
+        max_wait: Duration::from_millis(800),
+    };
+}
 
 enum Input {
     Event(notify::Result<Event>),
@@ -120,6 +136,7 @@ fn closest_existing(root: &Path) -> Option<PathBuf> {
 /// thread.
 pub fn start(
     roots: &CliRoots,
+    pace: Pace,
     on_batch: impl FnMut(Vec<PathBuf>) + Send + 'static,
 ) -> Option<CliWatch> {
     let (input, events) = mpsc::channel();
@@ -149,7 +166,7 @@ pub fn start(
     let roots = roots.clone();
     let spawned = std::thread::Builder::new()
         .name("agentflow-cli-usage".into())
-        .spawn(move || run(watching, &events, &roots, on_batch));
+        .spawn(move || run(watching, &events, &roots, pace, on_batch));
     match spawned {
         Ok(_) => Some(CliWatch { input }),
         Err(err) => {
@@ -163,6 +180,7 @@ fn run(
     mut watching: Watching,
     events: &mpsc::Receiver<Input>,
     roots: &CliRoots,
+    pace: Pace,
     mut on_batch: impl FnMut(Vec<PathBuf>),
 ) {
     let mut pending: BTreeSet<PathBuf> = BTreeSet::new();
@@ -171,7 +189,7 @@ fn run(
     loop {
         let input = match first {
             Some(first) => {
-                let deadline = (last + QUIET).min(first + MAX_WAIT);
+                let deadline = (last + pace.quiet).min(first + pace.max_wait);
                 match events.recv_timeout(deadline.saturating_duration_since(Instant::now())) {
                     Ok(input) => Some(input),
                     Err(mpsc::RecvTimeoutError::Timeout) => None,
@@ -228,7 +246,7 @@ mod tests {
             ..CliRoots::default()
         };
         let (tx, rx) = mpsc::channel();
-        let _watch = start(&roots, move |batch| {
+        let _watch = start(&roots, Pace::LIVE, move |batch| {
             let _ = tx.send(batch);
         })
         .expect("watching the home folder");

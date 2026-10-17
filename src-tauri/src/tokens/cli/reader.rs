@@ -14,6 +14,36 @@ use super::CliKind;
 /// Lines longer than this are skipped (a huge tool result cannot hold usage we need).
 const MAX_LINE: usize = 16 * 1024 * 1024;
 
+/// Calls `line` for every complete, non-empty UTF-8 line from byte `offset` on (a line
+/// still being written is left for the next read) and returns the offset after the last
+/// one. Oversized lines are skipped.
+pub fn tail_lines(path: &Path, offset: u64, mut line: impl FnMut(&str)) -> std::io::Result<u64> {
+    let mut reader = BufReader::new(File::open(path)?);
+    reader.seek(SeekFrom::Start(offset))?;
+    let mut offset = offset;
+    let mut buf = Vec::new();
+    loop {
+        buf.clear();
+        let read = reader.read_until(b'\n', &mut buf)?;
+        if read == 0 || buf.last() != Some(&b'\n') {
+            return Ok(offset); // end of file, or a partial line still being written
+        }
+        offset += read as u64;
+        if buf.len() > MAX_LINE {
+            tracing::debug!("skipping an oversized line in {}", path.display());
+            continue;
+        }
+        let Ok(text) = std::str::from_utf8(&buf) else {
+            tracing::debug!("skipping a non-UTF-8 line in {}", path.display());
+            continue;
+        };
+        let text = text.trim();
+        if !text.is_empty() {
+            line(text);
+        }
+    }
+}
+
 pub struct ReadResult {
     pub usage: Vec<LineUsage>,
     pub state: FileState,
@@ -45,51 +75,34 @@ pub fn read_file(kind: CliKind, path: &Path, mut state: FileState) -> std::io::R
         // Truncated or replaced: start over (ids prevent double counts).
         state = FileState::default();
     }
-    let mut reader = BufReader::new(File::open(path)?);
-    reader.seek(SeekFrom::Start(state.offset))?;
     let mut usage = Vec::new();
-    let mut line = Vec::new();
-    loop {
-        line.clear();
-        let read = reader.read_until(b'\n', &mut line)?;
-        if read == 0 || line.last() != Some(&b'\n') {
-            break; // end of file, or a partial line still being written
-        }
-        state.offset += read as u64;
-        if line.len() > MAX_LINE {
-            tracing::debug!("skipping an oversized line in {}", path.display());
-            continue;
-        }
-        let Ok(text) = std::str::from_utf8(&line) else {
-            tracing::debug!("skipping a non-UTF-8 line in {}", path.display());
-            continue;
-        };
-        let text = text.trim();
-        if text.is_empty() {
-            continue;
-        }
+    let mut has_records = state.has_records;
+    let (mut cwd, mut model) = (state.cwd.take(), state.model.take());
+    state.offset = tail_lines(path, state.offset, |text| {
         if kind == CliKind::Codex && text.contains("\"token_usage_record\"") {
-            state.has_records = true;
+            has_records = true;
         }
         let parsed = match kind {
             CliKind::Claude => claude_line(text),
-            CliKind::Codex => codex_line(text, state.has_records),
+            CliKind::Codex => codex_line(text, has_records),
             CliKind::Gemini => gemini_line(text),
         };
         match parsed {
             Ok(Parsed::Usage(mut found)) => {
-                found.model = found.model.or_else(|| state.model.clone());
-                found.cwd = found.cwd.or_else(|| state.cwd.clone());
+                found.model = found.model.or_else(|| model.clone());
+                found.cwd = found.cwd.or_else(|| cwd.clone());
                 usage.push(found);
             }
-            Ok(Parsed::Context { cwd, model }) => {
-                state.cwd = cwd.or(state.cwd.take());
-                state.model = model.or(state.model.take());
+            Ok(Parsed::Context { cwd: c, model: m }) => {
+                cwd = c.or(cwd.take());
+                model = m.or(model.take());
             }
             Ok(Parsed::Nothing) => {}
             Err(err) => tracing::debug!("skipping a malformed line in {}: {err}", path.display()),
         }
-    }
+    })?;
+    state.has_records = has_records;
+    (state.cwd, state.model) = (cwd, model);
     state.mtime = mtime;
     Ok(ReadResult { usage, state })
 }

@@ -13,6 +13,7 @@ pub mod pty;
 pub mod settings;
 pub mod themes;
 mod tokens;
+mod turns;
 mod util;
 
 use std::path::Path;
@@ -30,6 +31,7 @@ use crate::pty::{CliDetector, PtyManager};
 use crate::settings::{Settings, SettingsStore};
 use crate::themes::ThemeStore;
 use crate::tokens::{CliRoots, UsageTracker};
+use crate::turns::TurnWatcher;
 
 const SETTINGS_FILE: &str = "settings.json";
 const THEMES_DIR: &str = "themes";
@@ -129,6 +131,7 @@ pub fn run() {
             commands::usage::usage_prices,
             commands::usage::usage_set_prices,
             commands::usage::usage_cli_status,
+            commands::turns::turns_subscribe,
         ])
         .build(tauri::generate_context!());
 
@@ -153,6 +156,9 @@ pub fn run() {
             }
             if let Some(tracker) = handle.try_state::<UsageTracker>() {
                 tracker.shutdown();
+            }
+            if let Some(turns) = handle.try_state::<TurnWatcher>() {
+                turns.shutdown();
             }
         }
     });
@@ -183,6 +189,7 @@ fn manage_stores(app: &tauri::App, config_dir: &Path, data_dir: &Path) {
 /// background, so startup never waits for them.
 fn start_usage(app: &tauri::App, settings: &Settings, data_dir: &Path) {
     let roots = CliRoots::detect(app.path().home_dir().ok().as_deref());
+    app.manage(TurnWatcher::new(roots.clone()));
     let tracker = UsageTracker::new(data_dir.join(USAGE_DIR), roots);
     app.manage(tracker.clone());
     let (settings, conversations) = (settings.clone(), data_dir.join(CONVERSATIONS_DIR));

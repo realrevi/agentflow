@@ -18,9 +18,10 @@ mod watch;
 
 use std::path::{Path, PathBuf};
 
-pub use ingest::CliReaders;
+pub use ingest::{gemini_project_root, CliReaders};
 pub use parse::LineUsage;
-pub use watch::start as watch;
+pub use reader::tail_lines;
+pub use watch::{start as watch, CliWatch, Pace};
 #[cfg(test)]
 use {offsets::OffsetStore, reader::read_file};
 

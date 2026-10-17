@@ -233,7 +233,7 @@ impl UsageTracker {
             return;
         }
         let weak: Weak<Inner> = Arc::downgrade(&self.inner);
-        cli.watch = cli::watch(&cli.roots, move |paths| {
+        cli.watch = cli::watch(&cli.roots, cli::Pace::USAGE, move |paths| {
             if let Some(inner) = weak.upgrade() {
                 UsageTracker { inner }.ingest(&paths);
             }
