@@ -151,3 +151,42 @@ fn create_with_ai_gives_up_after_the_retry() {
     assert!(err.to_string().contains("no JSON object"), "{err}");
     assert_eq!(server.requests().len(), 2);
 }
+
+#[test]
+fn create_with_ai_handles_a_reply_cut_off_at_the_output_limit() {
+    let chunk = json!({ "choices": [{ "index": 0, "delta": { "content": "{\"schema\": 1, \"id\": \"a11y" },
+        "finish_reason": "length" }],
+        "usage": { "prompt_tokens": 10, "completion_tokens": 4096, "total_tokens": 4106 } });
+    let cut = Reply::sse(&format!("data: {chunk}\n\ndata: [DONE]\n\n"));
+    let server = MockServer::start(vec![cut, text_reply(&template_json("a11y-checker"))]);
+    let setup = setup(&server.base, "openai", "custom");
+    let request = GenerateRequest {
+        workspace: None,
+        provider_id: "p1".into(),
+        model: "model-x".into(),
+        description: "accessibility checker".into(),
+        language: "en".into(),
+    };
+    let result = tauri::async_runtime::block_on(generate(setup.deps(), request)).expect("draft");
+    assert_eq!(
+        (result.attempts, result.template.id.as_str()),
+        (2, "a11y-checker")
+    );
+    let requests = server.requests();
+    let first = requests[0].json();
+    let budget = first["max_tokens"]
+        .as_u64()
+        .or_else(|| first["max_completion_tokens"].as_u64())
+        .unwrap_or(0);
+    assert!(budget >= 16_000, "output budget {budget}");
+    let retry = requests[1].json();
+    let last = retry["messages"]
+        .as_array()
+        .and_then(|m| m.last())
+        .cloned()
+        .unwrap_or_default();
+    assert!(
+        last["content"].as_str().unwrap_or("").contains("cut off"),
+        "{last}"
+    );
+}

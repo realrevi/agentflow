@@ -10,13 +10,19 @@ use super::validate::validate;
 use crate::chat::ChatDeps;
 use crate::error::{AppError, AppResult};
 use crate::providers::{
-    build_provider, ChatRequest, ChatRole, ChatTurn, EventSink, StreamEvent, TokenUsage, TurnBlock,
+    build_provider, ChatRequest, ChatRole, ChatTurn, EventSink, StreamEnd, StreamEvent, TokenUsage,
+    TurnBlock,
 };
 use crate::tokens::{Source, UsageRecord};
 use crate::util::{now_ms, run_blocking};
 
 const SCHEMA: &str = include_str!("../../../schemas/agent-template.schema.json");
 const MAX_ATTEMPTS: usize = 2;
+/// Output budget for a template: reasoning models spend much of it thinking, so the usual
+/// chat limit (often 4096) cuts the JSON off.
+const MIN_OUTPUT_TOKENS: u32 = 16_000;
+/// Stop reasons that mean "hit the output limit" (OpenAI-style, Anthropic).
+const TRUNCATED: [&str; 2] = ["length", "max_tokens"];
 
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -118,7 +124,7 @@ pub async fn generate(deps: ChatDeps, request: GenerateRequest) -> AppResult<Gen
             model: request.model.clone(),
             system: system(&request.language),
             turns: turns.clone(),
-            max_tokens: entry.max_tokens,
+            max_tokens: entry.max_tokens.max(MIN_OUTPUT_TOKENS),
             temperature: None,
             caching: false,
             tools: Vec::new(),
@@ -132,8 +138,16 @@ pub async fn generate(deps: ChatDeps, request: GenerateRequest) -> AppResult<Gen
         total.output_tokens += sink.usage.output_tokens;
         total.cache_read_tokens += sink.usage.cache_read_tokens;
         total.cache_write_tokens += sink.usage.cache_write_tokens;
-        outcome.map_err(|err| AppError::Provider(err.redacted(secret.as_deref()).message))?;
-        match parse_reply(&sink.text) {
+        let end =
+            outcome.map_err(|err| AppError::Provider(err.redacted(secret.as_deref()).message))?;
+        let cut_off =
+            matches!(&end, StreamEnd::Stopped(reason) if TRUNCATED.contains(&reason.as_str()));
+        let parsed = if cut_off {
+            Err("the reply was cut off at the output limit".to_owned())
+        } else {
+            parse_reply(&sink.text)
+        };
+        match parsed {
             Ok(template) => {
                 return Ok(GenerateResult {
                     template,
@@ -147,9 +161,14 @@ pub async fn generate(deps: ChatDeps, request: GenerateRequest) -> AppResult<Gen
                     role: ChatRole::Assistant,
                     blocks: vec![TurnBlock::text(sink.text)],
                 });
-                turns.push(ChatTurn::user(format!(
-                    "That JSON is not valid: {error}. Reply with the corrected JSON object only."
-                )));
+                turns.push(ChatTurn::user(if cut_off {
+                    "Your reply was cut off at the output limit. Reply again with a shorter                      template (concise instructions, at most 6 questions), JSON only."
+                        .to_owned()
+                } else {
+                    format!(
+                        "That JSON is not valid: {error}. Reply with the corrected JSON object only."
+                    )
+                }));
             }
         }
     }
