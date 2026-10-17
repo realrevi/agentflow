@@ -4,13 +4,13 @@ Where the agent installer writes, and why. Checked against the official docs on
 **2026-10-17**; re-check when a tool changes its format. Project scope = inside the workspace;
 user scope = the home folder, only where the tool documents it, after a separate confirmation.
 
-| Target      | Agent file (project)          | Shared instructions (managed section) | User scope                              |
-| ----------- | ----------------------------- | ------------------------------------- | --------------------------------------- |
-| Claude Code | `.claude/agents/<id>.md`      | `CLAUDE.md`                           | `~/.claude/agents/`, `~/.claude/CLAUDE.md` |
-| Codex CLI   | `.codex/agents/<id>.toml`     | `AGENTS.md`                           | `~/.codex/agents/`, `~/.codex/AGENTS.md`   |
-| Gemini CLI  | `.gemini/agents/<id>.md`      | `GEMINI.md`                           | `~/.gemini/agents/`, `~/.gemini/GEMINI.md` |
-| Cursor      | `.cursor/rules/<id>.mdc`      | —                                     | not file-based (in-app user rules)      |
-| AgentFlow   | `.agentflow/agents/<id>.md`   | —                                     | project only                            |
+| Target      | Agent file (project)        | Shared instructions (managed section) | User scope                                 |
+| ----------- | --------------------------- | ------------------------------------- | ------------------------------------------ |
+| Claude Code | `.claude/agents/<id>.md`    | `CLAUDE.md`                           | `~/.claude/agents/`, `~/.claude/CLAUDE.md` |
+| Codex CLI   | `.codex/agents/<id>.toml`   | `AGENTS.md`                           | `~/.codex/agents/`, `~/.codex/AGENTS.md`   |
+| Gemini CLI  | `.gemini/agents/<id>.md`    | `GEMINI.md`                           | `~/.gemini/agents/`, `~/.gemini/GEMINI.md` |
+| Cursor      | `.cursor/rules/<id>.mdc`    | —                                     | not file-based (in-app user rules)         |
+| AgentFlow   | `.agentflow/agents/<id>.md` | —                                     | project only                               |
 
 The agent file holds the role; the shared instruction file only gets a short managed section
 that points to it (`<!-- agentflow:begin <id> -->` … `<!-- agentflow:end <id> -->`), so the

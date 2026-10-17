@@ -6,10 +6,10 @@ side in a VS Code-style dockable layout, watched over by cute pixel-art agent ch
 AgentFlow is a lightweight desktop app (Tauri 2 + Rust + SolidJS) for Windows, macOS and Linux.
 The goals are low RAM, a fast UI, a clean codebase, and a fun look.
 
-> **Status:** early development. Phases 1–6 of 11 are done: app shell, themes, languages,
+> **Status:** early development. Phases 1–8 of 11 are done: app shell, themes, languages,
 > dockable layout, real terminal panels, the workspace file tree, a code editor, pixel
-> characters with a prompt bar, API chat agents, and token and cost tracking. See the
-> [roadmap](#roadmap).
+> characters with a prompt bar, API agents with tools, token and cost tracking, and an agent
+> installer. See the [roadmap](#roadmap).
 
 ![AgentFlow screenshot](docs/screenshot.png)
 <!-- Phase 5: an API chat panel with its character and prompt bar; open panels and saved chats in the Agents view. -->
@@ -80,11 +80,32 @@ Available now (phases 1–6):
 
 ![The usage dashboard](docs/usage.png)
 
+### Agent installer
+
+Set up the same agent in every tool you use, from one template. Open the **Agents library**
+(activity bar, **+**, or `>` in Ctrl/Cmd+P):
+
+- Start from 8 starters (Code Reviewer, UI/Visual Tester, Test Writer, Bug Hunter, Refactorer,
+  Docs Writer, Security Reviewer, Commit & PR Writer), import a template file, or describe
+  the agent and let one of your models draft it ("Create with AI")
+- Install it for **Claude Code** (subagent), **Codex CLI** (subagent), **Gemini CLI**
+  (subagent), **Cursor** (project rule) and **AgentFlow** (an API agent with its own role,
+  tools and character), in the project or, where a tool documents it, your home folder
+- Answers are prefilled from your workspace (languages, package manager, tests, UI framework,
+  brand colors, fonts, spacing, breakpoints), read locally and marked "detected"
+- Every file is previewed with its path and a diff before anything is written. `CLAUDE.md`,
+  `AGENTS.md` and `GEMINI.md` only get a marked section; your own text stays as it is
+- Update, change answers or uninstall later; files you edited are never overwritten or deleted
+  without asking. Templates are plain JSON ([format](docs/agent-template.md), [where each tool
+  looks](docs/agent-targets.md)) and can be exported and shared
+
+![Installing an agent: the preview with a diff](docs/installer.png)
+
 ![The 15 characters](docs/characters.png)
 
 Planned:
 
-- Agent installer wizard and a community agent library
+- A community agent library
 
 ## Roadmap
 
@@ -97,7 +118,7 @@ Planned:
 | 5     | AI provider APIs + API chat panels (keys in the OS keychain)           | Done   |
 | 6     | Token and cost tracking (API chats + agent CLI logs, budgets)          | Done   |
 | 7     | API agent tools + default system prompt                                | Done   |
-| 8     | Agent installer wizard (per-AI formats and paths)                      |        |
+| 8     | Agent installer wizard (per-AI formats and paths)                      | Done   |
 | 9     | Community agent library from GitHub                                    |        |
 | 10    | UI polish                                                              |        |
 | 11    | Cross-platform builds + CI                                             |        |
@@ -107,6 +128,7 @@ Planned:
 | Shortcut (Cmd on macOS)     | Action                       |
 | --------------------------- | ---------------------------- |
 | Ctrl+P                      | Quick open a workspace file  |
+| Ctrl+P, then `>`            | Commands (Agents library...) |
 | Ctrl+S                      | Save the current editor      |
 | Ctrl+Shift+`                | New shell                    |
 | Ctrl+Shift+C / Ctrl+Shift+V | Copy / paste in a terminal   |
