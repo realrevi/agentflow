@@ -285,5 +285,8 @@
   "error.conversations": "Sohbetler yüklenemedi",
   "error.conversationUpdate": "Sohbet kaydedilemedi",
   "error.conversationDelete": "Sohbet silinemedi",
-  "error.attach": "Dosya eklenemedi"
+  "error.attach": "Dosya eklenemedi",
+  "chat.link.open": "Tarayıcıda aç",
+  "chat.link.copy": "Bağlantıyı kopyala",
+  "error.openLink": "Bağlantı açılamadı"
 }

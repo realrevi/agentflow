@@ -4,8 +4,10 @@ import { Channel, invoke } from '@tauri-apps/api/core';
 import { readText, writeText } from '@tauri-apps/plugin-clipboard-manager';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { open as openDialog } from '@tauri-apps/plugin-dialog';
-import { toAppError } from './errors';
+import { openUrl as openWithOs } from '@tauri-apps/plugin-opener';
+import { AppError, toAppError } from './errors';
 import type { Commands } from './ipcCommands';
+import { webUrl } from './url';
 import type {
   ChatEvent,
   ChatSendRequest,
@@ -136,6 +138,17 @@ async function clipboard<T>(run: () => Promise<T>): Promise<T> {
   }
 }
 
+/** Opens an http(s) URL in the system browser (tauri-plugin-opener); other schemes are refused. */
+async function openUrl(href: string): Promise<void> {
+  const url = webUrl(href);
+  if (!url) throw new AppError('invalidInput', href);
+  try {
+    await openWithOs(url);
+  } catch (err) {
+    throw toAppError(err);
+  }
+}
+
 export const ipc = {
   getSettings: () => call('get_settings', {}),
   saveSettings: (settings: Settings) => call('save_settings', { settings }),
@@ -190,4 +203,5 @@ export const ipc = {
   pickFolder,
   readClipboard: () => clipboard(readText),
   writeClipboard: (text: string) => clipboard(() => writeText(text)),
+  openUrl,
 };

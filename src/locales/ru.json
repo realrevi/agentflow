@@ -285,5 +285,8 @@
   "error.conversations": "Не удалось загрузить чаты",
   "error.conversationUpdate": "Не удалось сохранить чат",
   "error.conversationDelete": "Не удалось удалить чат",
-  "error.attach": "Не удалось прикрепить файл"
+  "error.attach": "Не удалось прикрепить файл",
+  "chat.link.open": "Открыть в браузере",
+  "chat.link.copy": "Копировать ссылку",
+  "error.openLink": "Не удалось открыть ссылку"
 }

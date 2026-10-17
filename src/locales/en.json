@@ -285,5 +285,8 @@
   "error.conversations": "Could not load the chats",
   "error.conversationUpdate": "Could not save the chat",
   "error.conversationDelete": "Could not delete the chat",
-  "error.attach": "Could not attach the file"
+  "error.attach": "Could not attach the file",
+  "chat.link.open": "Open in browser",
+  "chat.link.copy": "Copy link",
+  "error.openLink": "Could not open the link"
 }

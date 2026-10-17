@@ -1,10 +1,13 @@
 // The conversation: user prompts (plain text + attachment chips) and replies (sanitized
 // markdown). The streaming reply re-renders only its last block. Code copy buttons and
-// links are handled by delegation (links are copied, never opened inside the app).
-import { createEffect, createMemo, For, onCleanup, onMount, Show } from 'solid-js';
+// links are handled by delegation: http(s) links open in the system browser, right-click
+// offers "copy link"; nothing ever navigates inside the app.
+import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show } from 'solid-js';
 import { ipc } from '../../shared/ipc';
 import { showToast } from '../../shared/toast';
 import type { ChatError, ChatMessage } from '../../shared/types';
+import { Menu } from '../../shared/ui/Menu';
+import { webUrl } from '../../shared/url';
 import { reportError, t } from '../i18n';
 import { estimateTokens } from './attachments';
 import { renderMarkdown } from './markdown';
@@ -26,6 +29,7 @@ const PIN_SLACK_PX = 48;
 export function MessageList(props: MessageListProps) {
   let list: HTMLDivElement | undefined;
   let pinned = true;
+  const [linkMenu, setLinkMenu] = createSignal<{ x: number; y: number; url: string } | null>(null);
 
   const copy = async (text: string, toast: string) => {
     try {
@@ -34,6 +38,9 @@ export function MessageList(props: MessageListProps) {
     } catch (err) {
       reportError('error.clipboard', err);
     }
+  };
+  const open = (url: string) => {
+    ipc.openUrl(url).catch((err: unknown) => reportError('error.openLink', err));
   };
 
   const onClick = (event: MouseEvent) => {
@@ -47,9 +54,17 @@ export function MessageList(props: MessageListProps) {
     const link = target.closest<HTMLAnchorElement>('a[href]');
     if (link) {
       event.preventDefault();
-      const url = link.getAttribute('href') ?? '';
-      void copy(url, t('chat.linkCopied', { url }));
+      const href = link.getAttribute('href') ?? '';
+      const url = webUrl(href);
+      if (url) open(url);
+      else void copy(href, t('chat.linkCopied', { url: href }));
     }
+  };
+  const onContextMenu = (event: MouseEvent) => {
+    const link = (event.target as HTMLElement).closest<HTMLAnchorElement>('a[href]');
+    if (!link) return;
+    event.preventDefault();
+    setLinkMenu({ x: event.clientX, y: event.clientY, url: link.getAttribute('href') ?? '' });
   };
 
   const follow = () => {
@@ -79,7 +94,26 @@ export function MessageList(props: MessageListProps) {
         if (list) pinned = list.scrollHeight - list.scrollTop - list.clientHeight < PIN_SLACK_PX;
       }}
       onClick={onClick}
+      onContextMenu={onContextMenu}
     >
+      <Show when={linkMenu()}>
+        {(menu) => (
+          <Menu
+            anchor={{ x: menu().x, y: menu().y }}
+            placement="below-start"
+            items={[
+              { id: 'open', label: t('chat.link.open'), disabled: !webUrl(menu().url) },
+              { id: 'copy', label: t('chat.link.copy') },
+            ]}
+            onSelect={(id) => {
+              const url = menu().url;
+              if (id === 'open') open(url);
+              else void copy(url, t('chat.linkCopied', { url }));
+            }}
+            onClose={() => setLinkMenu(null)}
+          />
+        )}
+      </Show>
       <Show when={props.messages.length === 0 && !props.streaming}>
         <p class="af-chat-empty">{t('chat.empty')}</p>
       </Show>

@@ -285,5 +285,8 @@
   "error.conversations": "Die Chats konnten nicht geladen werden",
   "error.conversationUpdate": "Der Chat konnte nicht gespeichert werden",
   "error.conversationDelete": "Der Chat konnte nicht gelöscht werden",
-  "error.attach": "Die Datei konnte nicht angehängt werden"
+  "error.attach": "Die Datei konnte nicht angehängt werden",
+  "chat.link.open": "Im Browser öffnen",
+  "chat.link.copy": "Link kopieren",
+  "error.openLink": "Der Link konnte nicht geöffnet werden"
 }

@@ -285,5 +285,8 @@
   "error.conversations": "无法加载对话",
   "error.conversationUpdate": "无法保存对话",
   "error.conversationDelete": "无法删除对话",
-  "error.attach": "无法附加文件"
+  "error.attach": "无法附加文件",
+  "chat.link.open": "在浏览器中打开",
+  "chat.link.copy": "复制链接",
+  "error.openLink": "无法打开链接"
 }
