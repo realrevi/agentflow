@@ -1,0 +1,8 @@
+{"sessionId":"g1","projectHash":"abc","startTime":"2026-10-17T09:00:00.000Z","lastUpdated":"2026-10-17T09:00:00.000Z","kind":"main"}
+{"id":"m1","timestamp":"2026-10-17T09:00:01.000Z","type":"user","content":[{"text":"hi"}]}
+{"$set":{"lastUpdated":"2026-10-17T09:00:01.000Z"}}
+{"id":"m2","timestamp":"2026-10-17T09:00:03.000Z","type":"gemini","content":"","model":"gemini-2.5-pro","thoughts":[],"tokens":null}
+{"id":"m2","timestamp":"2026-10-17T09:00:03.000Z","type":"gemini","content":"Hello","model":"gemini-2.5-pro","thoughts":[],"tokens":{"input":12000,"output":300,"cached":8000,"thoughts":120,"tool":0,"total":12420}}
+{"id":"m2","timestamp":"2026-10-17T09:00:03.000Z","type":"gemini","content":"Hello!","model":"gemini-2.5-pro","thoughts":[],"tokens":{"input":12000,"output":300,"cached":8000,"thoughts":120,"tool":0,"total":12420}}
+{"$patch":{"updates":[{"id":"m2","content":"Hello!!"}]}}
+{"id":"m3","timestamp":"2026-10-17T09:01:00.000Z","type":"gemini","content":"More","model":"gemini-2.5-flash","tokens":{"input":500,"output":40,"cached":0,"total":540}}

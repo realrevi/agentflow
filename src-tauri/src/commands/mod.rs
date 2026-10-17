@@ -9,3 +9,4 @@ pub mod providers;
 pub mod pty;
 pub mod settings;
 pub mod themes;
+pub mod usage;

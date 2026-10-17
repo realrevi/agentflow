@@ -20,6 +20,14 @@ impl SettingsStore {
         Self { path, current }
     }
 
+    /// The current settings without awaiting (app setup, before anything else holds the lock).
+    pub fn snapshot(&self) -> Settings {
+        match self.current.try_lock() {
+            Ok(current) => current.clone(),
+            Err(_) => load_from_file(&self.path),
+        }
+    }
+
     pub async fn get(&self) -> Settings {
         self.current.lock().await.clone()
     }

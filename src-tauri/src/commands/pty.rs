@@ -8,32 +8,66 @@ use crate::pty::{
     resolve_launch, CliDetector, CliStatus, ExitInfo, OutputSink, PtyKind, PtyManager, PtyOutput,
     SessionId, SessionInfo, TermSize,
 };
+use crate::tokens::{CliKind, UsageTracker};
 use crate::util::run_blocking;
 
 /// Starts a terminal. Output arrives on `on_output` as raw bytes (`ArrayBuffer` in JS),
-/// followed by one JSON message `{ "type": "exit", "code", "signal" }`.
+/// followed by one JSON message `{ "type": "exit", "code", "signal" }`. Agent CLIs started
+/// with a `panel` id are registered for usage tracking (their logs name the folder, not the
+/// panel: cwd + time window match them).
 #[tauri::command]
 #[allow(clippy::too_many_arguments)] // mirrors the frontend call one-to-one
 pub async fn pty_spawn(
     app: AppHandle,
     manager: State<'_, PtyManager>,
+    tracker: State<'_, UsageTracker>,
     kind: PtyKind,
     command: Option<String>,
     args: Option<Vec<String>>,
     cwd: Option<String>,
     cols: u16,
     rows: u16,
+    panel: Option<String>,
     on_output: Channel<InvokeResponseBody>,
 ) -> AppResult<SessionInfo> {
     let home = app.path().home_dir().ok();
     let manager = manager.inner().clone();
+    let tracker = tracker.inner().clone();
     run_blocking(move || {
         let cwd = resolve_cwd(cwd.as_deref(), home)?;
         let launch = resolve_launch(kind, command.as_deref(), &args.unwrap_or_default())?;
         let size = TermSize::clamped(cols, rows);
-        manager.spawn(kind, &launch, &cwd, size, channel_sink(on_output))
+        let tracked = panel.zip(cli_kind(kind));
+        // Registered before the spawn, so even an instant exit finds its session.
+        if let Some((panel, cli)) = &tracked {
+            tracker.panel_started(panel, *cli, &cwd);
+        }
+        let mut sink = channel_sink(on_output);
+        if let Some((panel, _)) = tracked.clone() {
+            let (tracker, mut forward) = (tracker.clone(), sink);
+            sink = Box::new(move |output| {
+                if matches!(output, PtyOutput::Exit(_)) {
+                    tracker.panel_ended(&panel);
+                }
+                forward(output);
+            });
+        }
+        let spawned = manager.spawn(kind, &launch, &cwd, size, sink);
+        if let (Err(_), Some((panel, _))) = (&spawned, &tracked) {
+            tracker.panel_ended(panel);
+        }
+        spawned
     })
     .await
+}
+
+fn cli_kind(kind: PtyKind) -> Option<CliKind> {
+    match kind {
+        PtyKind::Claude => Some(CliKind::Claude),
+        PtyKind::Codex => Some(CliKind::Codex),
+        PtyKind::Gemini => Some(CliKind::Gemini),
+        PtyKind::Shell | PtyKind::Custom => None,
+    }
 }
 
 #[tauri::command]

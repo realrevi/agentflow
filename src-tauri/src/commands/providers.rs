@@ -11,6 +11,7 @@ use crate::providers::{
     StreamEvent,
 };
 use crate::settings::{ProviderEntry, SettingsStore};
+use crate::tokens::UsageTracker;
 use crate::util::run_blocking;
 
 #[tauri::command]
@@ -39,19 +40,24 @@ pub async fn provider_delete_key(vault: State<'_, KeyVault>, provider_id: String
     run_blocking(move || vault.delete(&provider_id)).await
 }
 
+/// Lists models; their context windows (and OpenRouter's prices) go to the usage tracker.
 #[tauri::command]
 pub async fn provider_models(
     settings: State<'_, SettingsStore>,
     vault: State<'_, KeyVault>,
     manager: State<'_, ChatManager>,
+    tracker: State<'_, UsageTracker>,
     provider_id: String,
 ) -> AppResult<Vec<ModelInfo>> {
+    let entry = entry(&settings, &provider_id).await?;
     let (provider, secret) = provider_for(&settings, &vault, &provider_id).await?;
     let http = manager.http()?;
-    provider
+    let models = provider
         .list_models(&http)
         .await
-        .map_err(|err| AppError::Provider(err.redacted(secret.as_deref()).message))
+        .map_err(|err| AppError::Provider(err.redacted(secret.as_deref()).message))?;
+    tracker.note_models(&entry.id, &entry.preset, &models);
+    Ok(models)
 }
 
 #[derive(Debug, Serialize)]

@@ -90,7 +90,7 @@ fn needs_a_user_message_last() {
 
 #[test]
 fn attachments_are_fenced_with_their_path() {
-    let files = [
+    let files = vec![
         Attachment {
             path: "src/main.rs".into(),
             content: "fn main() {}".into(),
@@ -100,7 +100,7 @@ fn attachments_are_fenced_with_their_path() {
             content: "use ```code``` here\n".into(),
         },
     ];
-    let content = files.iter().map(fenced).collect::<String>() + "Explain";
+    let content = user_content("Explain", &files);
     assert_eq!(
         content,
         "File: src/main.rs\n```rs\nfn main() {}\n```\n\n\

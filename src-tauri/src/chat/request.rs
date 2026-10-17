@@ -166,6 +166,13 @@ fn user_blocks(
     blocks
 }
 
+/// The attached files (each in a fence with its relative path), then the prompt.
+pub fn user_content(text: &str, attachments: &[Attachment]) -> String {
+    let mut out: String = attachments.iter().map(fenced).collect();
+    out.push_str(text);
+    out
+}
+
 fn fenced(attachment: &Attachment) -> String {
     let fence = "`".repeat(longest_backtick_run(&attachment.content).max(2) + 1);
     let lang = attachment

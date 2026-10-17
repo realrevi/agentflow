@@ -10,7 +10,11 @@ use crate::conversations::{ConversationStore, MessageStatus};
 use crate::providers::tests::mock::{MockServer, Reply};
 use crate::providers::{ErrorKind, Http, KeyVault, MemoryStore};
 use crate::settings::{ProviderEntry, Settings};
+use crate::tokens::{CliRoots, UsageTracker};
 use crate::util::test_dir::TestDir;
+
+mod compact;
+mod usage;
 
 const KEY: &str = "sk-ant-test-0123456789abcdefghij";
 const WS: Option<&str> = Some("/work/demo");
@@ -20,6 +24,7 @@ struct Setup {
     store: ConversationStore,
     vault: KeyVault,
     manager: ChatManager,
+    tracker: UsageTracker,
     settings: Settings,
     conversation: String,
 }
@@ -43,8 +48,10 @@ fn setup(base: &str, kind: &str, preset: &str) -> Setup {
         .create(WS, Some("p1".into()), "model-x", "")
         .expect("create")
         .id;
+    let tracker = UsageTracker::new(dir.path().join("usage"), CliRoots::default());
     Setup {
         _dir: dir,
+        tracker,
         store,
         vault,
         manager: ChatManager::with_http(Http::for_tests(Duration::from_secs(5))),
@@ -61,12 +68,15 @@ impl Setup {
             store: self.store.clone(),
             vault: self.vault.clone(),
             manager: self.manager.clone(),
+            tracker: self.tracker.clone(),
         };
         let request = ChatSendRequest {
             workspace: WS.map(str::to_owned),
             conversation_id: self.conversation.clone(),
             text: text.map(str::to_owned),
             attachments: Vec::new(),
+            panel: Some("chat-1".into()),
+            allow_once: None,
         };
         let started = tauri::async_runtime::block_on(start_chat(deps, request, move |event| {
             let _ = tx.send(event);
@@ -78,7 +88,7 @@ impl Setup {
 use crate::error::AppResult;
 
 /// All events until the final Stop/Error.
-fn collect(rx: &mpsc::Receiver<ChatEvent>) -> Vec<ChatEvent> {
+pub(super) fn collect(rx: &mpsc::Receiver<ChatEvent>) -> Vec<ChatEvent> {
     let mut events = Vec::new();
     loop {
         let event = rx.recv_timeout(Duration::from_secs(10)).expect("event");
