@@ -56,8 +56,10 @@ pub fn run() {
             }
         })
         .setup(|app| {
-            let config_dir = app.path().app_config_dir()?;
-            let data_dir = app.path().app_data_dir()?;
+            let (config_dir, data_dir) = match dev_data_dir() {
+                Some(dir) => (dir.join("config"), dir.join("data")),
+                None => (app.path().app_config_dir()?, app.path().app_data_dir()?),
+            };
             manage_stores(app, &config_dir, &data_dir);
             Ok(())
         })
@@ -165,6 +167,16 @@ fn start_usage(app: &tauri::App, settings: &Settings, data_dir: &Path) {
     if let Err(err) = spawned {
         tracing::warn!("usage tracking did not start: {err}");
     }
+}
+
+/// Debug builds only: `AGENTFLOW_DATA_DIR` keeps settings and app data in that folder
+/// instead of the user's, e.g. for demo screenshots or manual tests on throwaway data.
+fn dev_data_dir() -> Option<std::path::PathBuf> {
+    if !cfg!(debug_assertions) {
+        return None;
+    }
+    let dir = std::env::var_os("AGENTFLOW_DATA_DIR").filter(|value| !value.is_empty())?;
+    Some(std::path::PathBuf::from(dir))
 }
 
 fn init_tracing() {
