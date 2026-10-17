@@ -39,6 +39,29 @@ impl Shell {
         args.push(line.into());
         args
     }
+
+    /// Like `command_args`, for a command nobody can type into (agent tools): PowerShell
+    /// skips the profile and never prompts.
+    pub fn batch_args(&self, line: &str) -> Vec<String> {
+        match self.flavor {
+            Flavor::PowerShell => vec![
+                "-NoLogo".into(),
+                "-NoProfile".into(),
+                "-NonInteractive".into(),
+                "-Command".into(),
+                line.into(),
+            ],
+            _ => self.command_args(line),
+        }
+    }
+
+    /// A short name for the system prompt ("pwsh", "bash"...).
+    pub fn name(&self) -> String {
+        self.program
+            .file_stem()
+            .map(|stem| stem.to_string_lossy().into_owned())
+            .unwrap_or_default()
+    }
 }
 
 /// The user's shell: `$SHELL` on macOS/Linux, pwsh / powershell / cmd on Windows.

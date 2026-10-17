@@ -5,6 +5,7 @@ import { CharactersSection } from './sections/CharactersSection';
 import { FilesSection } from './sections/FilesSection';
 import { LanguageSection } from './sections/LanguageSection';
 import { LayoutSection } from './sections/LayoutSection';
+import { AgentsSection } from './sections/AgentsSection';
 import { ProvidersSection } from './sections/ProvidersSection';
 import { TerminalSection } from './sections/TerminalSection';
 import { UsageSection } from './sections/UsageSection';
@@ -16,6 +17,7 @@ export default function SettingsPanel() {
       <TerminalSection />
       <CharactersSection />
       <ProvidersSection />
+      <AgentsSection />
       <UsageSection />
       <FilesSection />
       <LanguageSection />

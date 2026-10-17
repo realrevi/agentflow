@@ -6,8 +6,9 @@ use super::model::{Settings, CURRENT_VERSION};
 use crate::error::AppResult;
 
 /// `STEPS[n]` upgrades a document from version `n` to `n + 1`.
-const STEPS: [fn(&mut Map<String, Value>); CURRENT_VERSION as usize] =
-    [v0_to_v1, v1_to_v2, v2_to_v3, v3_to_v4, v4_to_v5, v5_to_v6];
+const STEPS: [fn(&mut Map<String, Value>); CURRENT_VERSION as usize] = [
+    v0_to_v1, v1_to_v2, v2_to_v3, v3_to_v4, v4_to_v5, v5_to_v6, v6_to_v7,
+];
 
 /// Migrates and deserializes a raw settings document. Missing fields get defaults,
 /// unknown fields are dropped, and invalid values are repaired by `normalized()`.
@@ -72,6 +73,13 @@ fn v4_to_v5(doc: &mut Map<String, Value>) {
 fn v5_to_v6(doc: &mut Map<String, Value>) {
     doc.insert("version".into(), Value::from(6));
     doc.entry("usage")
+        .or_insert_with(|| Value::Object(Map::new()));
+}
+
+/// v7 adds the API agent options; defaults fill in on load.
+fn v6_to_v7(doc: &mut Map<String, Value>) {
+    doc.insert("version".into(), Value::from(7));
+    doc.entry("agent")
         .or_insert_with(|| Value::Object(Map::new()));
 }
 
@@ -210,7 +218,7 @@ mod tests {
             "providers": [{ "id": "p1", "kind": "anthropic", "preset": "anthropic" }]
         });
         let settings = migrate(raw).expect("migrate");
-        assert_eq!(settings.version, 6);
+        assert_eq!(settings.version, CURRENT_VERSION);
         assert!(
             !settings.chat.smooth_reveal,
             "existing chat options are kept"
@@ -248,6 +256,51 @@ mod tests {
         assert_eq!(settings.usage.budgets.providers[0].monthly, Some(30.0));
         let again = migrate(serde_json::to_value(&settings).expect("json")).expect("migrate");
         assert_eq!(again, settings);
+    }
+
+    #[test]
+    fn v6_document_gains_agent_settings() {
+        let raw = json!({
+            "version": 6,
+            "usage": { "cliSubscription": true },
+            "chat": { "autoCompact": true }
+        });
+        let settings = migrate(raw).expect("migrate");
+        assert_eq!(settings.version, 7);
+        assert!(settings.usage.cli_subscription, "usage is kept");
+        assert!(settings.chat.auto_compact, "chat is kept");
+        assert_eq!(settings.agent, crate::settings::AgentSettings::default());
+        let again = migrate(serde_json::to_value(&settings).expect("json")).expect("migrate");
+        assert_eq!(again, settings);
+    }
+
+    #[test]
+    fn v7_agent_round_trips() {
+        let raw = json!({
+            "version": 7,
+            "agent": {
+                "maxIterations": 40,
+                "defaultMode": "readOnly",
+                "defaultPrompt": false,
+                "showReasoning": false,
+                "toolModels": [{ "model": "glm-5.3", "tools": false }]
+            }
+        });
+        let settings = migrate(raw).expect("migrate");
+        assert_eq!(settings.agent.max_iterations, 40);
+        assert_eq!(
+            settings.agent.default_mode,
+            crate::conversations::PermissionMode::ReadOnly
+        );
+        assert!(!settings.agent.default_prompt);
+        assert!(!settings.agent.show_reasoning);
+        assert!(
+            migrate(json!({ "version": 7 }))
+                .expect("defaults")
+                .agent
+                .show_reasoning
+        );
+        assert_eq!(settings.agent.tools_override("glm-5.3"), Some(false));
     }
 
     #[test]

@@ -1,10 +1,11 @@
 // The tab of every panel: dockview's default look, plus a status dot for terminals (and
 // their character, which opens the character picker), a dirty dot for editors (it turns
-// into the close button on hover) and a guarded close.
+// into the close button on hover), an attention dot while an agent waits for approval
+// and a guarded close.
 import { createCloseButton, type DockviewPanelApi, type ITabRenderer } from 'dockview-core';
 import { createSignal, onCleanup, Show } from 'solid-js';
 import { Popover } from '../../shared/ui/Popover';
-import { Avatar, CharacterPicker } from '../characters';
+import { Avatar, CharacterPicker, spriteFor } from '../characters';
 import { editorDirty } from '../editor';
 import { t, type I18nKey } from '../i18n';
 import { settings } from '../settings/settingsStore';
@@ -60,7 +61,7 @@ function PanelTab(props: { api: DockviewPanelApi; title: string; params: PanelPa
             >
               <Avatar
                 character={current()}
-                state={agentState(props.api.id)}
+                state={spriteFor(agentState(props.api.id))}
                 scale={1}
                 speed={settings.characters.speed}
               />
@@ -73,6 +74,14 @@ function PanelTab(props: { api: DockviewPanelApi; title: string; params: PanelPa
             role="img"
             aria-label={t(STATUS_LABEL[status()])}
             title={t(STATUS_LABEL[status()])}
+          />
+        </Show>
+        <Show when={agentState(props.api.id) === 'wait'}>
+          <span
+            class="af-attention-dot"
+            role="img"
+            aria-label={t('agent.attention')}
+            title={t('agent.attention')}
           />
         </Show>
         {title()}

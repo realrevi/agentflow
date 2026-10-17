@@ -21,3 +21,9 @@ mod tests;
 
 pub use model::{EntryKind, FileContent, FileStat, FsChanges, FsEntry, QuickOpenMatch};
 pub use workspace::{FsState, Workspace};
+
+// For the agent tools, which share the sandbox and the limits.
+pub(crate) use paths::WorkspaceRoot;
+pub(crate) use read::read_file;
+pub(crate) use walk::walker;
+pub(crate) use write::{move_to_trash, write_file};

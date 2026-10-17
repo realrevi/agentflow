@@ -44,7 +44,7 @@ Available now (phases 1–6):
   Up recalls; your character walks along as you type and catches the prompt as a pixel packet.
   Prompt history per panel and workspace (click the character)
 - Animations cost nothing while agents rest, stop when hidden and follow reduced motion
-- API agents (chat only for now): Anthropic, OpenAI, DeepSeek, Gemini, OpenRouter, Groq, a local
+- API agents: Anthropic, OpenAI, DeepSeek, Gemini, OpenRouter, Groq, a local
   Ollama or any OpenAI-compatible server, each chat in its own panel with a character. Models
   come from the provider (or type one in); add providers in Settings › Providers and test them
 - Replies stream in smoothly as Markdown, with copyable code blocks; Stop at any time, Retry
@@ -65,13 +65,25 @@ Available now (phases 1–6):
 - Chats show a live pre-send estimate, cache hits, and a context-limit warning with
   **Compact**: older turns become a summary written by a model you choose (or automatically)
 
+- API agents work in your workspace with seven tools: list, read, find and search files,
+  write and edit files, and run commands (no network tools). Each call is a compact card with
+  its result; reads group into one "Explored" row, and the model's reasoning streams into a
+  collapsible "Thinking" section
+- You stay in control: **Ask** (reads run, edits and commands ask), **Auto-edit** or
+  **Read-only** per chat. Edits ask with a real diff; dangerous commands (recursive deletes,
+  force pushes, piping downloads into a shell, ...) always ask, with a red badge. Deny with a
+  reason and the model gets it. Every turn that changed files can be undone in one click
+- A default system prompt tells the model about your OS, shell, workspace and its
+  `AGENTS.md` / `CLAUDE.md` (can be turned off); files an agent changed are marked in the tree
+
+![An API agent asking to edit a file](docs/agent.png)
+
 ![The usage dashboard](docs/usage.png)
 
 ![The 15 characters](docs/characters.png)
 
 Planned:
 
-- Tools for API agents and a default system prompt
 - Agent installer wizard and a community agent library
 
 ## Roadmap
@@ -84,7 +96,7 @@ Planned:
 | 4     | Pixel character system (15 characters, 16x16 JSON sprites, speech bar) | Done   |
 | 5     | AI provider APIs + API chat panels (keys in the OS keychain)           | Done   |
 | 6     | Token and cost tracking (API chats + agent CLI logs, budgets)          | Done   |
-| 7     | API agent tools + default system prompt                                |        |
+| 7     | API agent tools + default system prompt                                | Done   |
 | 8     | Agent installer wizard (per-AI formats and paths)                      |        |
 | 9     | Community agent library from GitHub                                    |        |
 | 10    | UI polish                                                              |        |

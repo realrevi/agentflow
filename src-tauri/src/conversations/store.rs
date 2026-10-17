@@ -62,7 +62,7 @@ impl ConversationStore {
             std::io::ErrorKind::NotFound => AppError::NotFound(format!("conversation {id}")),
             _ => err.into(),
         })?;
-        Ok(serde_json::from_slice(&bytes)?)
+        Ok(serde_json::from_slice::<Conversation>(&bytes)?.migrated())
     }
 
     pub fn create(
@@ -108,6 +108,9 @@ impl ConversationStore {
             if let Some(system_prompt) = patch.system_prompt {
                 conversation.system_prompt = check_system_prompt(&system_prompt)?;
             }
+            if let Some(mode) = patch.permission_mode {
+                conversation.agent.permission_mode = Some(mode);
+            }
             Ok(())
         })
         .map(|conversation| ConversationSummary::from(&conversation))
@@ -146,6 +149,8 @@ impl ConversationStore {
             stop_reason: None,
             error: None,
             usage: None,
+            parts: Vec::new(),
+            prefix: None,
         };
         let stored = message.clone();
         let conversation = self.modify(workspace, id, move |conversation| {
@@ -175,7 +180,8 @@ impl ConversationStore {
         })
     }
 
-    pub fn append_assistant(
+    /// Appends an assistant or tool message (agent steps, replies).
+    pub fn append_message(
         &self,
         workspace: Option<&str>,
         id: &str,
@@ -210,7 +216,7 @@ impl ConversationStore {
         })
     }
 
-    fn modify(
+    pub(super) fn modify(
         &self,
         workspace: Option<&str>,
         id: &str,

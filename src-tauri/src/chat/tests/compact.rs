@@ -16,6 +16,8 @@ fn reply(id: &str, text: &str) -> ChatMessage {
         stop_reason: None,
         error: None,
         usage: None,
+        parts: Vec::new(),
+        prefix: None,
     }
 }
 
@@ -30,7 +32,7 @@ fn three_turns(setup: &Setup) {
             .expect("user");
         setup
             .store
-            .append_assistant(WS, &setup.conversation, reply(&format!("r{n}"), answer))
+            .append_message(WS, &setup.conversation, reply(&format!("r{n}"), answer))
             .expect("reply");
     }
 }
@@ -43,13 +45,7 @@ fn compact_keeps_the_last_turns_and_records_the_summary_call() {
     let mut setup = setup(&server.base, "anthropic", "anthropic");
     setup.settings.chat.compact_keep_turns = 2;
     three_turns(&setup);
-    let deps = ChatDeps {
-        settings: setup.settings.clone(),
-        store: setup.store.clone(),
-        vault: setup.vault.clone(),
-        manager: setup.manager.clone(),
-        tracker: setup.tracker.clone(),
-    };
+    let deps = setup.deps();
     let request = CompactRequest {
         workspace: WS.map(str::to_owned),
         conversation_id: setup.conversation.clone(),

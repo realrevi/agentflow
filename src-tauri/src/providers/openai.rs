@@ -3,21 +3,18 @@
 //! Groq, Ollama and custom servers; presets only switch documented quirks.
 
 use reqwest::Url;
-use serde_json::{json, Value};
+use serde_json::Value;
 
 use super::cancel::CancelToken;
-use super::error::{ErrorKind, ProviderError};
-use super::http::{
-    interrupted, pump, read_json, secret_header, send, stream_error, Decoder, ErrorDetail, Http,
-    SHORT_TIMEOUT,
-};
+use super::error::ProviderError;
+use super::http::{pump, read_json, secret_header, send, Http, SHORT_TIMEOUT};
 use super::keys::ApiKey;
 use super::provider::{BoxFuture, Provider};
-use super::sse::SseEvent;
-use super::types::{
-    ChatRequest, ChatRole, EventSink, ModelInfo, StreamEnd, StreamEvent, TokenUsage,
-};
+use super::types::{ChatRequest, EventSink, ModelInfo, StreamEnd, TokenUsage};
 use super::url::endpoint;
+
+pub use super::openai_request::request_body;
+pub use super::openai_stream::OpenAiDecoder;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Preset {
@@ -45,7 +42,7 @@ impl Preset {
 
     /// OpenAI's reasoning models take instructions as `developer`; DeepSeek rejects that
     /// role and everyone else documents `system`.
-    fn system_role(self) -> &'static str {
+    pub(super) fn system_role(self) -> &'static str {
         match self {
             Self::OpenAi => "developer",
             _ => "system",
@@ -55,7 +52,7 @@ impl Preset {
     /// OpenAI deprecated `max_tokens` (reasoning models reject it); OpenRouter and Groq
     /// document `max_completion_tokens` too. DeepSeek, Gemini, Ollama and most local
     /// servers know `max_tokens` only.
-    fn max_tokens_field(self) -> &'static str {
+    pub(super) fn max_tokens_field(self) -> &'static str {
         match self {
             Self::OpenAi | Self::OpenRouter | Self::Groq => "max_completion_tokens",
             _ => "max_tokens",
@@ -65,13 +62,25 @@ impl Preset {
     /// Usage is requested with `stream_options.include_usage` where that is documented.
     /// Groq's request schema rejects unknown fields (and sends usage anyway); OpenRouter
     /// always sends usage and calls the option deprecated.
-    fn wants_stream_options(self) -> bool {
+    pub(super) fn wants_stream_options(self) -> bool {
         !matches!(self, Self::Groq | Self::OpenRouter)
     }
 
     /// Gemini's OpenAI layer lists ids as `models/<id>` but takes bare ids in requests.
     fn model_prefix(self) -> Option<&'static str> {
         (self == Self::Gemini).then_some("models/")
+    }
+
+    /// How earlier reasoning goes back on assistant messages. DeepSeek (and GLM-style
+    /// custom servers) require `reasoning_content` once tools are in the request (else a
+    /// 400); OpenRouter wants `reasoning_details` unchanged (or `reasoning`). OpenAI, Gemini,
+    /// Groq and Ollama document no such field, so nothing is sent there.
+    pub(super) fn reasoning_echo(self) -> Option<&'static str> {
+        match self {
+            Self::DeepSeek | Self::Custom => Some("reasoning_content"),
+            Self::OpenRouter => Some("reasoning"),
+            Self::OpenAi | Self::Gemini | Self::Groq | Self::Ollama => None,
+        }
     }
 }
 
@@ -154,39 +163,6 @@ impl Provider for OpenAiCompatible {
     }
 }
 
-pub fn request_body(chat: &ChatRequest, preset: Preset) -> Value {
-    let mut messages = Vec::with_capacity(chat.turns.len() + 1);
-    if !chat.system.is_empty() {
-        messages.push(json!({ "role": preset.system_role(), "content": chat.system }));
-    }
-    for turn in &chat.turns {
-        let role = match turn.role {
-            ChatRole::User => "user",
-            ChatRole::Assistant => "assistant",
-        };
-        messages.push(json!({ "role": role, "content": turn.content() }));
-    }
-    let mut body = json!({
-        "model": chat.model,
-        "messages": messages,
-        "stream": true,
-    });
-    if preset.wants_stream_options() {
-        // Usage in the stream: a final chunk (OpenAI, Ollama, most local servers) or on
-        // the finish chunk (DeepSeek); Gemini sends it on every chunk anyway.
-        body["stream_options"] = json!({ "include_usage": true });
-    }
-    body[preset.max_tokens_field()] = json!(chat.max_tokens);
-    if let Some(temperature) = chat.temperature {
-        body["temperature"] = json!(temperature);
-    }
-    if preset == Preset::OpenAi {
-        // Drops the random `obfuscation` padding OpenAI adds to every chunk.
-        body["stream_options"]["include_obfuscation"] = json!(false);
-    }
-    body
-}
-
 pub fn parse_models(list: &Value, preset: Preset) -> Vec<ModelInfo> {
     let mut models: Vec<ModelInfo> = list["data"]
         .as_array()
@@ -214,75 +190,6 @@ pub fn parse_models(list: &Value, preset: Preset) -> Vec<ModelInfo> {
     models.sort_by(|a, b| a.id.cmp(&b.id));
     models.dedup_by(|a, b| a.id == b.id);
     models
-}
-
-/// Finish reasons that mean the provider gave up rather than finished (DeepSeek).
-const FAILED_FINISH: [&str; 2] = ["insufficient_system_resource", "aborted"];
-
-#[derive(Debug, Default)]
-pub struct OpenAiDecoder {
-    stop: Option<String>,
-}
-
-impl Decoder for OpenAiDecoder {
-    fn event(
-        &mut self,
-        event: &SseEvent,
-        sink: &mut dyn EventSink,
-    ) -> Result<Option<String>, ProviderError> {
-        let data = event.data.trim();
-        if data == "[DONE]" {
-            return Ok(Some(self.stop.take().unwrap_or_else(|| "stop".into())));
-        }
-        let Ok(chunk) = serde_json::from_str::<Value>(data) else {
-            return Ok(None);
-        };
-        // In-band errors: {"error":{...}} (OpenAI, OpenRouter), [{"error":{...}}] (Google)
-        // and Groq's `x_groq.error` string.
-        if let Some(detail) = ErrorDetail::from_json(&chunk) {
-            return Err(stream_error(&detail));
-        }
-        if let Some(message) = chunk["x_groq"]["error"].as_str() {
-            return Err(stream_error(&ErrorDetail {
-                message: message.to_owned(),
-                ..ErrorDetail::default()
-            }));
-        }
-        // Groq used to report streamed usage under `x_groq`.
-        let usage = chunk
-            .get("usage")
-            .filter(|u| u.is_object())
-            .or_else(|| chunk["x_groq"].get("usage").filter(|u| u.is_object()));
-        if let Some(usage) = usage {
-            sink.event(StreamEvent::Usage(normalize_usage(usage)));
-        }
-        let Some(choice) = chunk["choices"].as_array().and_then(|c| c.first()) else {
-            return Ok(None); // usage-only or debug chunk
-        };
-        let delta = &choice["delta"];
-        // Reasoning text (`reasoning_content`, `reasoning`) and tool calls are not part
-        // of a plain chat reply; a refusal is shown as the reply.
-        for field in ["content", "refusal"] {
-            if let Some(text) = delta[field].as_str().filter(|t| !t.is_empty()) {
-                sink.event(StreamEvent::Delta(text.to_owned()));
-            }
-        }
-        if let Some(reason) = choice["finish_reason"].as_str() {
-            if FAILED_FINISH.contains(&reason) {
-                return Err(ProviderError::new(
-                    ErrorKind::Server,
-                    format!("The provider stopped the reply ({reason})."),
-                ));
-            }
-            self.stop = Some(reason.to_owned());
-        }
-        Ok(None)
-    }
-
-    /// Some servers close without `[DONE]`; a reply that already finished still counts.
-    fn finish(&mut self) -> Result<String, ProviderError> {
-        self.stop.take().ok_or_else(interrupted)
-    }
 }
 
 /// OpenAI-style usage, normalized: `prompt_tokens` includes cache reads (OpenAI,

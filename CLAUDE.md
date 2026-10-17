@@ -30,6 +30,7 @@ src-tauri/src/
   conversations/      API chats per workspace (app data dir, one JSON file per conversation)
   chat/               ChatManager (one stream per chat, cancel), request building (blocks, cache
                       breakpoints, attachment dedup), Compact, pre-send estimate, Channel events
+  agent/              API agent loop, tools/, permissions, dangerous commands, checkpoints, prompt
   tokens/             UsageTracker: JSONL ledger, buckets, prices, budgets, CLI log readers
   util/               atomic_write, run_blocking, lock/Signal, workspace_key, hex color, test_dir
 src/
@@ -37,7 +38,7 @@ src/
   app/                shell: ActivityBar, Sidebar (+ views), StatusBar, Toasts, Dialogs, styles/
   features/layout/    dockview host, panels, roles, placement, saved layout, tabs, characters
   features/terminal/  TerminalController, lazy TerminalPanel, agent activity
-  features/chat/      lazy ChatPanel: session, smooth reveal, markdown, attachments, chat list
+  features/chat/      lazy ChatPanel: session, agent/ (timeline, cards, undo), reveal, markdown
   features/agentui/   corner character overlay + prompt bar, shared by terminal and chat panels
   features/providers/ presets (base URLs), model list and key status stores
   features/characters/  sprites/*.json, renderer, shared rAF animator, Avatar, state heuristic
@@ -48,8 +49,8 @@ src/
   features/i18n/      typed t(), lazy locale loading, reportError()
   features/settings/  settings store (debounced save) + lazy SettingsPanel and sections
   features/tokens/    usage store (one Channel), formats, badge, chart, Usage view + lazy panel
-  features/agents/, src-tauri/src/agents/: empty stubs
-  shared/             ipc (+ ipcCommands), types (+ chat/usageTypes), errors, toast, dialog, dnd, ui/
+  features/agents/, src-tauri/src/agents/: empty stubs (installer, library)
+  shared/             ipc (+ ipcCommands), types (+ chat/usage/agentTypes), errors, toast, dialog, ui/
   locales/            en.json (source of truth), tr, de, zh, ru
 themes/               built-in theme JSON (embedded into the Rust binary via include_str!)
 ```
@@ -63,11 +64,11 @@ other. `layout` and the settings panel compose panel features; `app/` composes a
 
 - Small files, one responsibility each; nothing over ~300 lines. No `any` in TS, no
   `unwrap()`/`expect()` in non-test Rust. Errors flow as `AppError` -> `reportError()` toast.
-- All IPC goes through `src/shared/ipc.ts`; components never call `invoke` directly.
-- Minimal dependencies; justify every new crate/package in the commit message.
+- All IPC goes through `src/shared/ipc.ts` (never `invoke` in components). Minimal
+  dependencies; justify every new crate/package in the commit message.
 - Performance: no polling (events, ResizeObserver, debounced saves), fine-grained signals (big
   blobs like the layout or tree listings stay out of reactive stores), lazy-load heavy panels.
-- Rust file I/O and keychain calls in commands run through `util::run_blocking`.
+  Rust file I/O and keychain calls in commands run through `util::run_blocking`.
 
 ## IPC, PTY and FS patterns
 
@@ -78,8 +79,7 @@ other. `layout` and the settings panel compose panel features; `app/` composes a
 - Streams use a `Channel` created _before_ the invoke, never global events. PTY: raw bytes
   (coalesced ~10 ms / 64 KB, `OutputDecoder`) then `{ type: 'exit', code, signal }`; flow control
   via `pty_ack` (reader pauses at 512 KB). Kill = SIGHUP / TerminateProcess, SIGKILL after 2 s.
-- Panels persist _config_ only (incl. `character`, `historyKey`). Restored agent CLIs never
-  auto-start; shells follow `terminal.autoStartShells`.
+- Panels persist _config_ only; restored agent CLIs never auto-start.
 - Frontend paths are workspace-relative with `/`; `fs/paths.rs` rejects `..`, absolute paths and
   escaping symlinks. One `ignore` config (`fs/walk.rs`: .gitignore even outside git, `.git`
   hidden, dotfiles per `files.showHidden`) for list, quick open and the watcher (notify, 200 ms
@@ -89,58 +89,66 @@ other. `layout` and the settings panel compose panel features; `app/` composes a
 
 ## Providers & API chat
 
-- **Adapters:** `trait Provider { stream_chat, list_models }`; `build_provider(entry, key)` ->
-  `anthropic.rs` (Messages) or `openai.rs` (Chat Completions; a `Preset` holds vendor quirks).
-  A `Decoder` turns SSE (`sse.rs`) into deltas, usage and a stop reason; `http.rs` sends with
-  cancel and maps errors to `ProviderError` kinds. A new OpenAI-compatible vendor is a preset
-  (formats from its docs). No hardcoded models.
-- **Keys live ONLY in the OS keychain** (`keys.rs`: `SecretStore`, service `dev.agentflow.desktop`,
-  account `provider:<id>`; tests use `MemoryStore`), never in settings, logs, error text or IPC:
-  the frontend gets `KeyStatus { hasKey, last4 }`, the key field is write-only, removing a provider
-  deletes its key. Errors are `redacted()` before leaving the backend, auth headers are sensitive,
-  redirects are not followed. Base URLs: HTTPS; plain HTTP only for `localhost`/loopback (`url.rs`).
-- `chat_send(…, Channel)` streams `delta | usage | stop | error` (one per chat, `chat_cancel`,
-  all cancelled on reload/exit); each reply is saved with its usage, partial text too. Rust
-  tests use `providers/tests/mock.rs` (never real APIs or keys; `refusing_port()` for "dead
-  server" cases, never bind-and-drop a port). Chat panels persist only their config; reveal on
-  the shared animator (`chat/reveal.ts`); Markdown via `markdown.ts` (DOMPurify allowlist).
+- **Adapters:** `trait Provider { stream_chat, list_models }`; `anthropic.rs` (Messages) or
+  `openai.rs` (Chat Completions; a `Preset` holds vendor quirks, e.g. the reasoning echo). A
+  `Decoder` turns SSE into deltas, reasoning, tool calls, usage and a stop reason; `http.rs` maps
+  errors to `ProviderError` kinds. A new OpenAI-compatible vendor is a preset. No hardcoded models.
+- **Keys live ONLY in the OS keychain** (`keys.rs`, service `dev.agentflow.desktop`, account
+  `provider:<id>`; tests use `MemoryStore`), never in settings, logs, error text or IPC (the
+  frontend gets `KeyStatus { hasKey, last4 }`). Errors are `redacted()`, redirects not followed,
+  base URLs HTTPS (plain HTTP only for loopback, `url.rs`).
+- `chat_send(…, Channel)`: one turn per chat, `chat_cancel`, all cancelled on reload/exit; every
+  model call is saved with its usage. Rust tests use `providers/tests/mock.rs` (never real APIs
+  or keys; `refusing_port()` for dead servers). Reveal: `chat/reveal.ts`; Markdown: DOMPurify.
+
+## API agents (phase 7)
+
+- Loop (`agent/run.rs`), up to `agent.maxIterations` calls per prompt: model call (`step.rs`)
+  stored as an assistant message with `parts` (reasoning, text, toolCall) -> per call: permission
+  and run (`execute.rs`) -> ONE `tool` message with the results -> next call. Cancel ends the
+  stream, a permission wait and a running command (process tree killed); calls that never ran
+  get "not run" results. Tools rejected by the provider: model remembered (`model-tools.json`,
+  settings override wins), the chat goes on without tools + `notice`.
+- Conversations v2: `parts`, `prefix` (digest of system + tools; Anthropic thinking is replayed
+  only under the same prefix and never before a compaction), `agent` (mode, allowed tools, tools
+  off, the environment text, built once so the cached prefix stays stable).
+- Tools (`agent/tools/`): an entry in `TOOLS` (name, read|write|command, JSON schema) + a fn.
+  Paths only via `WorkspaceRoot`; output capped (`agent.toolResultCap`); writes go through
+  `save()`, which checkpoints the original once per turn (`checkpoint.rs`). No network tools.
+- Permissions (`permissions.rs`): Ask (reads run), Auto-edit (writes run), Read-only (write and
+  command tools not offered); "allow for this conversation" is per tool. **Dangerous commands
+  ALWAYS ask** (never a conversation grant): patterns + reason ids only in `agent/dangerous.rs`,
+  each with tests and an `agent.danger.<id>` text.
+- **Permission answers** come only from a trusted click/keypress on that request's card
+  (`liveTurn.answer`: `isTrusted`, pending id) and carry the conversation id; the gate rejects
+  unknown, answered or foreign ids. A turn that ends (cancel, panel close, reload) never allows.
+- Events: `reasoning`, `status { phase }` (character `wait` while asking), `toolStart`,
+  `toolEnd { result }` (every call, denials at once; results keep outcome, duration and
+  `meta` for summaries), `permission`, `notice`, `message` (a stored step).
+- UI (`chat/agent/`): `timeline.ts` turns messages into cards (reads grouped), `liveTurn.ts`
+  holds what is in flight, summaries are localized from `meta` (`toolText.ts`). The layout
+  lends chat panels `ChatHooks` (open file, dirty check, tree marks, the editor's lazy DiffView).
 
 ## Usage tracking (phase 6)
 
-- Rust `tokens/tracker.rs` (+ `queries.rs`): one `UsageTracker`. Ledger: monthly JSONL in
-  `<app data>/usage`, append-only, dedup by `id` (`chat:<conv>:<msg>`, CLI ids); 15-minute
-  buckets for 62 days; cost at query time (`pricing.json` with source + date, cached OpenRouter
-  prices, overrides, free providers; no price = "—"). Lock order: `cli` before `state`. CLI logs
-  are tailed from byte offsets (saved after the ledger write) and watched with notify (a missing
-  root waits on its nearest ancestor). `pty_spawn(panel)` matches CLI usage to its panel.
-- Events: ONE `usage_subscribe` Channel (`tokens/usageStore.ts`, started in bootstrap):
-  `changed { panels }` -> those panels' badges (`createPanelUsage`) + debounced summary;
-  `repriced` -> everything; `budget { status }` -> toast + `onBudgetAlert` (panels flash
-  "error"). Usage commands take the local UTC offset. Hard stop = API chats only (kind
-  `budget`); the chat keeps the send until "Allow once" (`usage_allow_once` token -> resend).
-- Chat: debounced `usage_estimate` under the prompt bar ("≈" when approximate), strip +
-  Compact at the threshold, auto-compact once per crossing, cache label per reply. Anthropic
-  caching (`chat/cache.rs`): max 4 breakpoints, mind the 20-block lookback.
+- `tokens/tracker.rs`: monthly JSONL ledger in `<app data>/usage` (append-only, dedup by `id`),
+  15-minute buckets for 62 days, cost at query time (`pricing.json`, OpenRouter cache,
+  overrides; no price = "—"). Lock order: `cli` before `state`. CLI logs are tailed from saved
+  byte offsets and watched with notify; `pty_spawn(panel)` matches CLI usage to its panel.
+- ONE `usage_subscribe` Channel (`tokens/usageStore.ts`): `changed { panels }`, `repriced`,
+  `budget { status }`. Hard stop = API chats only (kind `budget`, "Allow once" token -> resend).
+  Chat: debounced `usage_estimate`, Compact at the threshold; Anthropic cache: max 4 breakpoints.
 
-## Layout roles
+## Layout, characters & prompt bar
 
-- Groups have a role (`layout/roles.ts`): `agents` (center: agent CLIs, API chats, editors,
-  settings), `files` (right, ~22%), `terminal` (shells, ~30% under the center). New panels open
-  in the last focused group of their role; `placement.ts` recreates a missing one. Saved layout =
-  `{ version: 2, dock, roles }`; bump `LAYOUT_VERSION` (`savedLayout.ts`) on incompatible changes.
-
-## Characters & prompt bar
-
-- Sprites: `characters/sprites/*.json` = `{ id, name, size, palettes, frameMs, states }`, 8 states
-  (idle walk think work receive done error sleep) of 2-4 frames of `size` strings, `.` =
-  transparent, else a base-36 palette index (`validate.ts`). Names are never translated. Agent
-  panels (shells only with `characters.onShells`) get an unused one (`layout/characters.ts`).
-- `renderer.ts` caches one ImageBitmap strip per (character, palette, scale, state). All motion
-  uses the ONE loop in `animator.ts`, which runs only while something animates on screen in a
-  visible document; idle/sleep are still frames. Respect `reducedMotion()`.
-- Terminal heuristic (`stateMachine.ts`, `agentActivity.ts`): prompt -> think, output -> work,
-  2 s quiet -> done, 5 s -> idle, exit 0 -> sleep else error (output < 400 ms after keys = echo).
-  Chat: send -> think, delta -> work, stop -> done. The prompt bar sends first.
+- Groups have a role (`layout/roles.ts`): `agents` (center), `files` (right, ~22%), `terminal`
+  (~30% under the center). New panels open in the last focused group of their role
+  (`placement.ts`). Saved layout `{ version: 2, dock, roles }`; bump `LAYOUT_VERSION` on changes.
+- Sprites: `characters/sprites/*.json`, 8 states (idle walk think work receive done error sleep)
+  of 2-4 frames, `.` = transparent, else a base-36 palette index (`validate.ts`); names are
+  never translated. ONE animation loop (`animator.ts`), only while visible; `reducedMotion()`.
+- Terminal (`stateMachine.ts`): prompt -> think, output -> work, 2 s quiet -> done, 5 s -> idle,
+  exit 0 -> sleep else error. Chat: send -> think, delta/tool -> work (bubble = tool status).
 
 ## Themes, i18n, settings
 
@@ -148,9 +156,8 @@ other. `layout` and the settings panel compose panel features; `app/` composes a
   hard-code colors. Overrides (text, accent, agent bold `#F5C542`, `--af-glow`): `overrides.ts`.
 - Flat dotted keys in `src/locales/en.json`; `I18nKey = keyof typeof en`; every visible string
   uses `t('key', { param })`. New keys go into **all five** locales (typecheck + tests check).
-- Rust owns `settings.json` (v6: `usage`, token options in `chat`): bump `CURRENT_VERSION` +
-  a `migrate.rs` step on shape changes; `normalized()` repairs values; `defaults.test.ts` checks
-  TS defaults against Rust. Frontend: `updateSettings()` (300 ms debounce).
+- Rust owns `settings.json` (v7: `agent`): bump `CURRENT_VERSION` + a `migrate.rs` step on shape
+  changes; `normalized()` repairs values; `defaults.test.ts` checks TS defaults against Rust.
 
 ## Commands
 
@@ -169,7 +176,7 @@ cargo build    # in src-tauri: compile check, no bundling
 4. [x] Pixel character system (15 characters, 16x16 JSON sprites scaled, typewriter speech bar)
 5. [x] AI provider APIs (Anthropic + OpenAI-compatible, keychain keys) + API chat panels
 6. [x] Token & cost tracking (ledger, CLI log readers, prices, budgets, dashboard, Compact)
-7. [ ] API agent tools + default system prompt
+7. [x] API agent tools + default system prompt (tool cards, diffs, permissions, undo)
 8. [ ] Agent installer wizard (per-AI formats/paths)
 9. [ ] Community agent library from GitHub
 10. [ ] UI polish

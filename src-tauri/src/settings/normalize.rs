@@ -48,6 +48,7 @@ impl Settings {
         self.providers = normalize_providers(std::mem::take(&mut self.providers));
         self.chat = std::mem::take(&mut self.chat).normalized();
         self.usage = std::mem::take(&mut self.usage).normalized();
+        self.agent = std::mem::take(&mut self.agent).normalized();
 
         if !self
             .layout
@@ -105,8 +106,8 @@ fn is_valid_theme_id(id: &str) -> bool {
 mod tests {
     use super::*;
     use crate::settings::{
-        AgentBold, Appearance, CharacterSettings, ChatSettings, FilesSettings, ProviderEntry,
-        UiState, UsageSettings,
+        AgentBold, AgentSettings, Appearance, CharacterSettings, ChatSettings, FilesSettings,
+        ProviderEntry, UiState, UsageSettings,
     };
     use serde_json::json;
 
@@ -140,6 +141,7 @@ mod tests {
             }],
             chat: ChatSettings::default(),
             usage: UsageSettings::default(),
+            agent: AgentSettings::default(),
             layout: Some(json!([1, 2, 3])),
         };
 

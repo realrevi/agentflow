@@ -137,3 +137,14 @@
 .af-input[type='number'] {
   width: 96px;
 }
+
+/* An agent waits for the user's approval (tabs, Agents list). */
+.af-attention-dot {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  margin-left: 4px;
+  border-radius: 50%;
+  background: var(--af-warning);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--af-warning) 30%, transparent);
+}

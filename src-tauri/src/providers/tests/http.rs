@@ -47,6 +47,7 @@ fn chat() -> ChatRequest {
         max_tokens: 512,
         temperature: None,
         caching: false,
+        tools: Vec::new(),
     }
 }
 

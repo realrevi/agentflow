@@ -1,4 +1,5 @@
 use super::*;
+use crate::conversations::Attachment;
 use crate::conversations::Compaction;
 
 fn message(role: Role, content: &str, status: MessageStatus) -> ChatMessage {
@@ -12,6 +13,8 @@ fn message(role: Role, content: &str, status: MessageStatus) -> ChatMessage {
         stop_reason: None,
         error: None,
         usage: None,
+        parts: Vec::new(),
+        prefix: None,
     }
 }
 
@@ -166,4 +169,120 @@ fn a_compaction_replaces_the_messages_it_covers() {
     let text = request.turns[0].content();
     assert!(text.starts_with("Summary of the earlier part of this conversation:\n\nThey talked"));
     assert!(text.ends_with("new question") && !text.contains("old"));
+}
+
+mod agent_parts {
+    use super::*;
+    use crate::providers::{Reasoning, ToolCall, ToolResult};
+    use serde_json::json;
+
+    fn step(role: Role, parts: Vec<Part>, prefix: Option<&str>, at: u64) -> ChatMessage {
+        let mut message = message(role, "", MessageStatus::Complete);
+        message.parts = parts;
+        message.prefix = prefix.map(str::to_owned);
+        message.at = at;
+        message
+    }
+
+    fn call(id: &str) -> Part {
+        Part::ToolCall(ToolCall {
+            id: id.into(),
+            name: "list_dir".into(),
+            input: json!({}),
+        })
+    }
+
+    fn thinking() -> Part {
+        Part::Reasoning(Reasoning {
+            text: "t".into(),
+            signature: Some("s".into()),
+            ..Reasoning::default()
+        })
+    }
+
+    fn anthropic(prefix: &str) -> RequestOptions {
+        RequestOptions {
+            anthropic: true,
+            prefix: Some(prefix.into()),
+            ..RequestOptions::default()
+        }
+    }
+
+    #[test]
+    fn tool_steps_become_turns_and_dangling_calls_get_a_result() {
+        use MessageStatus::Complete;
+        let chat = conversation(vec![
+            message(Role::User, "list", Complete),
+            step(
+                Role::Assistant,
+                vec![thinking(), call("c1"), call("c2")],
+                Some("p"),
+                2,
+            ),
+            step(
+                Role::Tool,
+                vec![Part::ToolResult(ToolResult {
+                    call_id: "c1".into(),
+                    content: "a/".into(),
+                    is_error: false,
+                    ..ToolResult::default()
+                })],
+                None,
+                3,
+            ),
+            message(Role::User, "and now?", Complete),
+        ]);
+        let request =
+            build_with(&chat, &ProviderEntry::default(), &anthropic("p")).expect("request");
+        assert_eq!(request.turns.len(), 3);
+        let results: Vec<(String, bool)> = request.turns[2]
+            .blocks
+            .iter()
+            .filter_map(|b| match &b.part {
+                Part::ToolResult(r) => Some((r.call_id.clone(), r.is_error)),
+                _ => None,
+            })
+            .collect();
+        assert_eq!(results, [("c2".to_owned(), true), ("c1".to_owned(), false)]);
+        assert_eq!(request.turns[2].content(), "and now?");
+        assert!(matches!(
+            request.turns[1].blocks[0].part,
+            Part::Reasoning(_)
+        ));
+    }
+
+    #[test]
+    fn anthropic_thinking_is_replayed_only_under_the_same_prefix() {
+        use MessageStatus::Complete;
+        let chat = conversation(vec![
+            message(Role::User, "q", Complete),
+            step(
+                Role::Assistant,
+                vec![thinking(), Part::Text { text: "a".into() }],
+                Some("old"),
+                2,
+            ),
+            message(Role::User, "q2", Complete),
+        ]);
+        let entry = ProviderEntry::default();
+        let has_thinking = |options: &RequestOptions| {
+            build_with(&chat, &entry, options).expect("request").turns[1]
+                .blocks
+                .iter()
+                .any(|b| matches!(b.part, Part::Reasoning(_)))
+        };
+        assert!(has_thinking(&anthropic("old")));
+        assert!(
+            !has_thinking(&anthropic("new")),
+            "the system prompt or tools changed"
+        );
+        let openai = RequestOptions {
+            prefix: Some("new".into()),
+            ..RequestOptions::default()
+        };
+        assert!(
+            has_thinking(&openai),
+            "OpenAI-compatible reasoning always goes back"
+        );
+    }
 }

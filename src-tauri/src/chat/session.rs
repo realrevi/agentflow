@@ -1,22 +1,18 @@
-//! Starts a reply: checks the chat's provider, model and key, stores the user message, then
-//! streams on a background task that forwards events and stores the assistant message
-//! (with its usage record) however the stream ends.
+//! Starts a turn: checks the chat's provider, model, key and budget, stores the user message,
+//! then runs the agent loop (`agent::run_turn`) on a background task that forwards events
+//! and stores every step (with its usage record) however the turn ends.
 
 use serde::{Deserialize, Serialize};
 
-use super::events::{ChatEvent, ForwardingSink};
+use super::events::ChatEvent;
 use super::manager::ChatManager;
-use super::request::build_request;
-use crate::conversations::{
-    Attachment, ChatMessage, ConversationStore, MessageStatus, Role, UsageRecord,
-};
+use crate::agent::{run_turn, CheckpointStore, ModelCapabilities, PermissionGate, Turn};
+use crate::conversations::{Attachment, ChatMessage, ConversationStore, Role};
 use crate::error::{AppError, AppResult};
-use crate::providers::{
-    build_provider, ChatRequest, Http, KeyVault, Provider, ProviderError, StreamEnd,
-};
-use crate::settings::{ProviderEntry, Settings};
-use crate::tokens::{chat_record, UsageTracker};
-use crate::util::{now_ms, run_blocking};
+use crate::providers::{build_provider, ChatRequest, KeyVault, ProviderError};
+use crate::settings::Settings;
+use crate::tokens::UsageTracker;
+use crate::util::run_blocking;
 
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -44,13 +40,16 @@ pub struct ChatStarted {
     pub title: String,
 }
 
-/// Everything a reply needs from the app's managed state.
+/// Everything a turn needs from the app's managed state.
 pub struct ChatDeps {
     pub settings: Settings,
     pub store: ConversationStore,
     pub vault: KeyVault,
     pub manager: ChatManager,
     pub tracker: UsageTracker,
+    pub gate: PermissionGate,
+    pub checkpoints: CheckpointStore,
+    pub capabilities: ModelCapabilities,
 }
 
 pub async fn start_chat<F>(
@@ -67,6 +66,9 @@ where
         vault,
         manager,
         tracker,
+        gate,
+        checkpoints,
+        capabilities,
     } = deps;
     let workspace = request.workspace.clone();
     let id = request.conversation_id.clone();
@@ -118,27 +120,33 @@ where
         }
     };
     let title = conversation.title.clone();
-    let caching = settings.chat.prompt_caching && entry.kind == "anthropic";
-    let chat = match build_request(&conversation, &entry, caching) {
-        Ok(chat) => chat,
-        Err(err) => {
-            manager.finish(request_id);
-            return Err(err);
-        }
-    };
-
-    let job = Job {
-        workspace,
-        panel,
-        tracker,
-        conversation_id: id,
+    // The turn is keyed by its user message (a retry reuses the last one).
+    let turn_id = conversation
+        .messages
+        .iter()
+        .rev()
+        .find(|m| m.role == Role::User)
+        .map(|m| m.id.clone())
+        .unwrap_or_else(|| "turn".into());
+    let turn = Turn {
+        http,
+        provider,
         entry,
         secret,
-        provider,
-        chat,
+        workspace,
+        conversation_id: id,
+        panel,
+        turn_id,
+        settings,
+        store,
+        tracker,
+        gate,
+        checkpoints,
+        capabilities,
+        cancel,
     };
     tauri::async_runtime::spawn(async move {
-        job.run(http, store, cancel, send).await;
+        run_turn(turn, send).await;
         manager.finish(request_id);
     });
     Ok(ChatStarted {
@@ -146,98 +154,6 @@ where
         user_message,
         title,
     })
-}
-
-struct Job {
-    workspace: Option<String>,
-    panel: Option<String>,
-    tracker: UsageTracker,
-    conversation_id: String,
-    entry: ProviderEntry,
-    /// Only to redact it from error messages.
-    secret: Option<String>,
-    provider: Box<dyn Provider>,
-    chat: ChatRequest,
-}
-
-impl Job {
-    async fn run<F>(
-        self,
-        http: Http,
-        store: ConversationStore,
-        cancel: crate::providers::CancelToken,
-        send: F,
-    ) where
-        F: FnMut(ChatEvent) + Send,
-    {
-        let mut sink = ForwardingSink::new(send);
-        let outcome = self
-            .provider
-            .stream_chat(&http, &self.chat, &mut sink, &cancel)
-            .await
-            .map_err(|err| err.redacted(self.secret.as_deref()));
-        let usage = (!sink.usage.is_empty()).then(|| UsageRecord {
-            provider_id: self.entry.id.clone(),
-            preset: self.entry.preset.clone(),
-            model: self.chat.model.clone(),
-            at: now_ms(),
-            tokens: sink.usage,
-        });
-        let (status, stop_reason, error) = match &outcome {
-            Ok(StreamEnd::Stopped(reason)) => (MessageStatus::Complete, Some(reason.clone()), None),
-            Ok(StreamEnd::Cancelled) => (MessageStatus::Cancelled, Some("cancelled".into()), None),
-            Err(err) => (MessageStatus::Error, None, Some(err.message.clone())),
-        };
-        let keep = status == MessageStatus::Complete || !sink.text.trim().is_empty();
-        let message = keep.then(|| ChatMessage {
-            id: format!("a{:x}", now_ms()),
-            role: Role::Assistant,
-            content: std::mem::take(&mut sink.text),
-            attachments: Vec::new(),
-            at: now_ms(),
-            status,
-            stop_reason: stop_reason.clone(),
-            error,
-            usage,
-        });
-        if let Some(message) = &message {
-            self.record_usage(message).await;
-        }
-        if let Some(message) = message.clone() {
-            let (workspace, id) = (self.workspace.clone(), self.conversation_id.clone());
-            let saved =
-                run_blocking(move || store.append_assistant(workspace.as_deref(), &id, message))
-                    .await;
-            if let Err(err) = saved {
-                tracing::warn!("could not store the reply: {err}");
-            }
-        }
-        sink.send(match outcome {
-            Ok(_) => ChatEvent::Stop {
-                reason: stop_reason.unwrap_or_default(),
-                message,
-            },
-            Err(error) => ChatEvent::Error { error, message },
-        });
-    }
-}
-
-impl Job {
-    /// Writes the reply's usage (partial replies too) to the usage ledger.
-    async fn record_usage(&self, message: &ChatMessage) {
-        let Some(usage) = &message.usage else { return };
-        let record = chat_record(
-            &self.conversation_id,
-            &message.id,
-            self.workspace.as_deref(),
-            self.panel.as_deref(),
-            usage,
-        );
-        let tracker = self.tracker.clone();
-        if let Err(err) = run_blocking(move || tracker.record(vec![record])).await {
-            tracing::warn!("could not record usage: {err}");
-        }
-    }
 }
 
 /// For "Test connection": a one-line reply proves the key, URL and model work.
@@ -249,6 +165,7 @@ pub fn tiny_request(model: &str) -> ChatRequest {
         max_tokens: 16,
         temperature: None,
         caching: false,
+        tools: Vec::new(),
     }
 }
 

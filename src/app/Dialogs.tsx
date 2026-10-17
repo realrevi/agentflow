@@ -11,8 +11,10 @@ function DialogBox(props: { request: DialogRequest }) {
   };
   onMount(() => {
     document.addEventListener('keydown', onKeyDown, true);
-    const primary = box?.querySelector<HTMLButtonElement>('.af-button:not(.secondary)');
-    (primary ?? box?.querySelector<HTMLButtonElement>('button'))?.focus();
+    // A destructive choice is never pre-focused (Enter must not trigger it): then the
+    // first safe button gets focus.
+    const first = (selector: string) => box?.querySelector<HTMLButtonElement>(selector);
+    (first('.af-button:not(.secondary):not(.danger)') ?? first('.af-button.secondary'))?.focus();
   });
   onCleanup(() => document.removeEventListener('keydown', onKeyDown, true));
 

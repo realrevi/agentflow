@@ -7,6 +7,8 @@ export interface Toast {
   kind: ToastKind;
   title: string;
   detail?: string;
+  /** One button, e.g. "Show" for a panel that waits; clicking it also dismisses. */
+  action?: { label: string; run: () => void };
 }
 
 const AUTO_DISMISS_MS: Record<ToastKind, number> = { info: 3500, success: 3500, error: 7000 };

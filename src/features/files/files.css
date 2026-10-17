@@ -203,3 +203,13 @@
 .af-quickopen-empty p {
   margin: 0;
 }
+
+/* Changed by an API agent this session. */
+.af-tree-agent-mark {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-left: 6px;
+  vertical-align: middle;
+  background: var(--af-accent);
+}

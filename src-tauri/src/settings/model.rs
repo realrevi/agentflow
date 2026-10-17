@@ -3,12 +3,13 @@
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
+use super::agent::AgentSettings;
 use super::chat::ChatSettings;
 use super::providers::ProviderEntry;
 use super::usage::UsageSettings;
 
 /// Bump when the on-disk shape changes and add a step in `migrate.rs`.
-pub const CURRENT_VERSION: u32 = 6;
+pub const CURRENT_VERSION: u32 = 7;
 pub const SUPPORTED_LANGUAGES: [&str; 5] = ["en", "tr", "de", "zh", "ru"];
 pub const DEFAULT_LANGUAGE: &str = "en";
 pub const DEFAULT_THEME_ID: &str = "agentflow-dark";
@@ -38,6 +39,8 @@ pub struct Settings {
     pub chat: ChatSettings,
     /// Token & cost tracking: CLI readers, prices, budgets (phase 6).
     pub usage: UsageSettings,
+    /// API agents: loop and tool limits, permissions, system prompt (phase 7).
+    pub agent: AgentSettings,
     /// Opaque dockview layout owned by the frontend. `None` means "use the default layout".
     pub layout: Option<Value>,
 }
@@ -123,6 +126,7 @@ impl Default for Settings {
             providers: Vec::new(),
             chat: ChatSettings::default(),
             usage: UsageSettings::default(),
+            agent: AgentSettings::default(),
             layout: None,
         }
     }

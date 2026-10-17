@@ -1,7 +1,8 @@
 // One chat panel's live state: the stored messages, the reply streaming right now (revealed
 // smoothly on the shared animation loop), and the character's state: think on send, work on
 // the first delta, done on stop (idle 5 s later), error on error. Also the hard budget stop
-// (see budgetStop.ts) and Compact.
+// (see budgetStop.ts) and Compact. Agent turns (agent/agentSession.ts): each finished step
+// arrives as a stored message, then the next step streams.
 import { batch, createSignal } from 'solid-js';
 import { toAppError } from '../../shared/errors';
 import { ipc } from '../../shared/ipc';
@@ -17,7 +18,10 @@ import { clearAgentState, setAgentState } from '../agentui';
 import { reducedMotion, startAnimation, type AgentState } from '../characters';
 import { reportError } from '../i18n';
 import { settings } from '../settings/settingsStore';
+import { createAgentSession } from './agent/agentSession';
+import { isAgentEvent } from './agent/liveTurn';
 import { createBudgetStop, isBudgetError } from './budgetStop';
+import { createCompactor } from './compactor';
 import { RevealBuffer } from './reveal';
 
 const REST_MS = 5000;
@@ -35,6 +39,11 @@ export interface ChatSessionOptions {
   onTitle: (title: string) => void;
   /** A reply ended: the conversation list should refresh. */
   onChanged: () => void;
+  /** The panel can be seen (else an approval request also shows a toast). */
+  isVisible: () => boolean;
+  focus: () => void;
+  /** Files an agent changed or a turn's undo restored. */
+  onFilesChanged: (paths: readonly string[]) => void;
 }
 
 type Ending = Extract<ChatEvent, { type: 'stop' | 'error' }>;
@@ -51,7 +60,8 @@ export function createChatSession(options: ChatSessionOptions) {
   const [messages, setMessages] = createSignal<readonly ChatMessage[]>([]);
   const [streaming, setStreaming] = createSignal<Streaming | null>(null);
   const [error, setError] = createSignal<ChatError | null>(null);
-  const [compacting, setCompacting] = createSignal(false);
+  /** The user message id of the turn that is streaming. */
+  const [turnId, setTurnId] = createSignal<string | null>(null);
   const budget = createBudgetStop({
     allowOnce: (providerId) => ipc.usageAllowOnce(providerId),
     resend: (text, attachments, token) => send(text, attachments, token),
@@ -65,6 +75,24 @@ export function createChatSession(options: ChatSessionOptions) {
   let firstDelta = true;
   let restTimer: number | undefined;
   let disposed = false;
+  const compactor = createCompactor({
+    ...options,
+    busy: () => Boolean(streaming()) || disposed,
+    state: (next) => state(next),
+    onCompacted: (compaction) =>
+      setConversation((current) => current && { ...current, compaction }),
+  });
+  const compacting = compactor.compacting;
+  const agent = createAgentSession({
+    workspace: options.workspace,
+    conversationId: options.conversationId,
+    messages,
+    setState: (next) => state(next),
+    isVisible: options.isVisible,
+    title: () => conversation()?.title ?? '',
+    focus: options.focus,
+    onFilesChanged: options.onFilesChanged,
+  });
 
   const state = (next: AgentState) => {
     window.clearTimeout(restTimer);
@@ -83,6 +111,7 @@ export function createChatSession(options: ChatSessionOptions) {
         setMessages(loaded.messages);
       });
       options.onTitle(loaded.title);
+      void agent.checkpoints.refresh();
     } catch (err) {
       reportError('error.chatLoad', err);
     }
@@ -100,6 +129,8 @@ export function createChatSession(options: ChatSessionOptions) {
     batch(() => {
       if (end.message) setMessages((list) => [...list, end.message as ChatMessage]);
       setStreaming(null);
+      setTurnId(null);
+      agent.live.reset(true);
       if (end.type === 'error') setError(end.error);
     });
     if (end.type === 'error') state('error');
@@ -126,6 +157,7 @@ export function createChatSession(options: ChatSessionOptions) {
     if (disposed) return;
     switch (event.type) {
       case 'delta':
+        agent.live.answerStarted();
         if (firstDelta) {
           firstDelta = false;
           state('work');
@@ -140,10 +172,26 @@ export function createChatSession(options: ChatSessionOptions) {
       case 'usage':
         setStreaming((current) => current && { ...current, usage: event.usage });
         break;
-      default:
+      case 'message':
+        // A finished step: its text is in the message, the next step starts empty.
+        if (reveal) reveal = new RevealBuffer();
+        stopAnimation?.();
+        stopAnimation = undefined;
+        firstDelta = true;
+        batch(() => {
+          setMessages((list) => [...list, event.message]);
+          setStreaming((current) => current && { text: '', usage: null });
+        });
+        void agent.stepStored(event.message);
+        break;
+      case 'stop':
+      case 'error':
         ending = event;
         if (reveal && reveal.backlog > 0) animate();
         else finish();
+        break;
+      default:
+        if (isAgentEvent(event)) agent.live.handle(event);
     }
   }
 
@@ -163,6 +211,7 @@ export function createChatSession(options: ChatSessionOptions) {
     reveal = settings.chat.smoothReveal && !reducedMotion() ? new RevealBuffer() : null;
     batch(() => {
       setError(null);
+      agent.live.reset();
       setStreaming({ text: '', usage: null });
       if (text === null) setMessages(withoutFailedTail);
     });
@@ -182,6 +231,7 @@ export function createChatSession(options: ChatSessionOptions) {
         requestId = started.requestId;
       }
       const user = started.userMessage;
+      setTurnId(user?.id ?? agent.currentTurn());
       if (user) setMessages((list) => [...list.filter((m) => m.id !== user.id), user].sort(byTime));
       if (started.title) options.onTitle(started.title);
       if (stopWanted && requestId !== null) void ipc.chatCancel(requestId);
@@ -196,30 +246,6 @@ export function createChatSession(options: ChatSessionOptions) {
         reportError('error.chatSend', err);
       }
       return false;
-    }
-  }
-
-  /** Summarizes the older turns (the last `chat.compactKeepTurns` stay verbatim). */
-  async function compact(): Promise<boolean> {
-    if (compacting() || streaming() || disposed) return false;
-    setCompacting(true);
-    state('think');
-    try {
-      const result = await ipc.chatCompact({
-        workspace: options.workspace,
-        conversationId: options.conversationId,
-        panel: options.panelId,
-      });
-      if (disposed) return true;
-      setConversation((current) => current && { ...current, compaction: result.compaction });
-      state('done');
-      return true;
-    } catch (err) {
-      state('error');
-      reportError('error.compact', err);
-      return false;
-    } finally {
-      setCompacting(false);
     }
   }
 
@@ -254,9 +280,13 @@ export function createChatSession(options: ChatSessionOptions) {
     send,
     stop,
     retry: () => send(null, []),
-    compact,
+    /** After the step limit: a short prompt that lets the agent go on. */
+    continueTurn: () => send(agent.live.continuePrompt(), []),
+    streamingTurn: () => (streaming() ? turnId() : null),
+    compact: compactor.compact,
     compacting,
     budget,
+    agent,
     canRetry,
     dispose,
   };

@@ -20,6 +20,8 @@ fn reply(text: &str, status: MessageStatus) -> ChatMessage {
         status,
         stop_reason: Some("end_turn".into()),
         error: None,
+        parts: Vec::new(),
+        prefix: None,
         usage: Some(UsageRecord {
             provider_id: "p1".into(),
             preset: "anthropic".into(),
@@ -50,7 +52,7 @@ fn conversation_file_round_trip() {
         .append_user(WS, &created.id, "Explain this file", vec![attachment])
         .expect("user");
     store
-        .append_assistant(
+        .append_message(
             WS,
             &created.id,
             reply("It prints nothing.", MessageStatus::Complete),
@@ -142,12 +144,12 @@ fn retry_drops_failed_replies_only() {
     assert!(store.prepare_retry(WS, &id).is_err(), "nothing sent yet");
     store.append_user(WS, &id, "one", Vec::new()).expect("user");
     store
-        .append_assistant(WS, &id, reply("partial", MessageStatus::Error))
+        .append_message(WS, &id, reply("partial", MessageStatus::Error))
         .expect("assistant");
     let ready = store.prepare_retry(WS, &id).expect("retry");
     assert_eq!(ready.messages.len(), 1);
     store
-        .append_assistant(WS, &id, reply("done", MessageStatus::Complete))
+        .append_message(WS, &id, reply("done", MessageStatus::Complete))
         .expect("assistant");
     assert!(
         store.prepare_retry(WS, &id).is_err(),
@@ -202,4 +204,50 @@ fn unreadable_files_are_skipped_in_the_list() {
         .join(crate::util::workspace_key(WS));
     std::fs::write(folder.join("broken.json"), "{oops").expect("write");
     assert_eq!(store.list(WS).expect("list").len(), 1);
+}
+
+#[test]
+fn version_1_files_load_and_are_saved_as_version_2() {
+    let dir = TestDir::new("conversation-v1");
+    let store = ConversationStore::new(dir.path().join("conversations"));
+    let created = store.create(WS, None, "m", "").expect("create");
+    // Rewrite it as a phase 5 (v1) file: no parts, no agent state.
+    let file = dir
+        .path()
+        .join("conversations")
+        .join(crate::util::workspace_key(WS))
+        .join(format!("{}.json", created.id));
+    let v1 = serde_json::json!({
+        "version": 1,
+        "id": created.id,
+        "title": "old",
+        "model": "m",
+        "messages": [{
+            "id": "m1", "role": "user", "content": "hi", "at": 1, "status": "complete"
+        }, {
+            "id": "a1", "role": "assistant", "content": "hello", "at": 2, "status": "complete"
+        }]
+    });
+    std::fs::write(&file, serde_json::to_vec(&v1).expect("json")).expect("write");
+
+    let loaded = store.get(WS, &created.id).expect("get");
+    assert_eq!(loaded.version, crate::conversations::FORMAT_VERSION);
+    assert_eq!(loaded.messages.len(), 2);
+    assert!(loaded
+        .messages
+        .iter()
+        .all(|m| m.parts.is_empty() && m.prefix.is_none()));
+    assert_eq!(loaded.agent, crate::conversations::AgentState::default());
+
+    store
+        .update_agent(WS, &created.id, |agent| agent.tools_disabled = true)
+        .expect("update");
+    let saved: serde_json::Value =
+        serde_json::from_slice(&std::fs::read(&file).expect("read")).expect("json");
+    assert_eq!(saved["version"], 2);
+    assert_eq!(saved["agent"]["toolsDisabled"], true);
+    assert!(
+        saved["messages"][0].get("parts").is_none(),
+        "empty parts are not written"
+    );
 }

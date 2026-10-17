@@ -1,5 +1,6 @@
 // Editor tabs: open (or focus) a workspace file, and follow renames from the file tree.
 import type { DockviewApi, IDockviewPanel } from 'dockview-core';
+import { editorDirty } from '../editor';
 import { currentWorkspace, renamedPath } from '../workspace';
 import { addPanel, currentDock, nextIndex, syncOpenPanels } from './layoutStore';
 import { panelTitle, parsePanelParams } from './panels';
@@ -21,6 +22,16 @@ export function openEditor(path: string): void {
   );
   if (existing) existing.panel.api.setActive();
   else addPanel(dock, { kind: 'editor', index: nextIndex(dock, 'editor'), root, path });
+}
+
+/** Reactive: a workspace file has unsaved changes in an open editor tab. */
+export function editorFileDirty(path: string): boolean {
+  const dock = currentDock();
+  const root = currentWorkspace();
+  if (!dock || !root) return false;
+  return editorPanels(dock).some(
+    (editor) => editor.root === root && editor.path === path && editorDirty(editor.panel.id),
+  );
 }
 
 /** Keeps editor tabs pointing at files that were renamed or moved in the file tree. */

@@ -9,7 +9,9 @@ use super::request::{requested_messages, user_content};
 use super::session::ChatDeps;
 use crate::conversations::{ChatMessage, Compaction, Conversation, Role};
 use crate::error::{AppError, AppResult};
-use crate::providers::{build_provider, ChatRequest, ChatTurn, EventSink, StreamEvent, TokenUsage};
+use crate::providers::{
+    build_provider, ChatRequest, ChatTurn, EventSink, Part, StreamEvent, TokenUsage,
+};
 use crate::settings::{ProviderEntry, Settings};
 use crate::tokens::{Source, UsageRecord};
 use crate::util::{now_ms, run_blocking};
@@ -44,6 +46,7 @@ pub async fn compact(deps: ChatDeps, request: CompactRequest) -> AppResult<Compa
         vault,
         manager,
         tracker,
+        ..
     } = deps;
     let workspace = request.workspace.clone();
     let id = request.conversation_id.clone();
@@ -75,6 +78,7 @@ pub async fn compact(deps: ChatDeps, request: CompactRequest) -> AppResult<Compa
         max_tokens: entry.max_tokens,
         temperature: None,
         caching: false,
+        tools: Vec::new(),
     };
     let mut sink = Collect::default();
     let outcome = provider.stream_chat(&http, &chat, &mut sink, &cancel).await;
@@ -167,6 +171,16 @@ fn summarizer(
     Ok((entry, model))
 }
 
+/// Long tool outputs are clipped in the transcript; the summary needs their gist only.
+const TRANSCRIPT_RESULT_CHARS: usize = 2_000;
+
+fn clip_chars(text: &str, max: usize) -> String {
+    match text.char_indices().nth(max) {
+        Some((cut, _)) => format!("{}…", &text[..cut]),
+        None => text.to_owned(),
+    }
+}
+
 fn transcript(previous: Option<&Compaction>, older: &[ChatMessage]) -> String {
     let mut out = String::new();
     if let Some(previous) = previous {
@@ -184,6 +198,20 @@ fn transcript(previous: Option<&Compaction>, older: &[ChatMessage]) -> String {
             Role::Assistant => {
                 out.push_str("Assistant:\n");
                 out.push_str(&message.content);
+                for part in &message.parts {
+                    if let Part::ToolCall(call) = part {
+                        out.push_str(&format!("\n[called {} {}]", call.name, call.input));
+                    }
+                }
+            }
+            Role::Tool => {
+                out.push_str("Tool results:\n");
+                for part in &message.parts {
+                    if let Part::ToolResult(result) = part {
+                        out.push_str(&clip_chars(&result.content, TRANSCRIPT_RESULT_CHARS));
+                        out.push('\n');
+                    }
+                }
             }
         }
         out.push_str("\n\n");
@@ -203,6 +231,10 @@ impl EventSink for Collect {
         match event {
             StreamEvent::Delta(text) => self.text.push_str(&text),
             StreamEvent::Usage(usage) => self.usage = usage,
+            // A summary needs no reasoning or tools (none are offered).
+            StreamEvent::ReasoningDelta(_)
+            | StreamEvent::Reasoning(_)
+            | StreamEvent::ToolCall(_) => {}
         }
     }
 }

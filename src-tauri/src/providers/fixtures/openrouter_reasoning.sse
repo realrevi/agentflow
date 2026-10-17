@@ -1,0 +1,12 @@
+: OPENROUTER PROCESSING
+
+data: {"id":"gen-r","object":"chat.completion.chunk","created":0,"model":"anthropic/claude-sonnet-4.6","choices":[{"index":0,"delta":{"role":"assistant","content":"","reasoning":"Think","reasoning_details":[{"type":"reasoning.text","text":"Think","format":"anthropic-claude-v1","index":0}]},"finish_reason":null}]}
+
+data: {"id":"gen-r","object":"chat.completion.chunk","created":0,"model":"anthropic/claude-sonnet-4.6","choices":[{"index":0,"delta":{"content":"","reasoning":"ing.","reasoning_details":[{"type":"reasoning.text","text":"ing.","index":0}]},"finish_reason":null}]}
+
+data: {"id":"gen-r","object":"chat.completion.chunk","created":0,"model":"anthropic/claude-sonnet-4.6","choices":[{"index":0,"delta":{"content":"","reasoning_details":[{"type":"reasoning.text","signature":"sig-or","index":0}]},"finish_reason":null}]}
+
+data: {"id":"gen-r","object":"chat.completion.chunk","created":0,"model":"anthropic/claude-sonnet-4.6","choices":[{"index":0,"delta":{"content":"Done."},"finish_reason":"stop"}],"usage":{"prompt_tokens":20,"completion_tokens":8,"total_tokens":28}}
+
+data: [DONE]
+

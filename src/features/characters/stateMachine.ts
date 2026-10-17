@@ -4,7 +4,16 @@
 // Output within 400 ms of a prompt or of keys typed into the terminal is just the echo
 // and is ignored (unless the agent is already working).
 
-export type AgentState = 'idle' | 'think' | 'work' | 'done' | 'sleep' | 'error';
+// API agents add `wait`: a permission request waits for the user (drawn as idle).
+
+import type { SpriteState } from './types';
+
+export type AgentState = 'idle' | 'think' | 'work' | 'done' | 'sleep' | 'error' | 'wait';
+
+/** The sprite a state is drawn with. */
+export function spriteFor(state: AgentState): SpriteState {
+  return state === 'wait' ? 'idle' : state;
+}
 
 export const QUIET_MS = 2000;
 export const REST_MS = 5000;

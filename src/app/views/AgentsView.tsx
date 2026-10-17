@@ -1,6 +1,6 @@
 import { For, Show } from 'solid-js';
 import { ChatList } from './ChatList';
-import { Avatar } from '../../features/characters';
+import { Avatar, spriteFor } from '../../features/characters';
 import { t } from '../../features/i18n';
 import { focusPanel, openPanel, openPanels, openTerminal } from '../../features/layout';
 import { settings } from '../../features/settings';
@@ -38,13 +38,21 @@ export function AgentsView() {
                     {(character) => (
                       <Avatar
                         character={character()}
-                        state={agentState(panel.id)}
+                        state={spriteFor(agentState(panel.id))}
                         scale={1}
                         speed={settings.characters.speed}
                       />
                     )}
                   </Show>
                   {panel.title}
+                  <Show when={agentState(panel.id) === 'wait'}>
+                    <span
+                      class="af-attention-dot"
+                      role="img"
+                      aria-label={t('agent.attention')}
+                      title={t('agent.attention')}
+                    />
+                  </Show>
                 </button>
               </li>
             )}

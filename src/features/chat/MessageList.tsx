@@ -1,19 +1,33 @@
-// The conversation: user prompts (plain text + attachment chips) and replies (sanitized
-// markdown). The streaming reply re-renders only its last block. Code copy buttons and
-// links are handled by delegation: http(s) links open in the system browser, right-click
-// offers "copy link"; nothing ever navigates inside the app.
-import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show } from 'solid-js';
+// The conversation as a timeline (agent/timeline.ts): prompts, replies (sanitized markdown),
+// reasoning, tool cards, grouped reads and turn ends, then the live part (streaming reply,
+// live reasoning, the permission card) and notices. Code copy buttons and links are
+// handled by delegation: http(s) links open in the system browser, right-click offers
+// "copy link"; nothing ever navigates inside the app.
+import {
+  createEffect,
+  createMemo,
+  createSignal,
+  For,
+  Match,
+  onCleanup,
+  onMount,
+  Show,
+  Switch,
+} from 'solid-js';
 import { ipc } from '../../shared/ipc';
 import { showToast } from '../../shared/toast';
 import type { ChatError, ChatMessage, Compaction } from '../../shared/types';
 import { Menu } from '../../shared/ui/Menu';
 import { webUrl } from '../../shared/url';
 import { reportError, t } from '../i18n';
-import { estimateTokens } from './attachments';
-import { renderMarkdown } from './markdown';
-import { cacheText, errorText, stopNote, usageText } from './messageText';
+import { AgentItem } from './agent/AgentItem';
+import type { AgentView } from './agent/agentView';
+import { LiveSection } from './agent/LiveSection';
+import { NoticeStrip } from './agent/NoticeStrip';
+import { buildTimeline, reconcile, type TimelineItem } from './agent/timeline';
+import { CompactDivider, ReplyMessage, StreamingReply, UserMessage } from './MessageItem';
+import { errorText } from './messageText';
 import type { Streaming } from './session';
-import { splitStable } from './stableSplit';
 
 interface MessageListProps {
   messages: readonly ChatMessage[];
@@ -23,6 +37,7 @@ interface MessageListProps {
   onRetry: () => void;
   /** Older messages a Compact summarized (requests send the summary instead). */
   compaction: Compaction | null;
+  agent: AgentView;
 }
 
 /** Near the bottom: keep following new text. */
@@ -79,12 +94,25 @@ export function MessageList(props: MessageListProps) {
     return latest;
   });
 
+  const items = createMemo<TimelineItem[]>(
+    (previous) =>
+      reconcile(
+        previous,
+        buildTimeline(props.messages, props.compaction, props.agent.streamingTurn()),
+      ),
+    [],
+  );
+  const live = () => props.agent.session.live;
+
   const follow = () => {
     if (list && pinned) list.scrollTop = list.scrollHeight;
   };
   createEffect(() => {
     void props.messages.length;
     void props.streaming?.text;
+    void items().length;
+    void live().reasoning()?.text;
+    void live().permission();
     void props.error;
     queueMicrotask(follow);
   });
@@ -129,19 +157,38 @@ export function MessageList(props: MessageListProps) {
       <Show when={props.messages.length === 0 && !props.streaming}>
         <p class="af-chat-empty">{t('chat.empty')}</p>
       </Show>
-      <For each={props.messages}>
-        {(message) => (
-          <>
-            <MessageItem message={message} latestCopy={latestCopy()} />
-            <Show when={props.compaction?.through === message.id && props.compaction}>
-              {(compaction) => <CompactDivider compaction={compaction()} />}
-            </Show>
-          </>
+      <For each={items()}>
+        {(item) => (
+          <Switch fallback={<AgentItem item={item} view={props.agent} />}>
+            <Match when={item.kind === 'user' && item}>
+              {(user) => <UserMessage message={user().message} latestCopy={latestCopy()} />}
+            </Match>
+            <Match when={item.kind === 'reply' && item}>
+              {(reply) => <ReplyMessage message={reply().message} />}
+            </Match>
+            <Match when={item.kind === 'compaction' && item}>
+              {(divider) => <CompactDivider compaction={divider().compaction} />}
+            </Match>
+          </Switch>
         )}
       </For>
       <Show when={props.streaming}>
-        {(streaming) => <StreamingReply text={streaming().text} />}
+        {(streaming) => (
+          <LiveSection
+            view={props.agent}
+            reply={(busy) => (
+              <Show when={streaming().text || !busy}>
+                <StreamingReply text={streaming().text} />
+              </Show>
+            )}
+          />
+        )}
       </Show>
+      <NoticeStrip
+        notices={live().notices()}
+        canContinue={props.agent.canContinue()}
+        onContinue={props.agent.onContinue}
+      />
       <Show when={props.error}>{(error) => <p class="af-chat-error">{errorText(error())}</p>}</Show>
       <Show when={props.canRetry}>
         <button
@@ -153,89 +200,5 @@ export function MessageList(props: MessageListProps) {
         </button>
       </Show>
     </div>
-  );
-}
-
-function CompactDivider(props: { compaction: Compaction }) {
-  return (
-    <details class="af-chat-compacted">
-      <summary>{t('chat.compact.divider')}</summary>
-      <p class="af-chat-compacted-summary">{props.compaction.summary}</p>
-      <p class="af-chat-compacted-by">{t('chat.compact.by', { model: props.compaction.model })}</p>
-    </details>
-  );
-}
-
-function MessageItem(props: { message: ChatMessage; latestCopy: Map<string, string> }) {
-  const html = createMemo(() =>
-    props.message.role === 'assistant' ? renderMarkdown(props.message.content) : '',
-  );
-  return (
-    <article class={`af-chat-message ${props.message.role}`}>
-      <Show
-        when={props.message.role === 'assistant'}
-        fallback={
-          <>
-            <div class="af-chat-who">{t('chat.you')}</div>
-            <div class="af-chat-user-text">{props.message.content}</div>
-            <Show when={props.message.attachments.length > 0}>
-              <div class="af-chips">
-                <For each={props.message.attachments}>
-                  {(file) => {
-                    const replaced = () => props.latestCopy.get(file.path) !== props.message.id;
-                    return (
-                      <span
-                        class="af-chip"
-                        classList={{ 'sent-earlier': replaced() }}
-                        title={
-                          replaced() ? t('chat.attach.replaced', { path: file.path }) : file.path
-                        }
-                      >
-                        {file.path.split('/').pop()}
-                        <span class="af-chip-tokens">
-                          {replaced()
-                            ? t('chat.attach.sentEarlier')
-                            : t('chat.attach.tokens', { count: estimateTokens(file.content) })}
-                        </span>
-                      </span>
-                    );
-                  }}
-                </For>
-              </div>
-            </Show>
-          </>
-        }
-      >
-        <div class="af-md" innerHTML={html()} />
-        <div class="af-chat-meta">
-          <Show when={stopNote(props.message)}>{(note) => <span>{note()}</span>}</Show>
-          <Show when={props.message.status === 'error' && props.message.error}>
-            {(error) => <span class="af-chat-meta-error">{error()}</span>}
-          </Show>
-          <Show when={usageText(props.message)}>{(usage) => <span>{usage()}</span>}</Show>
-          <Show when={cacheText(props.message)}>
-            {(cache) => (
-              <span class="af-chat-cache" classList={{ hit: cache().hit }}>
-                {cache().text}
-              </span>
-            )}
-          </Show>
-        </div>
-      </Show>
-    </article>
-  );
-}
-
-/** Finished blocks are rendered once; only the block being written re-renders per frame. */
-function StreamingReply(props: { text: string }) {
-  const split = createMemo(() => splitStable(props.text));
-  const head = createMemo(() => renderMarkdown(split().head));
-  const tail = createMemo(() => renderMarkdown(split().tail));
-  return (
-    <article class="af-chat-message assistant streaming">
-      <div class="af-md" innerHTML={head()} />
-      <div class="af-md af-md-tail" innerHTML={tail()} />
-      <span class="af-chat-caret" aria-hidden="true" />
-    </article>
   );
 }

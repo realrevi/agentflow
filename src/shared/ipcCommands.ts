@@ -3,6 +3,9 @@
 import type { Channel } from '@tauri-apps/api/core';
 import type {
   AllowOnceGrant,
+  CheckpointSummary,
+  PermissionAnswer,
+  RestoreReport,
   BudgetStatus,
   ChatEvent,
   ChatSendRequest,
@@ -94,6 +97,15 @@ export interface Commands {
   };
   chat_cancel: { args: { requestId: number }; result: boolean };
   chat_compact: { args: { request: CompactRequest }; result: CompactResult };
+  agent_permission_answer: {
+    args: { requestId: number; conversationId: string; answer: PermissionAnswer };
+    result: boolean;
+  };
+  agent_checkpoints: { args: Workspace & { conversationId: string }; result: CheckpointSummary[] };
+  agent_checkpoint_restore: {
+    args: Workspace & { conversationId: string; turn: string };
+    result: RestoreReport;
+  };
   provider_key_status: { args: ProviderId; result: KeyStatus };
   provider_set_key: { args: ProviderId & { key: string }; result: KeyStatus };
   provider_delete_key: { args: ProviderId; result: null };

@@ -5,6 +5,8 @@ import { FILE_PATH_MIME } from '../../shared/dnd';
 import type { EntryKind } from '../../shared/types';
 import { PixelIcon } from '../../shared/ui/PixelIcon';
 import { t } from '../i18n';
+import { currentWorkspace } from '../workspace';
+import { agentChanged } from './agentMarks';
 import { chevronIcon, iconFor } from './fileIcons';
 import { NameInput } from './NameInput';
 import type { TreeRow } from './treeModel';
@@ -136,6 +138,14 @@ export function TreeView(props: TreeViewProps) {
                   fallback={
                     <span class="af-tree-name" classList={{ link: entry.isSymlink }}>
                       {entry.name}
+                      <Show when={!entry.isDir && agentChanged(currentWorkspace(), entry.path)}>
+                        <span
+                          class="af-tree-agent-mark"
+                          role="img"
+                          aria-label={t('files.agentChanged')}
+                          title={t('files.agentChanged')}
+                        />
+                      </Show>
                     </span>
                   }
                 >

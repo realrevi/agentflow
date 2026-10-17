@@ -138,15 +138,20 @@ mod tests {
             run_pump(&rx, |o| out.push((Instant::now(), o)));
             out
         });
-        let sent = Instant::now();
         tx.send(PumpMsg::Data(b"hi".to_vec())).expect("send");
-        std::thread::sleep(FLUSH_INTERVAL * 10);
+        // The interval alone must flush: the data is out before anything else arrives. (Not a
+        // tight deadline: with ~250 tests in parallel the pump thread can be scheduled late.)
+        std::thread::sleep(FLUSH_INTERVAL * 50);
+        let exit_sent = Instant::now();
         tx.send(PumpMsg::Exited(exit0())).expect("send");
         drop(tx);
         let out = pump.join().expect("join");
         let (at, first) = &out[0];
         assert_eq!(*first, PtyOutput::Data(b"hi".to_vec()));
-        assert!(at.duration_since(sent) < FLUSH_INTERVAL * 8, "flushed late");
+        assert!(
+            *at < exit_sent,
+            "flushed only by the exit, not by the interval"
+        );
     }
 
     #[test]

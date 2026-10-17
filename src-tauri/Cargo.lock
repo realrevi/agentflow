@@ -23,11 +23,13 @@ dependencies = [
 name = "agentflow"
 version = "0.1.0"
 dependencies = [
+ "globset",
  "ignore",
  "keyring",
  "libc",
  "notify",
  "portable-pty",
+ "regex",
  "reqwest",
  "rustls",
  "serde",
@@ -4806,6 +4808,7 @@ dependencies = [
  "libc",
  "mio",
  "pin-project-lite",
+ "signal-hook-registry",
  "socket2",
  "tokio-macros",
  "windows-sys 0.61.2",

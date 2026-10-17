@@ -30,6 +30,8 @@
 .af-dialog-message {
   margin: 0;
   color: var(--af-fg-muted);
+  white-space: pre-line;
+  overflow-wrap: anywhere;
 }
 
 .af-dialog-actions {

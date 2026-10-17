@@ -13,6 +13,7 @@ import type {
   ChatSendRequest,
   CompactRequest,
   EstimateRequest,
+  PermissionAnswer,
   ChatStarted,
   ConversationPatch,
   EntryKind,
@@ -221,6 +222,15 @@ export const ipc = {
   chatCancel: (requestId: number) => call('chat_cancel', { requestId }),
   /** Summarizes the older turns (the last `chat.compactKeepTurns` stay verbatim). */
   chatCompact: (request: CompactRequest) => call('chat_compact', { request }),
+  /** The answer to an agent's permission request; `false` if the turn already ended. */
+  agentPermissionAnswer: (requestId: number, conversationId: string, answer: PermissionAnswer) =>
+    call('agent_permission_answer', { requestId, conversationId, answer }),
+  /** Turns of a chat that changed files, newest first. */
+  agentCheckpoints: (workspace: string | null, conversationId: string) =>
+    call('agent_checkpoints', { workspace, conversationId }),
+  /** Undoes a turn's file changes (created files go to the OS trash). */
+  agentCheckpointRestore: (workspace: string | null, conversationId: string, turn: string) =>
+    call('agent_checkpoint_restore', { workspace, conversationId, turn }),
   /** Keys are write-only: the frontend only ever sees has-key + the last 4 characters. */
   providerKeyStatus: (providerId: string) => call('provider_key_status', { providerId }),
   providerSetKey: (providerId: string, key: string) =>

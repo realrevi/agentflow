@@ -8,6 +8,7 @@ import type { PromptEntry } from '../../../shared/types';
 import {
   Avatar,
   reducedMotion,
+  spriteFor,
   startAnimation,
   type AgentState,
   type CharacterRef,
@@ -29,6 +30,7 @@ const STATE_LABEL: Record<AgentState, I18nKey> = {
   done: 'characters.state.done',
   sleep: 'characters.state.sleep',
   error: 'characters.state.error',
+  wait: 'characters.state.wait',
 };
 
 const BUBBLE: Partial<Record<AgentState, I18nKey>> = {
@@ -37,6 +39,7 @@ const BUBBLE: Partial<Record<AgentState, I18nKey>> = {
   done: 'characters.bubble.done',
   sleep: 'characters.bubble.sleep',
   error: 'characters.bubble.error',
+  wait: 'characters.bubble.wait',
 };
 
 export interface AgentOverlayHandle {
@@ -55,6 +58,8 @@ interface AgentOverlayProps {
   onPickPrompt: (text: string) => void;
   /** Session usage for the badge ("12.4k · $0.08"), once there is any. */
   usage?: string | null;
+  /** What the agent does right now ("Reading src/app.ts"); replaces the state's bubble. */
+  status?: string | null;
   /** Terminal panels only: the cursor the avatar rides above while output streams. */
   cursor?: () => CursorCell | null;
   onCursorChange?: (listener: () => void) => () => void;
@@ -77,7 +82,7 @@ export function AgentOverlay(props: AgentOverlayProps) {
     receive: () => setReceiving(true),
   });
 
-  const sprite = () => (receiving() ? 'receive' : props.state);
+  const sprite = () => (receiving() ? 'receive' : spriteFor(props.state));
 
   // The bubble shows the start of a new prompt for a moment, then the state.
   let promptTimer: number | undefined;
@@ -102,6 +107,7 @@ export function AgentOverlay(props: AgentOverlayProps) {
         ? `“${line.slice(0, PROMPT_PREVIEW_CHARS - 1)}…”`
         : `“${line}”`;
     }
+    if (props.status && props.state === 'work') return props.status;
     const key = BUBBLE[props.state];
     return key ? t(key) : '';
   });

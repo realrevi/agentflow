@@ -2,8 +2,12 @@
 // Header (provider, model, system prompt), the messages, and the shared prompt bar with the
 // panel's character; files dragged from the tree onto the bottom area are attached. Phase 6:
 // the live estimate, the context strip with Compact (or auto-compact), the hard budget stop
-// with "Allow once", and the session usage on the corner badge.
+// with "Allow once", and the session usage on the corner badge. Phase 7: agent turns (tool
+// cards, permission cards with diffs, undo), the running tool as the character's bubble;
+// file hooks (open, dirty check, tree marks, the diff view) come from the layout.
 import './chat.css';
+import './agent.css';
+import './permission.css';
 import type { DockviewPanelApi } from 'dockview-core';
 import { createEffect, createSignal, onCleanup, onMount, Show } from 'solid-js';
 import { FILE_PATH_MIME } from '../../shared/dnd';
@@ -22,6 +26,7 @@ import { reducedMotion } from '../characters';
 import { reportError, t } from '../i18n';
 import { providerName } from '../providers';
 import { settings } from '../settings/settingsStore';
+import { createAgentView, type ChatHooks } from './agent/agentView';
 import { AttachmentChips } from './AttachmentChips';
 import { BudgetNotice, ContextStrip, EstimateLine } from './ComposeNotices';
 import { readAttachment, withAttachment } from './attachments';
@@ -36,6 +41,7 @@ export interface ChatPanelProps {
   panelId: string;
   config: ChatConfig;
   api: DockviewPanelApi;
+  hooks: ChatHooks;
 }
 
 const PACKET_MS = 600;
@@ -62,6 +68,9 @@ export default function ChatPanel(props: ChatPanelProps) {
     conversationId: props.config.conversationId,
     onTitle: setTitle,
     onChanged: () => void refreshConversations(),
+    isVisible: () => props.api.isVisible,
+    focus: () => props.api.setActive(),
+    onFilesChanged: (paths) => props.hooks.filesChanged(paths),
   });
   const history = createPromptHistory(
     props.config.workspace,
@@ -77,6 +86,8 @@ export default function ChatPanel(props: ChatPanelProps) {
     const entry = provider();
     return session.conversation()?.model || (entry ? providerName(entry) : t('chat.untitled'));
   };
+
+  const agentView = createAgentView(session, props.config.workspace, props.hooks, ready);
 
   const { usage, estimate, nearLimit, sentBefore } = createChatUsage({
     panelId: props.panelId,
@@ -181,6 +192,7 @@ export default function ChatPanel(props: ChatPanelProps) {
             workspace={props.config.workspace}
             conversation={conversation()}
             onChanged={session.setConversation}
+            checkpoints={session.agent.checkpoints}
           />
         )}
       </Show>
@@ -192,6 +204,7 @@ export default function ChatPanel(props: ChatPanelProps) {
           canRetry={session.canRetry()}
           onRetry={() => void session.retry()}
           compaction={session.conversation()?.compaction ?? null}
+          agent={agentView}
         />
         <Show when={character()}>
           {(ref) => (
@@ -204,6 +217,7 @@ export default function ChatPanel(props: ChatPanelProps) {
               history={history.entries()}
               onPickPrompt={(text) => bar?.insert(text)}
               usage={usage()}
+              status={session.agent.live.status()}
             />
           )}
         </Show>

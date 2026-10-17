@@ -8,7 +8,14 @@ describe('webUrl', () => {
   });
 
   it('rejects other schemes and relative links', () => {
-    for (const href of ['javascript:alert(1)', 'file:///etc/passwd', 'mailto:a@b.c', '/docs', '#x', '']) {
+    for (const href of [
+      'javascript:alert(1)',
+      'file:///etc/passwd',
+      'mailto:a@b.c',
+      '/docs',
+      '#x',
+      '',
+    ]) {
       expect(webUrl(href), href).toBeNull();
     }
   });

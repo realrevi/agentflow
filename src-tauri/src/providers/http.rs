@@ -137,7 +137,7 @@ pub async fn pump(
             sink.flush();
             return match done {
                 Some(stop) => Ok(StreamEnd::Stopped(stop)),
-                None => decoder.finish().map(StreamEnd::Stopped),
+                None => decoder.finish(sink).map(StreamEnd::Stopped),
             };
         };
         let events = parser.push(&bytes).map_err(|_| {
@@ -163,8 +163,8 @@ pub trait Decoder: Send {
     ) -> Result<Option<String>, ProviderError>;
 
     /// The body ended without the provider's end marker: `Ok(stop)` if the reply was in
-    /// fact complete, else an error.
-    fn finish(&mut self) -> Result<String, ProviderError>;
+    /// fact complete (after reporting what is still pending to `sink`), else an error.
+    fn finish(&mut self, sink: &mut dyn EventSink) -> Result<String, ProviderError>;
 }
 
 pub fn interrupted() -> ProviderError {
