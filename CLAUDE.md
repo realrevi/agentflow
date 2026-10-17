@@ -47,14 +47,15 @@ src/
   features/theme/     VS Code -> --af-* mapping (+ syntax vars), user overrides, engine, store
   features/i18n/      typed t(), lazy locale loading, reportError()
   features/settings/  settings store (debounced save) + lazy SettingsPanel and sections
-  features/{tokens,agents}/, src-tauri/src/agents/: empty stubs (tokens UI: phase 6B)
+  features/tokens/    usage store (one Channel), formats, badge, chart, Usage view + lazy panel
+  features/agents/, src-tauri/src/agents/: empty stubs
   shared/             ipc (+ ipcCommands), types (+ chat/usageTypes), errors, toast, dialog, dnd, ui/
   locales/            en.json (source of truth), tr, de, zh, ru
 themes/               built-in theme JSON (embedded into the Rust binary via include_str!)
 ```
 
 Layering: `shared/` imports nothing from `features/` or `app/`. Core features (`i18n`,
-`settings`, `theme`, `characters`, `agentui`, `providers`) never import panel features. Panel
+`settings`, `theme`, `characters`, `agentui`, `providers`, `tokens`) never import panel features. Panel
 features (`terminal`, `files`, `editor`, `chat`) import core features and `workspace`, never each
 other. `layout` and the settings panel compose panel features; `app/` composes all.
 
@@ -88,45 +89,38 @@ other. `layout` and the settings panel compose panel features; `app/` composes a
 
 ## Providers & API chat
 
-- **Adapter pattern:** `trait Provider { stream_chat, list_models }` (`providers/provider.rs`);
-  `build_provider(entry, key)` returns `anthropic.rs` (Messages) or `openai.rs` (Chat Completions;
-  a `Preset` holds vendor quirks: system role, max-tokens field, `stream_options`, headers, model
-  prefix). An adapter builds the request; its `Decoder` turns SSE events (`sse.rs`) into text
-  deltas, usage and a stop reason. `http.rs` sends, pumps with cancel and maps HTTP/in-band errors
-  to `ProviderError` kinds (auth, rateLimit + retryAfter, invalidModel, network, timeout...). A
-  new OpenAI-compatible vendor is a preset; formats come from its docs. No hardcoded models.
+- **Adapters:** `trait Provider { stream_chat, list_models }`; `build_provider(entry, key)` ->
+  `anthropic.rs` (Messages) or `openai.rs` (Chat Completions; a `Preset` holds vendor quirks).
+  A `Decoder` turns SSE (`sse.rs`) into deltas, usage and a stop reason; `http.rs` sends with
+  cancel and maps errors to `ProviderError` kinds. A new OpenAI-compatible vendor is a preset
+  (formats from its docs). No hardcoded models.
 - **Keys live ONLY in the OS keychain** (`keys.rs`: `SecretStore`, service `dev.agentflow.desktop`,
   account `provider:<id>`; tests use `MemoryStore`), never in settings, logs, error text or IPC:
   the frontend gets `KeyStatus { hasKey, last4 }`, the key field is write-only, removing a provider
   deletes its key. Errors are `redacted()` before leaving the backend, auth headers are sensitive,
   redirects are not followed. Base URLs: HTTPS; plain HTTP only for `localhost`/loopback (`url.rs`).
-- `chat_send(…, Channel)` streams `delta | usage | stop | error` (one per chat, `chat_cancel`, all
-  cancelled on reload/exit); the backend saves each reply with a `UsageRecord`, partial text too.
-  Rust tests use the mock server in `providers/tests/mock.rs`, never real APIs or keys.
-- Chat panels (kind `chat`) persist only their config. Reveal: `chat/reveal.ts` on the shared
-  animator, ≤ ~300 ms behind, instant when `chat.smoothReveal` is off. Markdown: `markdown.ts`
-  (raw HTML escaped, DOMPurify allowlist).
+- `chat_send(…, Channel)` streams `delta | usage | stop | error` (one per chat, `chat_cancel`,
+  all cancelled on reload/exit); each reply is saved with its usage, partial text too. Rust
+  tests use `providers/tests/mock.rs` (never real APIs or keys; `refusing_port()` for "dead
+  server" cases, never bind-and-drop a port). Chat panels persist only their config; reveal on
+  the shared animator (`chat/reveal.ts`); Markdown via `markdown.ts` (DOMPurify allowlist).
 
 ## Usage tracking (phase 6)
 
-- `tokens/tracker.rs` (+ `queries.rs`): one `UsageTracker` in managed state. Ledger =
-  `<app data>/usage/YYYY-MM.jsonl`, append-only, malformed lines skipped; records dedup by
-  `id` (`chat:<conversation>:<message>`, CLI message/response ids). Totals live in 15-minute
-  buckets for 62 days; costs are computed at query time (`pricing.rs`: `pricing.json` with
-  source + date, OpenRouter prices from its models endpoint, user overrides, free providers;
-  no price = "—", never guessed). Lock order: `cli` before `state`.
-- Start (background thread): load ledger, backfill once from conversations (`.backfill`
-  marker), read CLI logs changed in the last 62 days, watch the roots (notify). CLI readers
-  (`tokens/cli/`) are read-only, tail from stored byte offsets (`cli-offsets.json`, saved only
-  after the records are in the ledger). `pty_spawn(panel)` registers agent CLIs so usage
-  matches a panel by CLI + cwd + time window (`panels.rs`), else its workspace.
-- Frontend gets live changes on the Channel of `usage_subscribe` (`changed { panels }`,
-  `repriced`, `budget { status }`); the usage commands take the local UTC offset. The hard
-  budget stop blocks API chat sends only (`AppError::Budget`, kind `budget`);
-  `usage_allow_once` returns a single-use token for `chat_send`'s `allowOnce`.
-- Anthropic prompt caching (`chat/cache.rs`): at most 4 breakpoints (system prompt, end of
-  request, end of the history before the newest prompt, newest attachment); keep the 20-block
-  lookback in mind when adding blocks.
+- Rust `tokens/tracker.rs` (+ `queries.rs`): one `UsageTracker`. Ledger: monthly JSONL in
+  `<app data>/usage`, append-only, dedup by `id` (`chat:<conv>:<msg>`, CLI ids); 15-minute
+  buckets for 62 days; cost at query time (`pricing.json` with source + date, cached OpenRouter
+  prices, overrides, free providers; no price = "—"). Lock order: `cli` before `state`. CLI logs
+  are tailed from byte offsets (saved after the ledger write) and watched with notify (a missing
+  root waits on its nearest ancestor). `pty_spawn(panel)` matches CLI usage to its panel.
+- Events: ONE `usage_subscribe` Channel (`tokens/usageStore.ts`, started in bootstrap):
+  `changed { panels }` -> those panels' badges (`createPanelUsage`) + debounced summary;
+  `repriced` -> everything; `budget { status }` -> toast + `onBudgetAlert` (panels flash
+  "error"). Usage commands take the local UTC offset. Hard stop = API chats only (kind
+  `budget`); the chat keeps the send until "Allow once" (`usage_allow_once` token -> resend).
+- Chat: debounced `usage_estimate` under the prompt bar ("≈" when approximate), strip +
+  Compact at the threshold, auto-compact once per crossing, cache label per reply. Anthropic
+  caching (`chat/cache.rs`): max 4 breakpoints, mind the 20-block lookback.
 
 ## Layout roles
 
@@ -144,10 +138,9 @@ other. `layout` and the settings panel compose panel features; `app/` composes a
 - `renderer.ts` caches one ImageBitmap strip per (character, palette, scale, state). All motion
   uses the ONE loop in `animator.ts`, which runs only while something animates on screen in a
   visible document; idle/sleep are still frames. Respect `reducedMotion()`.
-- Terminal heuristic (`stateMachine.ts`, `terminal/agentActivity.ts`): prompt -> think; output ->
-  work; 2 s quiet -> done; 5 s later -> idle; exit 0 -> sleep, else error. Output within 400 ms of
-  a prompt or keys is echo. Chat: send -> think, first delta -> work, stop -> done, error -> error.
-  The prompt bar sends first; animations are decoration only.
+- Terminal heuristic (`stateMachine.ts`, `agentActivity.ts`): prompt -> think, output -> work,
+  2 s quiet -> done, 5 s -> idle, exit 0 -> sleep else error (output < 400 ms after keys = echo).
+  Chat: send -> think, delta -> work, stop -> done. The prompt bar sends first.
 
 ## Themes, i18n, settings
 
@@ -155,9 +148,9 @@ other. `layout` and the settings panel compose panel features; `app/` composes a
   hard-code colors. Overrides (text, accent, agent bold `#F5C542`, `--af-glow`): `overrides.ts`.
 - Flat dotted keys in `src/locales/en.json`; `I18nKey = keyof typeof en`; every visible string
   uses `t('key', { param })`. New keys go into **all five** locales (typecheck + tests check).
-- Rust owns `settings.json` (v6, adds `usage` and the token options in `chat`): bump `CURRENT_VERSION` + add a
-  `migrate.rs` step when the shape changes; `normalized()` repairs values; `defaults.test.ts`
-  checks the TS defaults against Rust. The frontend uses `updateSettings()` (300 ms debounce).
+- Rust owns `settings.json` (v6: `usage`, token options in `chat`): bump `CURRENT_VERSION` +
+  a `migrate.rs` step on shape changes; `normalized()` repairs values; `defaults.test.ts` checks
+  TS defaults against Rust. Frontend: `updateSettings()` (300 ms debounce).
 
 ## Commands
 
@@ -175,7 +168,7 @@ cargo build    # in src-tauri: compile check, no bundling
 3. [x] Workspace file tree (notify + ignore) + CodeMirror 6 viewer/editor
 4. [x] Pixel character system (15 characters, 16x16 JSON sprites scaled, typewriter speech bar)
 5. [x] AI provider APIs (Anthropic + OpenAI-compatible, keychain keys) + API chat panels
-6. [ ] Token & cost tracking (6A backend + IPC done; 6B: usage dashboard, badges, budgets UI)
+6. [x] Token & cost tracking (ledger, CLI log readers, prices, budgets, dashboard, Compact)
 7. [ ] API agent tools + default system prompt
 8. [ ] Agent installer wizard (per-AI formats/paths)
 9. [ ] Community agent library from GitHub

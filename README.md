@@ -6,16 +6,17 @@ side in a VS Code-style dockable layout, watched over by cute pixel-art agent ch
 AgentFlow is a lightweight desktop app (Tauri 2 + Rust + SolidJS) for Windows, macOS and Linux.
 The goals are low RAM, a fast UI, a clean codebase, and a fun look.
 
-> **Status:** early development. Phases 1–5 of 9 are done: app shell, themes, languages,
+> **Status:** early development. Phases 1–6 of 11 are done: app shell, themes, languages,
 > dockable layout, real terminal panels, the workspace file tree, a code editor, pixel
-> characters with a prompt bar, and API chat agents. See the [roadmap](#roadmap).
+> characters with a prompt bar, API chat agents, and token and cost tracking. See the
+> [roadmap](#roadmap).
 
 ![AgentFlow screenshot](docs/screenshot.png)
 <!-- Phase 5: an API chat panel with its character and prompt bar; open panels and saved chats in the Agents view. -->
 
 ## Features
 
-Available now (phases 1–5):
+Available now (phases 1–6):
 
 - VS Code-style shell: activity bar, resizable and collapsible sidebar, dock area, status bar
 - Dockable panels (split, tab, drag, close, re-open from **+**), and the layout persists across restarts
@@ -52,12 +53,25 @@ Available now (phases 1–5):
   Token usage is recorded with every reply
 - API keys live only in your OS keychain, never in settings files or logs; the app only ever
   shows their last 4 characters
+- Token and cost tracking for API chats **and** your agent CLIs: Claude Code, Codex and Gemini
+  CLI usage is read from their own session logs (read-only), so it counts even outside
+  AgentFlow. A Usage view and dashboard panel show today / 7 / 30 days, a daily chart by
+  source, breakdowns by model, workspace and agent panel, and what prompt caching saved
+- Every agent panel shows its session tokens and cost next to its character; today's total is
+  in the status bar. Prices ship with their source and date; edit them, add custom models,
+  mark a provider free, or label CLI costs "API-equivalent" if a subscription pays for them
+- Daily and monthly budgets (overall and per provider) warn at 80% and 100%; an optional hard
+  stop pauses API chats until you allow a send once (CLI agents can only be warned)
+- Chats show a live pre-send estimate, cache hits, and a context-limit warning with
+  **Compact**: older turns become a summary written by a model you choose (or automatically)
+
+![The usage dashboard](docs/usage.png)
 
 ![The 15 characters](docs/characters.png)
 
 Planned:
 
-- Token and cost tracking (a dashboard over the recorded usage)
+- Tools for API agents and a default system prompt
 - Agent installer wizard and a community agent library
 
 ## Roadmap
@@ -69,10 +83,12 @@ Planned:
 | 3     | Workspace file tree (notify + ignore) + CodeMirror 6 viewer/editor     | Done   |
 | 4     | Pixel character system (15 characters, 16x16 JSON sprites, speech bar) | Done   |
 | 5     | AI provider APIs + API chat panels (keys in the OS keychain)           | Done   |
-| 6     | Token and cost tracking                                                |        |
-| 7     | Agent installer wizard (per-AI formats and paths)                      |        |
-| 8     | Community agent library from GitHub                                    |        |
-| 9     | Cross-platform builds + CI                                             |        |
+| 6     | Token and cost tracking (API chats + agent CLI logs, budgets)          | Done   |
+| 7     | API agent tools + default system prompt                                |        |
+| 8     | Agent installer wizard (per-AI formats and paths)                      |        |
+| 9     | Community agent library from GitHub                                    |        |
+| 10    | UI polish                                                              |        |
+| 11    | Cross-platform builds + CI                                             |        |
 
 ## Keyboard shortcuts
 
