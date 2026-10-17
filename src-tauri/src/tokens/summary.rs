@@ -1,7 +1,7 @@
 //! Dashboard queries over the aggregator: totals (today / 7d / 30d), a daily series and
 //! breakdowns by provider/model, workspace and panel; panel session totals; budget spend.
 
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 
 use serde::Serialize;
 
@@ -16,6 +16,16 @@ pub use super::totals::Totals;
 pub struct Day {
     /// `YYYY-MM-DD` (local).
     pub date: String,
+    #[serde(flatten)]
+    pub totals: Totals,
+    /// The same day split by source (sources without usage are left out), for the chart.
+    pub sources: Vec<SourceTotals>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SourceTotals {
+    pub source: Source,
     #[serde(flatten)]
     pub totals: Totals,
 }
@@ -63,6 +73,7 @@ pub fn summarize(agg: &Aggregator, book: &PriceBook, now_ms: u64, offset: i32) -
     let today = day_index(now_ms, offset);
     let first = today - (DAYS - 1);
     let mut days: Vec<Totals> = vec![Totals::default(); DAYS as usize];
+    let mut by_source: Vec<BTreeMap<Source, Totals>> = vec![BTreeMap::new(); DAYS as usize];
     let mut models: HashMap<GroupKey, Totals> = HashMap::new();
     let mut workspaces: HashMap<GroupKey, Totals> = HashMap::new();
     let mut panels: HashMap<GroupKey, Totals> = HashMap::new();
@@ -70,6 +81,10 @@ pub fn summarize(agg: &Aggregator, book: &PriceBook, now_ms: u64, offset: i32) -
     agg.visit(day_start(first, offset), now_ms + 1, |at, key, counts| {
         let index = (day_index(at, offset) - first).clamp(0, DAYS - 1) as usize;
         days[index].add(key, counts, book);
+        by_source[index]
+            .entry(key.source)
+            .or_default()
+            .add(key, counts, book);
         let group = |map: &mut HashMap<GroupKey, Totals>, name: &str| {
             map.entry((key.source, key.provider.to_string(), name.to_owned()))
                 .or_default()
@@ -99,9 +114,14 @@ pub fn summarize(agg: &Aggregator, book: &PriceBook, now_ms: u64, offset: i32) -
         days: days
             .iter()
             .enumerate()
-            .map(|(i, totals)| Day {
+            .zip(by_source)
+            .map(|((i, totals), sources)| Day {
                 date: date_label(first + i as i64),
                 totals: *totals,
+                sources: sources
+                    .into_iter()
+                    .map(|(source, totals)| SourceTotals { source, totals })
+                    .collect(),
             })
             .collect(),
         models: sorted(models),

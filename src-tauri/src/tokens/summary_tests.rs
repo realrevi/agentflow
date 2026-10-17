@@ -50,6 +50,14 @@ fn totals_series_and_breakdowns() {
     assert_eq!(summary.days.len(), 30);
     assert_eq!(summary.days[29].date, "2026-10-17");
     assert!(close(summary.days[27].totals.cost, 15.0));
+    let sources: Vec<Source> = summary.days[27].sources.iter().map(|s| s.source).collect();
+    assert_eq!(
+        sources,
+        [Source::ClaudeCode],
+        "days split by source for the chart"
+    );
+    assert_eq!(summary.days[29].sources.len(), 1, "today: API only");
+    assert!(summary.days[0].sources.is_empty());
     assert_eq!(summary.models[0].key, "claude-sonnet-4-6");
     assert_eq!(
         summary.models[0].source,
