@@ -46,6 +46,8 @@ impl Settings {
         normalize_terminal(&mut self.terminal);
         normalize_characters(&mut self.characters);
         self.providers = normalize_providers(std::mem::take(&mut self.providers));
+        self.chat = std::mem::take(&mut self.chat).normalized();
+        self.usage = std::mem::take(&mut self.usage).normalized();
 
         if !self
             .layout
@@ -104,7 +106,7 @@ mod tests {
     use super::*;
     use crate::settings::{
         AgentBold, Appearance, CharacterSettings, ChatSettings, FilesSettings, ProviderEntry,
-        UiState,
+        UiState, UsageSettings,
     };
     use serde_json::json;
 
@@ -137,6 +139,7 @@ mod tests {
                 ..ProviderEntry::default()
             }],
             chat: ChatSettings::default(),
+            usage: UsageSettings::default(),
             layout: Some(json!([1, 2, 3])),
         };
 

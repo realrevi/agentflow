@@ -7,7 +7,7 @@ use crate::error::AppResult;
 
 /// `STEPS[n]` upgrades a document from version `n` to `n + 1`.
 const STEPS: [fn(&mut Map<String, Value>); CURRENT_VERSION as usize] =
-    [v0_to_v1, v1_to_v2, v2_to_v3, v3_to_v4, v4_to_v5];
+    [v0_to_v1, v1_to_v2, v2_to_v3, v3_to_v4, v4_to_v5, v5_to_v6];
 
 /// Migrates and deserializes a raw settings document. Missing fields get defaults,
 /// unknown fields are dropped, and invalid values are repaired by `normalized()`.
@@ -65,6 +65,14 @@ fn v4_to_v5(doc: &mut Map<String, Value>) {
     doc.insert("version".into(), Value::from(5));
     doc.entry("providers")
         .or_insert_with(|| Value::Array(Vec::new()));
+}
+
+/// v6 adds usage tracking (prices, budgets, CLI readers) and token management options to
+/// `chat`; defaults fill in on load and the existing `chat.smoothReveal` is kept.
+fn v5_to_v6(doc: &mut Map<String, Value>) {
+    doc.insert("version".into(), Value::from(6));
+    doc.entry("usage")
+        .or_insert_with(|| Value::Object(Map::new()));
 }
 
 #[cfg(test)]
@@ -166,7 +174,7 @@ mod tests {
     fn v4_document_gains_providers_and_chat_settings() {
         let raw = json!({ "version": 4, "characters": { "scale": 4 }, "layout": { "version": 2 } });
         let settings = migrate(raw).expect("migrate");
-        assert_eq!(settings.version, 5);
+        assert_eq!(settings.version, CURRENT_VERSION);
         assert_eq!(settings.characters.scale, 4);
         assert!(settings.providers.is_empty());
         assert!(settings.chat.smooth_reveal);
@@ -189,6 +197,55 @@ mod tests {
         assert_eq!(settings.providers[0].preset, "deepseek");
         assert_eq!(settings.providers[0].temperature, Some(0.5));
         assert!(!settings.chat.smooth_reveal);
+        let again = migrate(serde_json::to_value(&settings).expect("json")).expect("migrate");
+        assert_eq!(again, settings);
+    }
+
+    #[test]
+    fn v5_document_gains_usage_and_token_settings() {
+        let raw = json!({
+            "version": 5,
+            "chat": { "smoothReveal": false },
+            "ui": { "activeView": "explorer" },
+            "providers": [{ "id": "p1", "kind": "anthropic", "preset": "anthropic" }]
+        });
+        let settings = migrate(raw).expect("migrate");
+        assert_eq!(settings.version, 6);
+        assert!(
+            !settings.chat.smooth_reveal,
+            "existing chat options are kept"
+        );
+        assert!(settings.chat.prompt_caching);
+        assert_eq!(settings.chat.default_context_window, 128_000);
+        assert_eq!(settings.chat.compact_threshold, 0.7);
+        assert!(!settings.chat.auto_compact);
+        assert!(settings.usage.track_cli);
+        assert!(!settings.usage.cli_subscription);
+        assert!(settings.usage.prices.is_empty());
+        assert_eq!(settings.usage.budgets.daily, None);
+        assert!(!settings.usage.budgets.hard_stop);
+        assert_eq!(settings.ui.active_view, "explorer");
+        assert_eq!(settings.providers.len(), 1);
+    }
+
+    #[test]
+    fn v6_usage_round_trips() {
+        let raw = json!({
+            "version": 6,
+            "ui": { "activeView": "usage" },
+            "usage": {
+                "cliSubscription": true,
+                "freeProviders": ["p1"],
+                "prices": [{ "model": "x", "input": 1.0, "output": 2.0 }],
+                "budgets": { "daily": 5.0, "hardStop": true,
+                             "providers": [{ "provider": "codex", "monthly": 30.0 }] }
+            }
+        });
+        let settings = migrate(raw).expect("migrate");
+        assert_eq!(settings.ui.active_view, "usage");
+        assert!(settings.usage.cli_subscription);
+        assert_eq!(settings.usage.prices[0].output, 2.0);
+        assert_eq!(settings.usage.budgets.providers[0].monthly, Some(30.0));
         let again = migrate(serde_json::to_value(&settings).expect("json")).expect("migrate");
         assert_eq!(again, settings);
     }
