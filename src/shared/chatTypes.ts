@@ -19,9 +19,28 @@ export interface ProviderEntry {
   temperature: number | null;
 }
 
+export interface ModelWindow {
+  model: string;
+  tokens: number;
+}
+
 export interface ChatSettings {
   /** Streamed text is revealed smoothly; off = shown as it arrives. */
   smoothReveal: boolean;
+  /** Anthropic: cache breakpoints on the system prompt, attachments and the stable prefix. */
+  promptCaching: boolean;
+  /** Used when neither the models endpoint nor `contextWindows` knows the model. */
+  defaultContextWindow: number;
+  contextWindows: ModelWindow[];
+  /** Share of the context window at which the prompt bar warns (and auto-compact runs). */
+  compactThreshold: number;
+  /** Compact keeps this many recent turns verbatim. */
+  compactKeepTurns: number;
+  /** `null` = the chat's own provider. */
+  compactProviderId: string | null;
+  /** Empty = the chat's own model. */
+  compactModel: string;
+  autoCompact: boolean;
 }
 
 /** All the frontend ever learns about a stored API key. */
@@ -33,6 +52,8 @@ export interface KeyStatus {
 export interface ModelInfo {
   id: string;
   name: string | null;
+  /** Max input tokens, when the models endpoint says. */
+  contextWindow: number | null;
 }
 
 export interface ConnectionTest {
@@ -99,6 +120,17 @@ export interface Conversation {
   createdAt: number;
   updatedAt: number;
   messages: ChatMessage[];
+  /** Set by Compact: requests send the summary instead of the messages up to `through`. */
+  compaction: Compaction | null;
+}
+
+export interface Compaction {
+  summary: string;
+  /** Id of the last message the summary covers. */
+  through: string;
+  at: number;
+  providerId: string;
+  model: string;
 }
 
 export interface ConversationPatch {
@@ -141,6 +173,10 @@ export interface ChatSendRequest {
   /** `null` = retry: resend the last user message (a failed reply after it is dropped). */
   text: string | null;
   attachments: Attachment[];
+  /** The chat panel (per-panel usage). */
+  panel: string | null;
+  /** A token from `usage_allow_once`: passes a hard budget stop once. */
+  allowOnce: string | null;
 }
 
 export interface ChatStarted {

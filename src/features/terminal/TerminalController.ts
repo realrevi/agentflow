@@ -39,6 +39,8 @@ interface Launch {
 export interface ControllerOptions {
   config: TerminalConfig;
   activity?: ActivityHooks;
+  /** The dock panel id (agent CLI usage is matched to it). */
+  panelId: string;
   /** Used when the config has no folder: the current workspace (null = home). */
   defaultCwd: () => string | null;
   settings: TerminalSettings;
@@ -162,6 +164,7 @@ export class TerminalController {
           cwd: config.cwd ?? this.options.defaultCwd(),
           cols: this.term.cols,
           rows: this.term.rows,
+          panel: this.options.panelId,
         },
         (message) => this.onMessage(launch, decoder, message),
       );

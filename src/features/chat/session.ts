@@ -158,6 +158,8 @@ export function createChatSession(options: ChatSessionOptions) {
         conversationId: options.conversationId,
         text,
         attachments,
+        panel: options.panelId,
+        allowOnce: null,
       };
       const { started, detach: stopListening } = await ipc.chatSend(request, onEvent);
       if (!ending) {

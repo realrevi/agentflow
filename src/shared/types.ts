@@ -1,10 +1,12 @@
 // Types shared with the Rust backend. Keep in sync with src-tauri/src/{settings,themes,error}.
 import type { ChatSettings, ProviderEntry } from './chatTypes';
+import type { UsageSettings } from './usageTypes';
 
 export type * from './chatTypes';
+export type * from './usageTypes';
 
 export type Locale = 'en' | 'tr' | 'de' | 'zh' | 'ru';
-export type SidebarView = 'agents' | 'explorer' | 'characters';
+export type SidebarView = 'agents' | 'explorer' | 'characters' | 'usage';
 export type ThemeKind = 'dark' | 'light';
 
 export interface AgentBoldSettings {
@@ -75,6 +77,8 @@ export interface Settings {
   characters: CharacterSettings;
   providers: ProviderEntry[];
   chat: ChatSettings;
+  /** Token & cost tracking: CLI readers, prices, budgets. */
+  usage: UsageSettings;
   layout: SerializedLayout | null;
 }
 
@@ -102,6 +106,8 @@ export type PtySpawnRequest = {
   cwd: string | null;
   cols: number;
   rows: number;
+  /** The panel id: agent CLI usage is matched to it (null = not tracked per panel). */
+  panel: string | null;
 };
 
 export interface SessionInfo {
@@ -190,4 +196,5 @@ export type AppErrorKind =
   | 'conflict'
   | 'tooLarge'
   | 'provider'
+  | 'budget'
   | 'internal';

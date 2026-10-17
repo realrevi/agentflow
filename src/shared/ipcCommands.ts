@@ -2,21 +2,30 @@
 // #[tauri::command] in src-tauri/src/commands.
 import type { Channel } from '@tauri-apps/api/core';
 import type {
+  AllowOnceGrant,
+  BudgetStatus,
   ChatEvent,
   ChatSendRequest,
   ChatStarted,
   CliStatus,
+  CliSupport,
+  CompactRequest,
+  CompactResult,
   ConnectionTest,
   Conversation,
   ConversationPatch,
   ConversationSummary,
   EntryKind,
+  Estimate,
+  EstimateRequest,
   FileContent,
   FileStat,
   FsChanges,
   FsEntry,
   KeyStatus,
   ModelInfo,
+  PriceList,
+  PriceOverride,
   PromptEntry,
   PtyMessage,
   PtySpawnRequest,
@@ -25,10 +34,15 @@ import type {
   Settings,
   ThemeData,
   ThemeSummary,
+  Totals,
+  UsageEvent,
+  UsageSummary,
 } from './types';
 
 type Workspace = { workspace: string | null };
 type ProviderId = { providerId: string };
+/** Minutes east of UTC (`-new Date().getTimezoneOffset()`): local days and months. */
+type Offset = { offsetMinutes: number };
 
 export interface Commands {
   get_settings: { args: Record<string, never>; result: Settings };
@@ -79,9 +93,19 @@ export interface Commands {
     result: ChatStarted;
   };
   chat_cancel: { args: { requestId: number }; result: boolean };
+  chat_compact: { args: { request: CompactRequest }; result: CompactResult };
   provider_key_status: { args: ProviderId; result: KeyStatus };
   provider_set_key: { args: ProviderId & { key: string }; result: KeyStatus };
   provider_delete_key: { args: ProviderId; result: null };
   provider_models: { args: ProviderId; result: ModelInfo[] };
   provider_test: { args: ProviderId; result: ConnectionTest };
+  usage_subscribe: { args: Offset & { onEvent: Channel<UsageEvent> }; result: null };
+  usage_summary: { args: Offset; result: UsageSummary };
+  usage_panel_totals: { args: { panel: string; since: number }; result: Totals };
+  usage_estimate: { args: { request: EstimateRequest }; result: Estimate };
+  usage_budgets: { args: Offset; result: BudgetStatus[] };
+  usage_allow_once: { args: ProviderId; result: AllowOnceGrant };
+  usage_prices: { args: Record<string, never>; result: PriceList };
+  usage_set_prices: { args: { prices: PriceOverride[] }; result: Settings };
+  usage_cli_status: { args: Record<string, never>; result: CliSupport[] };
 }

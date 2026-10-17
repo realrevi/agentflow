@@ -3,7 +3,7 @@
 import { createStore, produce, unwrap } from 'solid-js/store';
 import { debounce } from '../../shared/debounce';
 import { ipc } from '../../shared/ipc';
-import type { SerializedLayout, Settings } from '../../shared/types';
+import type { PriceOverride, SerializedLayout, Settings } from '../../shared/types';
 import { reportError } from '../i18n';
 import { DEFAULT_SETTINGS } from './defaults';
 
@@ -41,6 +41,16 @@ export function savedLayout(): SerializedLayout | null {
 export function saveLayout(next: SerializedLayout | null): void {
   layout = next;
   persist();
+}
+
+/**
+ * Replaces the user's price overrides. The backend stores them (and reprices at once), so
+ * pending edits are flushed first and the store adopts what was saved.
+ */
+export async function setPriceOverrides(prices: PriceOverride[]): Promise<void> {
+  await flushSettings();
+  const { layout: _layout, ...saved } = await ipc.usageSetPrices(prices);
+  setSettings(saved);
 }
 
 /** Writes any pending change right away; resolves once the last save finished. */

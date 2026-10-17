@@ -57,6 +57,7 @@ export default function TerminalPanel(props: TerminalPanelProps) {
   const agentUi = hasAgentUi(props.config.kind);
   const activity = new AgentActivity(props.panelId);
   const controller = new TerminalController({
+    panelId: props.panelId,
     config: props.config,
     activity: {
       start: () => activity.start(),
