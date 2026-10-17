@@ -2,6 +2,16 @@
 // #[tauri::command] in src-tauri/src/commands.
 import type { Channel } from '@tauri-apps/api/core';
 import type {
+  AgentProfile,
+  AgentTemplate,
+  Confirmations,
+  Detection,
+  GenerateRequest,
+  GenerateResult,
+  InstallPlan,
+  InstallRequest,
+  InstallResult,
+  InstalledAgent,
   AllowOnceGrant,
   CheckpointSummary,
   PermissionAnswer,
@@ -43,6 +53,8 @@ import type {
 } from './types';
 
 type Workspace = { workspace: string | null };
+/** The installer's commands take the workspace folder as `workspacePath`. */
+type WorkspacePath = { workspacePath: string | null };
 type ProviderId = { providerId: string };
 /** Minutes east of UTC (`-new Date().getTimezoneOffset()`): local days and months. */
 type Offset = { offsetMinutes: number };
@@ -106,6 +118,28 @@ export interface Commands {
     args: Workspace & { conversationId: string; turn: string };
     result: RestoreReport;
   };
+  agents_starters: { args: Record<string, never>; result: AgentTemplate[] };
+  agents_validate: { args: { template: unknown }; result: string[] };
+  agents_template_read: { args: { path: string }; result: AgentTemplate };
+  agents_template_write: { args: { path: string; template: AgentTemplate }; result: void };
+  agents_detect: { args: WorkspacePath; result: Detection };
+  agents_plan: { args: WorkspacePath & { request: InstallRequest }; result: InstallPlan };
+  agents_install: {
+    args: WorkspacePath & { request: InstallRequest; confirm: Confirmations };
+    result: InstallResult;
+  };
+  agents_installed: { args: WorkspacePath; result: InstalledAgent[] };
+  agents_uninstall_plan: { args: WorkspacePath & { id: string }; result: InstallPlan };
+  agents_uninstall: {
+    args: WorkspacePath & { id: string; confirm: Confirmations; keep: string[] };
+    result: InstallPlan;
+  };
+  agents_profiles: { args: WorkspacePath; result: AgentProfile[] };
+  agents_profile_chat: {
+    args: WorkspacePath & { profileId: string; providerId: string; model: string };
+    result: Conversation;
+  };
+  agents_generate: { args: { request: GenerateRequest }; result: GenerateResult };
   provider_key_status: { args: ProviderId; result: KeyStatus };
   provider_set_key: { args: ProviderId & { key: string }; result: KeyStatus };
   provider_delete_key: { args: ProviderId; result: null };
