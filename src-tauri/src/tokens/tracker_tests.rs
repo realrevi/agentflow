@@ -84,6 +84,27 @@ fn backfill_imports_stored_replies_once() {
 }
 
 #[test]
+fn openrouter_prices_survive_a_restart() {
+    let dir = TestDir::new("usage-openrouter");
+    let usage = tracker(&dir);
+    let mut model = crate::providers::ModelInfo::named("openai/gpt-x", None);
+    model.pricing = Some(serde_json::json!({ "prompt": "0.000002", "completion": "0.00001" }));
+    usage.note_models("or", "openrouter", std::slice::from_ref(&model));
+    assert!(usage.price_for("or", "openai/gpt-x").is_some());
+
+    let restarted = tracker(&dir);
+    assert!(
+        restarted.price_for("or", "openai/gpt-x").is_none(),
+        "not loaded yet"
+    );
+    restarted.start(&Settings::default(), &dir.path().join("conversations"));
+    let price = restarted
+        .price_for("or", "openai/gpt-x")
+        .expect("cached price");
+    assert!((price.input - 2.0).abs() < 1e-9 && (price.output - 10.0).abs() < 1e-9);
+}
+
+#[test]
 fn records_are_deduplicated_and_announced_per_panel() {
     let dir = TestDir::new("usage-record");
     let usage = tracker(&dir);

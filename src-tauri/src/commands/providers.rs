@@ -56,8 +56,13 @@ pub async fn provider_models(
         .list_models(&http)
         .await
         .map_err(|err| AppError::Provider(err.redacted(secret.as_deref()).message))?;
-    tracker.note_models(&entry.id, &entry.preset, &models);
-    Ok(models)
+    // May write the OpenRouter price cache: off the async runtime.
+    let tracker = tracker.inner().clone();
+    run_blocking(move || {
+        tracker.note_models(&entry.id, &entry.preset, &models);
+        Ok(models)
+    })
+    .await
 }
 
 #[derive(Debug, Serialize)]

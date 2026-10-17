@@ -14,6 +14,7 @@ use super::cli::{self, CliKind, CliReaders, CliRoots, LineUsage};
 use super::events::{UsageEvent, UsageSink};
 use super::ledger::LedgerFiles;
 use super::panels::{PanelRegistry, PanelSession};
+use super::price_cache;
 use super::pricing::PriceBook;
 use super::record::UsageRecord;
 use super::time::month_key;
@@ -29,6 +30,8 @@ pub struct UsageTracker {
 }
 
 pub(super) struct Inner {
+    /// `<app data>/usage`
+    pub dir: PathBuf,
     pub ledger: LedgerFiles,
     pub state: Mutex<State>,
     pub cli: Mutex<CliReaders>,
@@ -67,7 +70,8 @@ impl UsageTracker {
         let cli = CliReaders::new(roots, dir.join(OFFSETS_FILE));
         Self {
             inner: Arc::new(Inner {
-                ledger: LedgerFiles::new(dir),
+                ledger: LedgerFiles::new(dir.clone()),
+                dir,
                 state: Mutex::new(state),
                 cli: Mutex::new(cli),
             }),
@@ -86,6 +90,9 @@ impl UsageTracker {
             }
             state.agg.prune(now);
             state.last_prune = now;
+            for (model, price) in price_cache::load(&self.inner.dir.join(price_cache::FILE)) {
+                state.book.set_dynamic(&model, price);
+            }
             for workspace in settings
                 .current_workspace
                 .iter()

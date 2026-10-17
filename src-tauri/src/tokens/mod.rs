@@ -10,6 +10,7 @@ mod estimate;
 mod events;
 mod ledger;
 mod panels;
+mod price_cache;
 mod pricing;
 mod queries;
 mod record;

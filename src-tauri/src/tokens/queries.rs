@@ -1,12 +1,15 @@
 //! What the commands ask the tracker: dashboard totals, panel badges, budgets (with the hard
 //! stop and "allow once"), prices, context windows and the CLI readers' status.
 
+use std::collections::BTreeMap;
+
 use serde::Serialize;
 
 use super::allow::AllowOnceGrant;
 use super::budget::{self, BudgetStatus, Period};
 use super::cli::CliKind;
 use super::events::UsageEvent;
+use super::price_cache;
 use super::pricing::{openrouter_price, Price, PriceEntry};
 use super::record::Source;
 use super::summary::{day_start, panel_totals, spent, summarize, Summary, Totals};
@@ -156,7 +159,7 @@ impl UsageTracker {
     /// A provider's model list: context windows, and OpenRouter's per-token prices.
     pub fn note_models(&self, provider_id: &str, preset: &str, models: &[ModelInfo]) {
         let mut repriced = false;
-        {
+        let cached = {
             let mut state = lock(&self.inner.state);
             for model in models {
                 if let Some(window) = model.context_window {
@@ -171,8 +174,15 @@ impl UsageTracker {
                     repriced |= state.book.set_dynamic(&model.id, price);
                 }
             }
-        }
+            let all: BTreeMap<String, Price> = state
+                .book
+                .dynamic()
+                .map(|(model, price)| (model.clone(), *price))
+                .collect();
+            all
+        };
         if repriced {
+            price_cache::save(&self.inner.dir.join(price_cache::FILE), &cached);
             self.emit(UsageEvent::Repriced);
         }
     }
