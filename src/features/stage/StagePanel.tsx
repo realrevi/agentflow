@@ -15,46 +15,38 @@ import {
   untrack,
 } from 'solid-js';
 import { activityOf, agentState, glowing } from '../agentui';
-import { createPromptHistory, HistoryPopover } from '../agentui/components';
-import { characterById, characters, loadCharacters, reducedMotion, spriteFor } from '../characters';
-import { frameAt, playbackOf } from '../characters/playback';
-import type { SpriteState } from '../characters/types';
+import { characterById, characters, loadCharacters, reducedMotion } from '../characters';
 import { t } from '../i18n';
 import { settings } from '../settings/settingsStore';
 import { themeVars } from '../theme/themeStore';
 import { onHandoffSent, workstreamOf, workstreams } from '../workstreams/store';
 import type { StageHooks } from './hooks';
+import { createFrames } from './frame';
 import { autoLayout, cellAt, cellCenter, rowsOf, unitsFor, withPlaced } from './layout';
+import { createStagePointer, type Drag, type Hover } from './pointer';
 import { PULSE_MS, StageMotion } from './motion';
 import { clearCells, placeCell, placedCells } from './positions';
-import { bubbleView, distanceToSegment, needsFrames, type Point } from './scene';
+import { bubbleView, type Point } from './scene';
+import { StageHistory } from './StageHistory';
 import { StageOverlay } from './StageOverlay';
-import { StageRenderer, type CharDraw, type FrameInput, type LineDraw } from './StageRenderer';
+import { StageRenderer } from './StageRenderer';
 
 const PAD = 24;
 const TOP = 40;
-const RECEIVE_MS = 700;
-const DRAG_PX = 4;
 
 export default function StagePanel(props: { api: DockviewPanelApi; hooks: StageHooks }) {
   let host: HTMLDivElement | undefined;
   let canvas: HTMLCanvasElement | undefined;
   let renderer: StageRenderer | undefined;
   const motion = new StageMotion();
-  const since = new Map<string, { state: SpriteState; at: number }>();
   const [size, setSize] = createSignal({ w: 0, h: 0 });
   const [visible, setVisible] = createSignal(props.api.isVisible);
   const [focused, setFocused] = createSignal(document.hasFocus());
   const [left, setLeft] = createSignal(props.hooks.isLeft());
   const [now, setNow] = createSignal(Date.now());
   const [tick, setTick] = createSignal(0);
-  const [hover, setHover] = createSignal<{ panel: string; title: string; at: Point } | null>(null);
-  const [drag, setDrag] = createSignal<{
-    panel: string;
-    start: Point;
-    at: Point;
-    moved: boolean;
-  } | null>(null);
+  const [hover, setHover] = createSignal<Hover | null>(null);
+  const [drag, setDrag] = createSignal<Drag | null>(null);
   const [history, setHistory] = createSignal<{ panel: string; at: Point } | null>(null);
 
   const scale = () => settings.workstreams.stageScale;
@@ -104,92 +96,24 @@ export default function StagePanel(props: { api: DockviewPanelApi; hooks: StageH
     return { bg: css('--af-panel-bg', '#1e1e1e'), grid: css('--af-border', '#3a3a3a'), glow };
   });
 
-  const spriteState = (panel: string, at: number): SpriteState => {
-    const received = motion.receiving.get(panel);
-    if (received !== undefined && at - received < RECEIVE_MS) return 'receive';
-    if (received !== undefined) motion.receiving.delete(panel);
-    return spriteFor(agentState(panel));
-  };
-  const animating = (char: CharDraw, at: number) => {
-    const playback = playbackOf(char.state, animate());
-    if (playback.kind === 'still') return false;
-    const frames = char.sheet.states[char.state].length;
-    return frameAt(playback, frames, at - char.since, char.sheet.frameMs) !== null;
-  };
-
-  function frame(at: number): FrameInput {
-    const chars: CharDraw[] = [];
-    for (const info of agents()) {
-      const sheet = info.character ? characterById(info.character.id) : undefined;
-      const point = pointOf(info.id);
-      if (!info.character || !sheet || !point) continue;
-      const state = spriteState(info.id, at);
-      const started = since.get(info.id)?.state === state ? (since.get(info.id)?.at ?? at) : at;
-      since.set(info.id, { state, at: started });
-      chars.push({
-        panel: info.id,
-        sheet,
-        palette: info.character.palette,
-        state,
-        since: started,
-        at: point,
-        glow: glowing(info.id),
-        aura: motion.aura(info.id, at),
-      });
-    }
-    const lines: LineDraw[] = [];
-    for (const ws of workstreams()) {
-      const top = pointOf(ws.manager);
-      for (const worker of ws.workers) {
-        const bottom = pointOf(worker);
-        if (!top || !bottom) continue;
-        lines.push({
-          from: { x: top.x, y: top.y + charSize() / 2 },
-          to: { x: bottom.x, y: bottom.y - charSize() / 2 },
-          color: ws.color,
-          heat: motion.heat(ws.manager, worker, at),
-        });
-      }
-    }
-    const packets = motion.packets(pointOf, at);
-    for (const ws of workstreams()) {
-      const sender = ws.pending ? pointOf(ws.pending.from) : undefined;
-      if (sender)
-        packets.push({
-          at: StageMotion.bounce(sender, charSize() * 0.8, at, animate()),
-          color: ws.color,
-        });
-    }
-    return {
-      scale: scale(),
-      speed: settings.characters.speed,
-      animate: animate(),
-      now: at,
-      chars,
-      lines,
-      packets,
-      colors: colors(),
-    };
-  }
+  const frames = createFrames({
+    agents,
+    pointOf,
+    charSize,
+    scale,
+    speed: () => settings.characters.speed,
+    animate,
+    colors,
+    motion,
+  });
 
   /** Draws one frame; true while something still moves. */
   function draw(at: number): boolean {
     if (!renderer || !visible()) return false;
     motion.advance(at);
-    const current = frame(at);
+    const current = frames.frame(at);
     renderer.draw(current);
-    const pending = workstreams().filter((ws) => ws.pending).length;
-    return (
-      focused() &&
-      needsFrames({
-        animate: animate(),
-        animatedCharacters: current.chars.filter((c) => animating(c, at)).length,
-        packets: current.packets.length - pending,
-        pulses: motion.busy,
-        pending,
-        glows: current.chars.filter((c) => c.glow).length,
-      })
-    );
+    return focused() && frames.moving(current, at);
   }
 
   // Redraw on any change; start the loop only when something moves.
@@ -234,86 +158,20 @@ export default function StagePanel(props: { api: DockviewPanelApi; hooks: StageH
     }),
   );
 
-  const hit = (x: number, y: number): string | null => {
-    const half = charSize() / 2 + 4;
-    for (const info of agents()) {
-      const at = pointOf(info.id);
-      if (at && Math.abs(at.x - x) <= half && Math.abs(at.y - y) <= half) return info.id;
-    }
-    return null;
-  };
-  const hitLine = (x: number, y: number): { ws: string; pair: [string, string] } | null => {
-    for (const ws of workstreams()) {
-      const top = pointOf(ws.manager);
-      for (const worker of ws.workers) {
-        const bottom = pointOf(worker);
-        if (top && bottom && distanceToSegment({ x, y }, top, bottom) < 6) {
-          return { ws: ws.id, pair: [ws.manager, worker] };
-        }
-      }
-    }
-    return null;
-  };
-  const local = (event: PointerEvent | MouseEvent): Point => {
-    const box = canvas?.getBoundingClientRect();
-    return { x: event.clientX - (box?.left ?? 0), y: event.clientY - (box?.top ?? 0) };
-  };
-
-  const onPointerDown = (event: PointerEvent) => {
-    const at = local(event);
-    const panel = hit(at.x, at.y);
-    if (!panel) return;
-    setDrag({ panel, start: at, at, moved: false });
-    try {
-      canvas?.setPointerCapture(event.pointerId);
-    } catch {
-      // Not every input device can be captured; dragging still works inside the canvas.
-    }
-  };
-  const onPointerMove = (event: PointerEvent) => {
-    const at = local(event);
-    const dragging = drag();
-    if (dragging) {
-      const moved =
-        dragging.moved || Math.hypot(at.x - dragging.start.x, at.y - dragging.start.y) > DRAG_PX;
-      setDrag({ ...dragging, at, moved });
-      setHover(null);
-      return;
-    }
-    const panel = hit(at.x, at.y);
-    const point = panel ? pointOf(panel) : undefined;
-    setHover(
-      panel && point
-        ? { panel, title: nameOf(panel), at: { x: point.x + charSize() / 2 + 8, y: point.y } }
-        : null,
-    );
-    if (canvas) canvas.style.cursor = panel || hitLine(at.x, at.y) ? 'pointer' : 'default';
-  };
-  const onPointerUp = (event: PointerEvent) => {
-    const dragging = drag();
-    setDrag(null);
-    if (dragging?.moved) {
-      placeCell(
-        settings.currentWorkspace,
-        dragging.panel,
-        cellAt(dragging.at.x, dragging.at.y, units(), origin),
-      );
-      return;
-    }
-    if (dragging) {
-      props.hooks.focus(dragging.panel);
-      return;
-    }
-    const at = local(event);
-    const line = hitLine(at.x, at.y);
-    if (line) props.hooks.openTimeline(line.ws, line.pair);
-  };
-  const onDoubleClick = (event: MouseEvent) => {
-    const at = local(event);
-    const panel = hit(at.x, at.y);
-    const point = panel ? pointOf(panel) : undefined;
-    if (panel && point) setHistory({ panel, at: point });
-  };
+  const pointer = createStagePointer({
+    canvas: () => canvas,
+    agents: () => agents().map((a) => a.id),
+    charSize,
+    pointOf,
+    nameOf,
+    drag,
+    setDrag,
+    setHover,
+    setHistory,
+    place: (panel, at) =>
+      placeCell(settings.currentWorkspace, panel, cellAt(at.x, at.y, units(), origin)),
+    hooks: props.hooks,
+  });
 
   onMount(() => {
     void loadCharacters();
@@ -379,10 +237,10 @@ export default function StagePanel(props: { api: DockviewPanelApi; hooks: StageH
           class="af-stage-canvas"
           role="img"
           aria-label={t('panel.stage.title')}
-          onPointerDown={onPointerDown}
-          onPointerMove={onPointerMove}
-          onPointerUp={onPointerUp}
-          onDblClick={onDoubleClick}
+          onPointerDown={pointer.down}
+          onPointerMove={pointer.move}
+          onPointerUp={pointer.up}
+          onDblClick={pointer.doubleClick}
         />
         <StageOverlay
           ids={agents().map((a) => a.id)}
@@ -404,30 +262,6 @@ export default function StagePanel(props: { api: DockviewPanelApi; hooks: StageH
           )}
         </Show>
       </div>
-    </div>
-  );
-}
-
-function StageHistory(props: { panel: string; at: Point; hooks: StageHooks; onClose: () => void }) {
-  let anchor: HTMLDivElement | undefined;
-  const where = props.hooks.history(props.panel);
-  const entries = where ? createPromptHistory(where.workspace, where.key).entries : () => [];
-  return (
-    <div
-      ref={anchor}
-      class="af-stage-history"
-      style={{ left: `${props.at.x}px`, top: `${props.at.y}px` }}
-    >
-      <Show when={anchor}>
-        {(element) => (
-          <HistoryPopover
-            entries={entries()}
-            anchor={element()}
-            onPick={() => props.hooks.focus(props.panel)}
-            onClose={props.onClose}
-          />
-        )}
-      </Show>
     </div>
   );
 }

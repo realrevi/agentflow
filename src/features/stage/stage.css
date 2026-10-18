@@ -15,6 +15,15 @@
   border-bottom: 1px solid var(--af-border);
 }
 
+.af-stage-bar .af-button {
+  flex: none;
+  white-space: nowrap;
+}
+
+.af-stage-bar {
+  flex-wrap: wrap;
+}
+
 .af-stage-spacer {
   flex: 1;
 }
