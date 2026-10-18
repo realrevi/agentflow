@@ -1,19 +1,59 @@
 # AgentFlow
 
+[![CI](https://github.com/realrevi/agentflow/actions/workflows/ci.yml/badge.svg)](https://github.com/realrevi/agentflow/actions/workflows/ci.yml)
+[![Latest release](https://img.shields.io/github/v/release/realrevi/agentflow?include_prereleases&sort=semver)](https://github.com/realrevi/agentflow/releases)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
 **A multi-agent terminal and AI manager for vibe coders.** Run several AI coding agents side by
 side in a VS Code-style dockable layout, watched over by cute pixel-art agent characters.
 
 AgentFlow is a lightweight desktop app (Tauri 2 + Rust + SolidJS) for Windows, macOS and Linux.
 The goals are low RAM, a fast UI, a clean codebase, and a fun look.
 
-> **Status:** early development. Phases 1–11 of 12 are done: app shell, themes, languages,
-> dockable layout, real terminal panels, the workspace file tree, a code editor, pixel
-> characters with a prompt bar, API agents with tools, token and cost tracking, an agent
-> installer, manager–worker workstreams with the Agent Stage, the community agent library,
-> and a polished UI with a first-run guide. See the [roadmap](#roadmap).
+> **Status:** version 0.1, the first public release: all 12 roadmap phases are done (app
+> shell, themes, languages, dockable layout, terminal panels, file tree and editor, pixel
+> characters, API agents with tools, usage tracking, agent installer, workstreams with the
+> Agent Stage, community library, UI polish, and signed releases with auto-updates). See
+> the [changelog](CHANGELOG.md) and the [roadmap](#roadmap).
 
 ![AgentFlow screenshot](docs/screenshot.png)
 <!-- Phase 11: an API chat with link icons and gold agent bold; Material file icons in the Files panel. -->
+
+## Download
+
+Get the installer for your system from the
+**[latest release](https://github.com/realrevi/agentflow/releases/latest)**:
+
+| System                                               | File                                                                          |
+| ---------------------------------------------------- | ----------------------------------------------------------------------------- |
+| Windows 10 (1803+) / 11, 64-bit                      | `AgentFlow_x.y.z_x64-setup.exe` (recommended) or `.msi`                       |
+| macOS 11+ on Apple silicon (M1 and up)               | `AgentFlow_x.y.z_aarch64.dmg`                                                 |
+| macOS 11+ on Intel                                   | `AgentFlow_x.y.z_x64.dmg`                                                     |
+| Linux x86_64 (Ubuntu 22.04+, Debian 12+, Fedora 38+) | `.AppImage` (glibc 2.35+), `.deb` (Debian, Ubuntu), `.rpm` (Fedora, openSUSE) |
+
+**System requirements**
+
+- **Windows:** the Microsoft Edge WebView2 runtime (part of Windows 11 and current Windows 10;
+  the installer adds it when missing).
+- **macOS:** macOS 11 Big Sur or newer.
+- **Linux:** WebKitGTK 4.1 and a Secret Service keyring (GNOME Keyring, KWallet...) for API
+  keys. The `.deb` and `.rpm` packages pull in what they need; for the AppImage install
+  `libwebkit2gtk-4.1-0` (Debian/Ubuntu) or `webkit2gtk4.1` (Fedora) yourself.
+- The agent CLIs you want to run (Claude Code, Codex, Gemini CLI) installed and on your PATH.
+
+**Opening a build without a code signature.** Releases may not be signed with a paid
+certificate yet, so your system can warn the first time:
+
+- **Windows (SmartScreen):** "Windows protected your PC" → **More info** → **Run anyway**.
+- **macOS:** right-click (or Control-click) AgentFlow in Applications → **Open** → **Open**. On
+  newer macOS: try to open it once, then **System Settings → Privacy & Security → Open
+  Anyway**. If macOS says the app "is damaged", run `xattr -cr /Applications/AgentFlow.app`.
+- **Linux AppImage:** `chmod +x AgentFlow_*.AppImage`, then run it.
+
+**Updates.** AgentFlow looks for a new version shortly after it starts (turn this off in
+Settings → About, where you can also check by hand). It never updates on its own: a newer
+version shows a message with its notes and an **Install and restart** button. Every update is
+checked against AgentFlow's signing key before it is installed.
 
 ## Features
 
@@ -174,7 +214,7 @@ usage and budgets, files, language and layout.
 | 9     | Manager–worker workstreams + the Agent Stage                           | Done   |
 | 10    | Community agent library from GitHub                                    | Done   |
 | 11    | UI polish + first-run guide                                            | Done   |
-| 12    | Cross-platform builds + CI                                             |        |
+| 12    | Cross-platform builds + CI, releases, auto-updates                     | Done   |
 
 ## Keyboard shortcuts
 
@@ -263,6 +303,9 @@ cd ..
 pnpm tauri build --debug  # full desktop build + installers
 ```
 
+How to contribute, the commit style and how releases are made: [CONTRIBUTING.md](CONTRIBUTING.md).
+Security issues: [SECURITY.md](SECURITY.md).
+
 ## Project layout
 
 See [CLAUDE.md](CLAUDE.md) for the folder map, code rules and conventions.
@@ -270,7 +313,8 @@ See [CLAUDE.md](CLAUDE.md) for the folder map, code rules and conventions.
 ## License
 
 [MIT](LICENSE) © AgentFlow contributors. Bundled fonts are under the SIL Open Font License 1.1
-(see `src/assets/fonts/*-OFL.txt`). Icons: [Lucide](https://lucide.dev) (ISC),
+(see `src/assets/fonts/*-OFL.txt`). All third-party licenses: [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)
+(also in the app: Settings → About → Third-party licenses). Icons: [Lucide](https://lucide.dev) (ISC),
 [Material Icon Theme](https://github.com/material-extensions/vscode-material-icon-theme) (MIT) and
 [Simple Icons](https://simpleicons.org) (CC0); licenses in `src/assets/icons/` and
 `src/shared/ui/file-icons/`.

@@ -39,6 +39,7 @@
     "shortDescription": "Multi-agent terminal and AI manager",
     "license": "MIT",
     "createUpdaterArtifacts": true,
+    "macOS": { "minimumSystemVersion": "11.0" },
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
