@@ -1,0 +1,67 @@
+/*
+ * Design tokens: the one source of truth for spacing, type, radii, borders, elevation and
+ * motion. Colors come from the theme (--af-* set by features/theme at runtime; base.css
+ * holds the first-paint defaults). Never hard-code these values in feature CSS.
+ */
+:root {
+  /* Spacing: a 4 px scale. */
+  --af-space-0: 2px;
+  --af-space-1: 4px;
+  --af-space-2: 8px;
+  --af-space-3: 12px;
+  --af-space-4: 16px;
+  --af-space-5: 20px;
+  --af-space-6: 24px;
+  --af-space-8: 32px;
+
+  /* Type: Inter for the interface, JetBrains Mono for code and terminals, Pixelify Sans
+     only for small accents (character names, a few section titles). */
+  --af-font-ui:
+    'Inter', system-ui, -apple-system, 'Segoe UI', 'Noto Sans', 'PingFang SC', 'Microsoft YaHei',
+    sans-serif;
+  --af-font-mono: 'JetBrains Mono', ui-monospace, 'Cascadia Code', Menlo, Consolas, monospace;
+  --af-font-pixel: 'Pixelify Sans', var(--af-font-ui);
+  --af-text-xs: 11px;
+  --af-text-sm: 12px;
+  --af-text-md: 13px;
+  --af-text-lg: 15px;
+  --af-text-xl: 18px;
+  --af-text-2xl: 24px;
+  --af-leading: 1.45;
+  --af-weight-regular: 400;
+  --af-weight-medium: 500;
+  --af-weight-semibold: 600;
+
+  /* Shape */
+  --af-radius-sm: 4px;
+  --af-radius-md: 6px;
+  --af-radius-lg: 10px;
+  --af-radius-full: 999px;
+  --af-border-width: 1px;
+  --af-control-height-sm: 24px;
+  --af-control-height: 30px;
+
+  /* Elevation (shadows use the theme's shadow color). */
+  --af-elevation-1: 0 1px 2px var(--af-shadow);
+  --af-elevation-2: 0 6px 20px var(--af-shadow);
+  --af-elevation-3: 0 18px 50px var(--af-shadow);
+
+  /* Motion: one easing, three short durations. */
+  --af-ease: cubic-bezier(0.2, 0, 0, 1);
+  --af-duration-fast: 120ms;
+  --af-duration: 160ms;
+  --af-duration-slow: 220ms;
+
+  /* Focus ring and the soft accent glow of primary and active controls. Gold
+     (--af-bold-color / --af-glow) stays for highlights and "needs you" states. */
+  --af-focus-ring: 0 0 0 2px var(--af-bg), 0 0 0 4px var(--af-focus);
+  --af-accent-glow: 0 0 14px color-mix(in srgb, var(--af-accent) 38%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --af-duration-fast: 0ms;
+    --af-duration: 0ms;
+    --af-duration-slow: 0ms;
+  }
+}

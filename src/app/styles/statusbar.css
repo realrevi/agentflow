@@ -8,7 +8,7 @@
   background: var(--af-statusbar-bg);
   color: var(--af-statusbar-fg);
   border-top: 1px solid var(--af-statusbar-border);
-  font-size: 12px;
+  font-size: var(--af-text-sm);
 }
 
 .af-statusbar-spacer {
@@ -32,8 +32,25 @@ button.af-status-item {
   cursor: pointer;
 }
 
+button.af-status-item {
+  transition: background-color var(--af-duration) var(--af-ease);
+}
+
 button.af-status-item:hover {
   background: var(--af-statusbar-hover-bg);
+}
+
+button.af-status-item:focus-visible {
+  outline: 2px solid var(--af-focus);
+  outline-offset: -2px;
+}
+
+.af-status-toggle {
+  opacity: 0.9;
+}
+
+.af-status-toggle.off {
+  opacity: 0.45;
 }
 
 .af-status-brand {
@@ -61,11 +78,31 @@ button.af-status-item:hover {
   padding: 10px 10px 10px 12px;
   border: 1px solid var(--af-widget-border);
   border-left: 3px solid var(--af-accent);
-  border-radius: 6px;
+  border-radius: var(--af-radius-md);
   background: var(--af-widget-bg);
   color: var(--af-widget-fg);
-  box-shadow: 0 6px 20px var(--af-shadow);
+  box-shadow: var(--af-elevation-2);
   pointer-events: auto;
+  animation: af-toast-in var(--af-duration-slow) var(--af-ease);
+  transition:
+    opacity var(--af-duration) var(--af-ease),
+    transform var(--af-duration) var(--af-ease);
+}
+
+.af-toast.leaving {
+  opacity: 0;
+  transform: translateX(12px);
+}
+
+@keyframes af-toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 .af-toast-error {
@@ -85,7 +122,7 @@ button.af-status-item:hover {
 }
 
 .af-toast-detail {
-  font-size: 12px;
+  font-size: var(--af-text-sm);
   color: var(--af-fg-muted);
   overflow-wrap: anywhere;
   user-select: text;

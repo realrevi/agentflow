@@ -4,6 +4,7 @@ import { t } from '../../i18n';
 import { groups, missing } from './answers';
 import { QuestionField } from './QuestionField';
 import type { Wizard } from './wizardStore';
+import { Button } from '../../../shared/ui/Button';
 
 export function StepQuestions(props: { wizard: Wizard }) {
   const w = props.wizard;
@@ -44,17 +45,12 @@ export function StepQuestions(props: { wizard: Wizard }) {
         </p>
       </Show>
       <div class="af-wizard-actions">
-        <button type="button" class="af-button secondary" onClick={() => w.setStep('targets')}>
+        <Button variant="secondary" onClick={() => w.setStep('targets')}>
           {t('installer.back')}
-        </button>
-        <button
-          type="button"
-          class="af-button"
-          disabled={lacking().length > 0 || w.busy()}
-          onClick={() => void w.preview()}
-        >
+        </Button>
+        <Button disabled={lacking().length > 0 || w.busy()} onClick={() => void w.preview()}>
           {t('installer.toPreview')}
-        </button>
+        </Button>
       </div>
     </section>
   );

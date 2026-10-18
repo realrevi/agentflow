@@ -1,11 +1,10 @@
 // Consecutive read-only calls as one "Explored N items" row; expanded, each call's card.
 import { createSignal, For, Show } from 'solid-js';
-import { PixelIcon } from '../../../shared/ui/PixelIcon';
+import { Icon } from '../../../shared/ui/Icon';
 import { t } from '../../i18n';
 import type { LiveTool } from './liveTurn';
 import type { ToolEntry } from './timeline';
 import { StateMark, ToolCard } from './ToolCard';
-import { exploreIcon } from './toolIcons';
 import { effectiveResult, toolState, type ToolState } from './toolText';
 
 /** Running wins, then failures; all done = done. */
@@ -36,7 +35,7 @@ export function ToolGroup(props: {
         aria-expanded={open()}
         onClick={() => setOpen((value) => !value)}
       >
-        <PixelIcon art={exploreIcon} class="af-tool-icon" />
+        <Icon name="folder-search" size={14} class="af-tool-icon" />
         <span class="af-tool-summary">
           {t('agent.group.explored', { count: props.tools.length })}
         </span>

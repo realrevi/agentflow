@@ -1,33 +1,43 @@
-import { For } from 'solid-js';
+// The activity bar: always visible. Views toggle the sidebar (clicking the active one hides
+// it, like VS Code); the rest open panels. The pixel logo is the one playful accent here.
+import { For, type JSX } from 'solid-js';
 import type { SidebarView } from '../shared/types';
-import {
-  agentsIcon,
-  charactersIcon,
-  explorerIcon,
-  libraryIcon,
-  logoIcon,
-  settingsIcon,
-  stageIcon,
-  usageIcon,
-} from '../shared/ui/icons';
-import { PixelIcon, type PixelArt } from '../shared/ui/PixelIcon';
+import { logoIcon } from '../shared/ui/icons';
+import { Icon, type IconName } from '../shared/ui/Icon';
+import { PixelIcon } from '../shared/ui/PixelIcon';
+import { Tooltip } from '../shared/ui/Surface';
 import { t, type I18nKey } from '../features/i18n';
 import { openPanel, openStage } from '../features/layout';
-import { settings, updateSettings } from '../features/settings';
+import { settings } from '../features/settings';
+import { selectView } from './panelToggles';
 
-const VIEWS: readonly { id: SidebarView; icon: PixelArt; label: I18nKey }[] = [
-  { id: 'agents', icon: agentsIcon, label: 'activity.agents' },
-  { id: 'explorer', icon: explorerIcon, label: 'activity.explorer' },
-  { id: 'characters', icon: charactersIcon, label: 'activity.characters' },
-  { id: 'usage', icon: usageIcon, label: 'activity.usage' },
+const VIEWS: readonly { id: SidebarView; icon: IconName; label: I18nKey }[] = [
+  { id: 'agents', icon: 'square-terminal', label: 'activity.agents' },
+  { id: 'explorer', icon: 'files', label: 'activity.explorer' },
+  { id: 'characters', icon: 'face-slightly-smiling', label: 'activity.characters' },
+  { id: 'usage', icon: 'chart-column', label: 'activity.usage' },
 ];
 
-/** Clicking the active view toggles the sidebar, like VS Code. */
-function selectView(view: SidebarView): void {
-  updateSettings((s) => {
-    s.ui.sidebarVisible = !(s.ui.sidebarVisible && s.ui.activeView === view);
-    s.ui.activeView = view;
-  });
+function Activity(props: {
+  icon: IconName;
+  label: string;
+  active?: boolean;
+  onClick: () => void;
+}): JSX.Element {
+  return (
+    <Tooltip text={props.label}>
+      <button
+        type="button"
+        class="af-activity"
+        classList={{ active: Boolean(props.active) }}
+        aria-label={props.label}
+        aria-pressed={props.active === undefined ? undefined : props.active}
+        onClick={() => props.onClick()}
+      >
+        <Icon name={props.icon} size={20} strokeWidth={1.75} />
+      </button>
+    </Tooltip>
+  );
 }
 
 export function ActivityBar() {
@@ -37,51 +47,27 @@ export function ActivityBar() {
         <PixelIcon art={logoIcon} />
       </div>
       <For each={VIEWS}>
-        {(view) => {
-          const active = () => settings.ui.sidebarVisible && settings.ui.activeView === view.id;
-          return (
-            <button
-              type="button"
-              class="af-activity"
-              classList={{ active: active() }}
-              title={t(view.label)}
-              aria-label={t(view.label)}
-              aria-pressed={active()}
-              onClick={() => selectView(view.id)}
-            >
-              <PixelIcon art={view.icon} />
-            </button>
-          );
-        }}
+        {(view) => (
+          <Activity
+            icon={view.icon}
+            label={t(view.label)}
+            active={settings.ui.sidebarVisible && settings.ui.activeView === view.id}
+            onClick={() => selectView(view.id)}
+          />
+        )}
       </For>
-      <button
-        type="button"
-        class="af-activity"
-        title={t('activity.library')}
-        aria-label={t('activity.library')}
+      <Activity
+        icon="library-big"
+        label={t('activity.library')}
         onClick={() => openPanel('installer')}
-      >
-        <PixelIcon art={libraryIcon} />
-      </button>
-      <button
-        type="button"
-        class="af-activity"
-        title={t('activity.stage')}
-        aria-label={t('activity.stage')}
-        onClick={() => openStage()}
-      >
-        <PixelIcon art={stageIcon} />
-      </button>
+      />
+      <Activity icon="drama" label={t('activity.stage')} onClick={() => openStage()} />
       <div class="af-activitybar-spacer" />
-      <button
-        type="button"
-        class="af-activity"
-        title={t('activity.settings')}
-        aria-label={t('activity.settings')}
+      <Activity
+        icon="settings"
+        label={t('activity.settings')}
         onClick={() => openPanel('settings')}
-      >
-        <PixelIcon art={settingsIcon} />
-      </button>
+      />
     </nav>
   );
 }

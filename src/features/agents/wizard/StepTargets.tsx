@@ -8,6 +8,8 @@ import { reportError, t } from '../../i18n';
 import { supportsTarget, TARGETS } from './answers';
 import { TemplateEditor } from './TemplateEditor';
 import type { Wizard } from './wizardStore';
+import { Button } from '../../../shared/ui/Button';
+import { Checkbox } from '../../../shared/ui/Field';
 
 export function StepTargets(props: { wizard: Wizard }) {
   const w = props.wizard;
@@ -41,9 +43,9 @@ export function StepTargets(props: { wizard: Wizard }) {
           <div class="af-wizard-template">
             <strong>{template().name}</strong>
             <span class="af-badge">v{template().version}</span>
-            <button type="button" class="af-link-btn" onClick={() => void exportTemplate()}>
+            <Button variant="ghost" size="sm" onClick={() => void exportTemplate()}>
               {t('installer.export')}
-            </button>
+            </Button>
             <TemplateEditor wizard={w} />
           </div>
         )}
@@ -53,8 +55,7 @@ export function StepTargets(props: { wizard: Wizard }) {
         <For each={TARGETS}>
           {(target) => (
             <label class="af-check af-target" classList={{ disabled: !usable(target) }}>
-              <input
-                type="checkbox"
+              <Checkbox
                 disabled={!usable(target)}
                 checked={w.targets().has(target.id) && usable(target)}
                 onChange={(e) => w.toggleTarget(target.id, e.currentTarget.checked)}
@@ -100,12 +101,10 @@ export function StepTargets(props: { wizard: Wizard }) {
         </Show>
       </fieldset>
       <div class="af-wizard-actions">
-        <button type="button" class="af-button secondary" onClick={() => w.reset()}>
+        <Button variant="secondary" onClick={() => w.reset()}>
           {t('installer.back')}
-        </button>
-        <button
-          type="button"
-          class="af-button"
+        </Button>
+        <Button
           disabled={chosen().length === 0}
           onClick={() => {
             for (const target of TARGETS) {
@@ -115,7 +114,7 @@ export function StepTargets(props: { wizard: Wizard }) {
           }}
         >
           {t('installer.next')}
-        </button>
+        </Button>
       </div>
     </section>
   );

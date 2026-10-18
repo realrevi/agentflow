@@ -5,6 +5,7 @@ import type { Estimate } from '../../shared/types';
 import { t } from '../i18n';
 import { estimateText, formatShare, formatTokens } from '../tokens';
 import type { BlockedSend } from './budgetStop';
+import { Button } from '../../shared/ui/Button';
 
 export function BudgetNotice(props: {
   blocked: BlockedSend;
@@ -20,22 +21,17 @@ export function BudgetNotice(props: {
         <span class="af-chat-notice-hint">{t('chat.budget.hint')}</span>
       </div>
       <div class="af-chat-notice-actions">
-        <button
-          type="button"
-          class="af-button small"
-          disabled={props.allowing}
-          onClick={() => props.onAllow()}
-        >
+        <Button size="sm" disabled={props.allowing} onClick={() => props.onAllow()}>
           {t('chat.budget.allowOnce')}
-        </button>
-        <button
-          type="button"
-          class="af-button secondary small"
+        </Button>
+        <Button
+          variant="secondary"
+          size="sm"
           disabled={props.allowing}
           onClick={() => props.onCancel()}
         >
           {t('chat.budget.cancel')}
-        </button>
+        </Button>
       </div>
     </div>
   );
@@ -55,14 +51,9 @@ export function ContextStrip(props: {
           window: formatTokens(props.estimate.contextWindow),
         })}
       </span>
-      <button
-        type="button"
-        class="af-button small"
-        disabled={props.compacting}
-        onClick={() => props.onCompact()}
-      >
+      <Button size="sm" disabled={props.compacting} onClick={() => props.onCompact()}>
         {props.compacting ? t('chat.compact.running') : t('chat.compact.action')}
-      </button>
+      </Button>
     </div>
   );
 }

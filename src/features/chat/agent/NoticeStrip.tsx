@@ -2,6 +2,7 @@
 import { For, Show } from 'solid-js';
 import { t } from '../../i18n';
 import type { AgentNotice } from './liveTurn';
+import { Button } from '../../../shared/ui/Button';
 
 export function NoticeStrip(props: {
   notices: readonly AgentNotice[];
@@ -20,13 +21,9 @@ export function NoticeStrip(props: {
             )}
           </span>
           <Show when={notice.kind === 'maxIterations' && props.canContinue}>
-            <button
-              type="button"
-              class="af-button primary small"
-              onClick={() => props.onContinue()}
-            >
+            <Button class="primary" size="sm" onClick={() => props.onContinue()}>
               {t('agent.notice.continue')}
-            </button>
+            </Button>
           </Show>
         </div>
       )}

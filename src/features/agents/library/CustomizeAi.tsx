@@ -7,6 +7,8 @@ import type { AgentTemplate } from '../../../shared/types';
 import { locale, reportError, t } from '../../i18n';
 import { providerName } from '../../providers';
 import { settings } from '../../settings/settingsStore';
+import { Button } from '../../../shared/ui/Button';
+import { Checkbox, Input, Select, Textarea } from '../../../shared/ui/Field';
 
 export function CustomizeAi(props: {
   workspace: string | null;
@@ -49,17 +51,15 @@ export function CustomizeAi(props: {
         <label class="af-question-label" for="af-lib-notes">
           {t('library.customize.notes')}
         </label>
-        <textarea
+        <Textarea
           id="af-lib-notes"
-          class="af-input"
           rows={3}
           placeholder={t('library.customize.placeholder')}
           value={notes()}
           onInput={(e) => setNotes(e.currentTarget.value)}
         />
         <div class="af-create-ai-row">
-          <select
-            class="af-select"
+          <Select
             aria-label={t('chat.provider')}
             value={providerId()}
             onChange={(e) => {
@@ -71,9 +71,8 @@ export function CustomizeAi(props: {
             <For each={settings.providers}>
               {(entry) => <option value={entry.id}>{providerName(entry)}</option>}
             </For>
-          </select>
-          <input
-            class="af-input"
+          </Select>
+          <Input
             aria-label={t('chat.model')}
             placeholder={t('chat.model.placeholder')}
             value={model()}
@@ -81,21 +80,15 @@ export function CustomizeAi(props: {
           />
         </div>
         <label class="af-check">
-          <input
-            type="checkbox"
+          <Checkbox
             checked={ownLanguage()}
             onChange={(e) => setOwnLanguage(e.currentTarget.checked)}
           />
           {t('library.customize.ownLanguage')}
         </label>
-        <button
-          type="button"
-          class="af-button"
-          disabled={busy() || !model().trim()}
-          onClick={() => void customize()}
-        >
+        <Button disabled={busy() || !model().trim()} onClick={() => void customize()}>
           {busy() ? t('installer.ai.working') : t('library.customize.run')}
-        </button>
+        </Button>
       </Show>
     </div>
   );

@@ -12,14 +12,14 @@ import {
   Switch,
   type JSX,
 } from 'solid-js';
-import { explorerIcon } from '../../shared/ui/icons';
-import { PixelIcon } from '../../shared/ui/PixelIcon';
+import { Icon } from '../../shared/ui/Icon';
 import { t, type I18nKey } from '../i18n';
 import { settings } from '../settings/settingsStore';
 import { activeTheme } from '../theme';
 import { currentWorkspace, fsRoot, onFsChanges } from '../workspace';
 import { EditorController, type DiskBanner, type EditorInfo } from './EditorController';
 import { registerEditor, setEditorDirty } from './editorStore';
+import { Button } from '../../shared/ui/Button';
 
 export interface EditorPanelProps {
   panelId: string;
@@ -44,7 +44,7 @@ function formatSize(bytes: number): string {
 function InfoView(props: { title: I18nKey; body: string; children?: JSX.Element }) {
   return (
     <div class="af-editor-info">
-      <PixelIcon art={explorerIcon} scale={4} />
+      <Icon name="file" size={40} strokeWidth={1.5} class="af-empty-icon" />
       <h2 class="af-pixel-title">{t(props.title)}</h2>
       <p>{props.body}</p>
       {props.children}
@@ -129,21 +129,13 @@ export default function EditorPanel(props: EditorPanelProps) {
           <div class="af-editor-banner" role="alert">
             <span>{t(BANNER_TEXT[kind()])}</span>
             <Show when={kind() !== 'deleted'}>
-              <button
-                type="button"
-                class="af-button small"
-                onClick={() => void controller?.reload()}
-              >
+              <Button size="sm" onClick={() => void controller?.reload()}>
                 {t('editor.banner.reload')}
-              </button>
+              </Button>
             </Show>
-            <button
-              type="button"
-              class="af-button small secondary"
-              onClick={() => void controller?.keepMine()}
-            >
+            <Button variant="secondary" size="sm" onClick={() => void controller?.keepMine()}>
               {t('editor.banner.keepMine')}
-            </button>
+            </Button>
           </div>
         )}
       </Show>
@@ -166,9 +158,7 @@ export default function EditorPanel(props: EditorPanelProps) {
         </Match>
         <Match when={info().status === 'error'}>
           <InfoView title="editor.error.title" body={info().message ?? ''}>
-            <button type="button" class="af-button" onClick={() => void controller?.load()}>
-              {t('editor.retry')}
-            </button>
+            <Button onClick={() => void controller?.load()}>{t('editor.retry')}</Button>
           </InfoView>
         </Match>
       </Switch>

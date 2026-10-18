@@ -30,6 +30,7 @@ import { bubbleView, type Point } from './scene';
 import { StageHistory } from './StageHistory';
 import { StageOverlay } from './StageOverlay';
 import { StageRenderer } from './StageRenderer';
+import { Button } from '../../shared/ui/Button';
 
 const PAD = 24;
 const TOP = 40;
@@ -209,27 +210,23 @@ export default function StagePanel(props: { api: DockviewPanelApi; hooks: StageH
   return (
     <div class="af-stage">
       <div class="af-stage-bar">
-        <button type="button" class="af-button small" onClick={() => props.hooks.newWorkstream()}>
+        <Button size="sm" onClick={() => props.hooks.newWorkstream()}>
           {t('workstream.new')}
-        </button>
-        <button
-          type="button"
-          class="af-button secondary small"
-          onClick={() => clearCells(settings.currentWorkspace)}
-        >
+        </Button>
+        <Button variant="secondary" size="sm" onClick={() => clearCells(settings.currentWorkspace)}>
           {t('stage.autoArrange')}
-        </button>
+        </Button>
         <div class="af-stage-spacer" />
-        <button
-          type="button"
-          class="af-button secondary small"
+        <Button
+          variant="secondary"
+          size="sm"
           onClick={() => {
             props.hooks.move(left() ? 'center' : 'left');
             setLeft(props.hooks.isLeft());
           }}
         >
           {left() ? t('stage.moveCenter') : t('stage.moveLeft')}
-        </button>
+        </Button>
       </div>
       <div ref={host} class="af-stage-body" onPointerLeave={() => setHover(null)}>
         <canvas

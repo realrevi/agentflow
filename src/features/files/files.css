@@ -20,7 +20,7 @@
   flex: 1;
   min-width: 0;
   overflow: hidden;
-  font-size: 11px;
+  font-size: var(--af-text-xs);
   font-weight: 600;
   letter-spacing: 0.6px;
   text-overflow: ellipsis;
@@ -87,9 +87,9 @@
 .af-tree-twisty {
   display: inline-flex;
   flex: none;
-  width: 12px;
-  overflow: hidden;
-  transition: transform 0.08s ease;
+  width: 14px;
+  color: var(--af-fg-muted);
+  transition: transform var(--af-duration) var(--af-ease);
 }
 
 .af-tree-twisty.open {
@@ -138,7 +138,7 @@
   background: var(--af-widget-bg);
   color: var(--af-widget-fg);
   border: 1px solid var(--af-widget-border);
-  border-radius: 8px;
+  border-radius: var(--af-radius-lg);
   box-shadow: 0 12px 40px var(--af-shadow);
 }
 
@@ -159,7 +159,7 @@
   align-items: center;
   gap: 8px;
   padding: 4px 8px;
-  border-radius: 4px;
+  border-radius: var(--af-radius-sm);
   white-space: nowrap;
   cursor: pointer;
 }
@@ -183,7 +183,7 @@
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: 12px;
+  font-size: var(--af-text-sm);
   color: var(--af-fg-muted);
 }
 

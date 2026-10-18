@@ -1,6 +1,7 @@
 import { Show } from 'solid-js';
 import { toHex6 } from '../../../shared/color';
 import { t } from '../../i18n';
+import { Button } from '../../../shared/ui/Button';
 
 interface ColorFieldProps {
   id: string;
@@ -25,13 +26,9 @@ export function ColorField(props: ColorFieldProps) {
       />
       <code class="af-color-value">{shown()}</code>
       <Show when={props.value !== null}>
-        <button
-          type="button"
-          class="af-button secondary small"
-          onClick={() => props.onChange(null)}
-        >
+        <Button variant="secondary" size="sm" onClick={() => props.onChange(null)}>
           {props.resetLabel ?? t('settings.useTheme')}
-        </button>
+        </Button>
       </Show>
     </div>
   );

@@ -14,6 +14,8 @@ import {
 import { TrustBadge } from './ItemCard';
 import { errorText, reasonText } from './labels';
 import { refreshLibrary } from './libraryStore';
+import { Button } from '../../../shared/ui/Button';
+import { Checkbox, Input } from '../../../shared/ui/Field';
 
 const GITHUB_URL =
   /^https:\/\/github\.com\/[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+(\/(tree|blob)\/.+)?\/?$/;
@@ -45,14 +47,13 @@ function TokenField() {
       <Show when={status()?.hasKey}>
         <p class="af-installer-hint">
           {t('library.tokenSaved', { last4: status()?.last4 ?? '••••' })}{' '}
-          <button type="button" class="af-link-btn" onClick={() => void remove()}>
+          <Button variant="ghost" size="sm" onClick={() => void remove()}>
             {t('library.tokenRemove')}
-          </button>
+          </Button>
         </p>
       </Show>
       <div class="af-create-ai-row">
-        <input
-          class="af-input"
+        <Input
           type="password"
           autocomplete="off"
           aria-label={t('library.token')}
@@ -60,14 +61,9 @@ function TokenField() {
           value={token()}
           onInput={(e) => setToken(e.currentTarget.value)}
         />
-        <button
-          type="button"
-          class="af-button secondary"
-          disabled={!token().trim()}
-          onClick={() => void save()}
-        >
+        <Button variant="secondary" disabled={!token().trim()} onClick={() => void save()}>
           {t('library.tokenSave')}
-        </button>
+        </Button>
       </div>
     </div>
   );
@@ -102,9 +98,9 @@ function CustomSources() {
               {source.url}
               {source.path ? ` › ${source.path}` : ''}
             </code>
-            <button
-              type="button"
-              class="af-link-btn"
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={() =>
                 void apply((d) => {
                   d.library.customSources.splice(index(), 1);
@@ -112,28 +108,26 @@ function CustomSources() {
               }
             >
               {t('library.customRemove')}
-            </button>
+            </Button>
           </p>
         )}
       </For>
       <div class="af-create-ai-row">
-        <input
-          class="af-input"
+        <Input
           aria-label={t('library.customUrl')}
           placeholder="https://github.com/owner/repo"
           value={url()}
           onInput={(e) => setUrl(e.currentTarget.value)}
         />
-        <input
-          class="af-input"
+        <Input
           aria-label={t('library.customPath')}
           placeholder={t('library.customPath')}
           value={path()}
           onInput={(e) => setPath(e.currentTarget.value)}
         />
-        <button type="button" class="af-button secondary" disabled={!valid()} onClick={add}>
+        <Button variant="secondary" disabled={!valid()} onClick={add}>
           {t('library.customAdd')}
-        </button>
+        </Button>
       </div>
     </div>
   );
@@ -161,14 +155,14 @@ export function SourcesSection(props: { catalog: LibraryCatalog | null }) {
                 })}
               </span>
               <Show when={source.unsupported > 0}>
-                <button
-                  type="button"
-                  class="af-link-btn"
+                <Button
+                  variant="ghost"
+                  size="sm"
                   aria-expanded={open() === source.id}
                   onClick={() => setOpen((id) => (id === source.id ? null : source.id))}
                 >
                   {t('library.showUnsupported')}
-                </button>
+                </Button>
               </Show>
             </div>
             <Show when={source.error}>
@@ -193,8 +187,7 @@ export function SourcesSection(props: { catalog: LibraryCatalog | null }) {
       </For>
       <CustomSources />
       <label class="af-check">
-        <input
-          type="checkbox"
+        <Checkbox
           checked={settings.library.autoRefresh}
           onChange={(e) => {
             const on = e.currentTarget.checked;

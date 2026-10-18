@@ -17,6 +17,8 @@ import {
 import { settings, updateSettings } from '../settingsStore';
 import { ProviderEditor } from './ProviderEditor';
 import { Row, Section } from './Section';
+import { Button } from '../../../shared/ui/Button';
+import { Toggle } from '../../../shared/ui/Field';
 
 export function ProvidersSection() {
   let addButton: HTMLButtonElement | undefined;
@@ -95,13 +97,9 @@ export function ProvidersSection() {
                         aria-hidden="true"
                       />
                     </button>
-                    <button
-                      type="button"
-                      class="af-button secondary small"
-                      onClick={() => void remove(entry.id)}
-                    >
+                    <Button variant="secondary" size="sm" onClick={() => void remove(entry.id)}>
                       {t('settings.providers.remove')}
-                    </button>
+                    </Button>
                   </div>
                   <Show when={expanded()}>
                     <ProviderEditor entry={entry} />
@@ -112,16 +110,15 @@ export function ProvidersSection() {
           </For>
         </ul>
       </Show>
-      <button
+      <Button
+        size="sm"
         ref={addButton}
-        type="button"
-        class="af-button small"
         aria-haspopup="menu"
         aria-expanded={adding()}
         onClick={() => setAdding((value) => !value)}
       >
         {t('settings.providers.add')}
-      </button>
+      </Button>
       <Show when={adding() && addButton}>
         {(anchor) => (
           <Menu
@@ -134,11 +131,8 @@ export function ProvidersSection() {
         )}
       </Show>
       <Row label={t('settings.chat.smoothReveal')} for="af-chat-reveal">
-        <input
+        <Toggle
           id="af-chat-reveal"
-          type="checkbox"
-          class="af-switch"
-          role="switch"
           checked={settings.chat.smoothReveal}
           onChange={(event) => {
             const on = event.currentTarget.checked;

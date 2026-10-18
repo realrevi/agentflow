@@ -8,6 +8,8 @@ import type { Handoff, PauseReason, Workstream } from './model';
 import { memberName } from './model';
 import { remindManager } from './runtime';
 import { dispatch, setPendingText, workstreams } from './store';
+import { Button } from '../../shared/ui/Button';
+import { Textarea } from '../../shared/ui/Field';
 
 const REASONS: Partial<Record<PauseReason, I18nKey>> = {
   ask: 'workstream.reason.ask',
@@ -55,12 +57,12 @@ function Card(props: { ws: Workstream; onFocus: (panel: string) => void }) {
         <strong>{props.ws.name}</strong>
         <Show when={pending()}>
           {(handoff) => (
-            <button type="button" class="af-link-btn" onClick={() => props.onFocus(handoff().from)}>
+            <Button variant="ghost" size="sm" onClick={() => props.onFocus(handoff().from)}>
               {t('workstream.route', {
                 from: memberName(props.ws, handoff().from),
                 to: memberName(props.ws, handoff().to),
               })}
-            </button>
+            </Button>
           )}
         </Show>
       </header>
@@ -78,8 +80,8 @@ function Card(props: { ws: Workstream; onFocus: (panel: string) => void }) {
         {(handoff) => (
           <>
             <Show when={editing()}>
-              <textarea
-                class="af-input af-handoff-text"
+              <Textarea
+                class="af-handoff-text"
                 rows={6}
                 spellcheck={false}
                 aria-label={t('workstream.preview')}
@@ -91,71 +93,50 @@ function Card(props: { ws: Workstream; onFocus: (panel: string) => void }) {
               </Show>
             </Show>
             <div class="af-button-row">
-              <button
-                type="button"
-                class="af-button small"
+              <Button
+                size="sm"
                 onClick={() => dispatch(props.ws.id, { type: 'send', text: handoff().text })}
               >
                 {sendLabel(handoff())}
-              </button>
+              </Button>
               <Show when={!editing()}>
-                <button
-                  type="button"
-                  class="af-button secondary small"
-                  onClick={() => setEditing(true)}
-                >
+                <Button variant="secondary" size="sm" onClick={() => setEditing(true)}>
                   {t('workstream.edit')}
-                </button>
+                </Button>
               </Show>
-              <button
-                type="button"
-                class="af-button secondary small"
+              <Button
+                variant="secondary"
+                size="sm"
                 onClick={() => dispatch(props.ws.id, { type: 'dismiss' })}
               >
                 {t('workstream.discard')}
-              </button>
+              </Button>
             </div>
           </>
         )}
       </Show>
       <Show when={!pending() && (props.ws.reason === 'noBlock' || props.ws.reason === 'malformed')}>
         <div class="af-button-row">
-          <button
-            type="button"
-            class="af-button small"
-            onClick={() => void remindManager(props.ws.id)}
-          >
+          <Button size="sm" onClick={() => void remindManager(props.ws.id)}>
             {t('workstream.remind', { name: memberName(props.ws, props.ws.manager) })}
-          </button>
-          <button
-            type="button"
-            class="af-button secondary small"
-            onClick={() => props.onFocus(props.ws.manager)}
-          >
+          </Button>
+          <Button variant="secondary" size="sm" onClick={() => props.onFocus(props.ws.manager)}>
             {t('workstream.openManager')}
-          </button>
+          </Button>
         </div>
       </Show>
       <Show when={!pending() && props.ws.reason === 'ask'}>
         <div class="af-button-row">
-          <button
-            type="button"
-            class="af-button small"
-            onClick={() => props.onFocus(props.ws.manager)}
-          >
+          <Button size="sm" onClick={() => props.onFocus(props.ws.manager)}>
             {t('workstream.answer', { name: memberName(props.ws, props.ws.manager) })}
-          </button>
+          </Button>
         </div>
       </Show>
       <Show when={!pending() && canResume()}>
         <div class="af-button-row">
-          <button
-            type="button"
-            class="af-button small"
-            onClick={() => dispatch(props.ws.id, { type: 'resume' })}
-          >
+          <Button size="sm" onClick={() => dispatch(props.ws.id, { type: 'resume' })}>
             {t('workstream.resume')}
-          </button>
+          </Button>
         </div>
       </Show>
     </section>

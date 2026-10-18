@@ -10,6 +10,7 @@ import {
   setWorkspace,
 } from '../../features/workspace';
 import { shortcutLabel } from '../../shared/platform';
+import { Button } from '../../shared/ui/Button';
 
 /** The workspace folder at a glance; the tree itself lives in the Files dock panel. */
 export function ExplorerView() {
@@ -30,16 +31,14 @@ export function ExplorerView() {
       </Show>
       <div class="af-button-column">
         <Show when={currentWorkspace()}>
-          <button type="button" class="af-button" onClick={() => openPanel('files')}>
-            {t('sidebar.agents.showFiles')}
-          </button>
-          <button type="button" class="af-button secondary" onClick={openQuickOpen}>
+          <Button onClick={() => openPanel('files')}>{t('sidebar.agents.showFiles')}</Button>
+          <Button variant="secondary" onClick={openQuickOpen}>
             {t('sidebar.explorer.quickOpen', { shortcut: shortcutLabel('P') })}
-          </button>
+          </Button>
         </Show>
-        <button type="button" class="af-button secondary" onClick={() => void openFolder()}>
+        <Button variant="secondary" onClick={() => void openFolder()}>
           {t('workspace.open')}
-        </button>
+        </Button>
       </div>
       <Show when={others().length > 0}>
         <h2 class="af-view-heading af-view-gap">{t('workspace.recent')}</h2>

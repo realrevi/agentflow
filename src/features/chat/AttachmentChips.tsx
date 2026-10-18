@@ -2,8 +2,8 @@
 // chat already sent is marked "sent earlier": requests carry only its newest copy.
 import { For, Show } from 'solid-js';
 import type { Attachment } from '../../shared/types';
-import { closeIcon } from '../../shared/ui/icons';
-import { PixelIcon } from '../../shared/ui/PixelIcon';
+import { IconButton } from '../../shared/ui/Button';
+import { FileIcon } from '../../shared/ui/FileIcon';
 import { t } from '../i18n';
 import { estimateTokens } from './attachments';
 
@@ -29,6 +29,7 @@ export function AttachmentChips(props: {
                     : file.path
                 }
               >
+                <FileIcon name={name()} size={14} />
                 {name()}
                 <span class="af-chip-tokens">
                   {t('chat.attach.tokens', { count: estimateTokens(file.content) })}
@@ -36,15 +37,13 @@ export function AttachmentChips(props: {
                 <Show when={props.sentBefore?.(file.path)}>
                   <span class="af-chip-note">{t('chat.attach.sentEarlier')}</span>
                 </Show>
-                <button
-                  type="button"
+                <IconButton
+                  icon="x"
+                  size={12}
                   class="af-chip-remove"
-                  title={t('chat.attach.remove', { name: name() })}
-                  aria-label={t('chat.attach.remove', { name: name() })}
+                  label={t('chat.attach.remove', { name: name() })}
                   onClick={() => props.onRemove(file.path)}
-                >
-                  <PixelIcon art={closeIcon} />
-                </button>
+                />
               </span>
             );
           }}

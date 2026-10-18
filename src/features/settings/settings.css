@@ -18,7 +18,7 @@
 .af-settings-title {
   margin: 0 0 12px;
   font-family: var(--af-font-pixel);
-  font-size: 15px;
+  font-size: var(--af-text-lg);
   font-weight: 600;
   letter-spacing: 0.5px;
   color: var(--af-accent);
@@ -26,13 +26,13 @@
 
 .af-settings-subtitle {
   margin: 22px 0 4px;
-  font-size: 13px;
+  font-size: var(--af-text-md);
   font-weight: 600;
 }
 
 .af-settings-hint {
   margin: 0 0 12px;
-  font-size: 12px;
+  font-size: var(--af-text-sm);
   color: var(--af-fg-muted);
 }
 
@@ -45,7 +45,7 @@
 }
 
 .af-settings-label {
-  font-size: 13px;
+  font-size: var(--af-text-md);
 }
 
 .af-settings-control {
@@ -66,7 +66,7 @@
   height: 26px;
   padding: 2px;
   border: 1px solid var(--af-input-border);
-  border-radius: 4px;
+  border-radius: var(--af-radius-sm);
   background: var(--af-input-bg);
   cursor: pointer;
 }
@@ -74,7 +74,7 @@
 .af-color-value {
   min-width: 64px;
   font-family: var(--af-font-mono);
-  font-size: 12px;
+  font-size: var(--af-text-sm);
   color: var(--af-fg-muted);
 }
 
@@ -82,11 +82,11 @@
   margin: 0;
   padding: 10px 12px;
   border: 1px dashed var(--af-border);
-  border-radius: 6px;
+  border-radius: var(--af-radius-md);
   background: var(--af-terminal-bg);
   color: var(--af-terminal-fg);
   font-family: var(--af-font-mono);
-  font-size: 13px;
+  font-size: var(--af-text-md);
 }
 
 .af-choice-list {
@@ -101,7 +101,7 @@
   gap: 6px;
   padding: 6px 12px;
   border: 1px solid var(--af-input-border);
-  border-radius: 6px;
+  border-radius: var(--af-radius-md);
   background: var(--af-input-bg);
   cursor: pointer;
 }
@@ -146,13 +146,13 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 12px;
+  font-size: var(--af-text-sm);
   color: var(--af-fg-muted);
   user-select: text;
 }
 
 .af-cli-missing {
-  font-size: 12px;
+  font-size: var(--af-text-sm);
   color: var(--af-fg-muted);
   font-style: italic;
 }
@@ -177,7 +177,7 @@
 .af-provider {
   margin-bottom: 8px;
   border: 1px solid var(--af-widget-border);
-  border-radius: 6px;
+  border-radius: var(--af-radius-md);
 }
 
 .af-provider.open {
@@ -199,7 +199,7 @@
   min-width: 0;
   padding: 6px 8px;
   border: none;
-  border-radius: 4px;
+  border-radius: var(--af-radius-sm);
   background: none;
   color: inherit;
   font: inherit;
@@ -217,7 +217,7 @@
 
 .af-provider-meta {
   overflow: hidden;
-  font-size: 12px;
+  font-size: var(--af-text-sm);
   color: var(--af-fg-muted);
   white-space: nowrap;
   text-overflow: ellipsis;
@@ -251,7 +251,7 @@
 
 .af-field-error {
   flex-basis: 100%;
-  font-size: 12px;
+  font-size: var(--af-text-sm);
   color: var(--af-error);
 }
 
@@ -268,7 +268,7 @@
 }
 
 .af-key-status {
-  font-size: 12px;
+  font-size: var(--af-text-sm);
   color: var(--af-fg-muted);
 }
 
@@ -285,7 +285,7 @@
 }
 
 .af-test-result {
-  font-size: 12px;
+  font-size: var(--af-text-sm);
   overflow-wrap: anywhere;
 }
 
@@ -302,7 +302,7 @@
   width: 100%;
   margin: 6px 0 10px;
   border-collapse: collapse;
-  font-size: 12px;
+  font-size: var(--af-text-sm);
 }
 
 .af-settings-table th,
@@ -334,7 +334,7 @@
   max-height: 320px;
   overflow: auto;
   border: 1px solid var(--af-border);
-  border-radius: 4px;
+  border-radius: var(--af-radius-sm);
   margin-top: 6px;
   padding: 0 6px;
 }
@@ -344,18 +344,5 @@
   align-items: center;
   gap: 8px;
   margin: 4px 0;
-  font-size: 13px;
-}
-
-.af-settings-link {
-  padding: 0;
-  border: none;
-  background: none;
-  color: var(--af-link, var(--af-accent));
-  font: inherit;
-  cursor: pointer;
-}
-
-.af-settings-link:hover {
-  text-decoration: underline;
+  font-size: var(--af-text-md);
 }

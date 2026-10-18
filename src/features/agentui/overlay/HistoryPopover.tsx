@@ -3,8 +3,7 @@ import { For, onCleanup, onMount, Show } from 'solid-js';
 import { ipc } from '../../../shared/ipc';
 import { showToast } from '../../../shared/toast';
 import type { PromptEntry } from '../../../shared/types';
-import { copyIcon } from '../../../shared/ui/icons';
-import { PixelIcon } from '../../../shared/ui/PixelIcon';
+import { Icon } from '../../../shared/ui/Icon';
 import { locale, reportError, t } from '../../i18n';
 
 interface HistoryPopoverProps {
@@ -73,7 +72,7 @@ export function HistoryPopover(props: HistoryPopoverProps) {
                   aria-label={t('prompt.copy')}
                   onClick={() => void copy(entry.text)}
                 >
-                  <PixelIcon art={copyIcon} />
+                  <Icon name="copy" size={14} />
                 </button>
               </li>
             )}

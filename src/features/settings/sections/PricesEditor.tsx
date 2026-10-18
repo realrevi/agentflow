@@ -9,6 +9,8 @@ import { providerName } from '../../providers';
 import { onRepriced } from '../../tokens';
 import { setPriceOverrides, settings, updateSettings } from '../settingsStore';
 import { MAX_PRICE, parseMoney, removeOverride, setFree, upsertOverride } from './usageForm';
+import { Button } from '../../../shared/ui/Button';
+import { Checkbox, Input } from '../../../shared/ui/Field';
 
 const FIELDS = ['input', 'output', 'cacheRead', 'cacheWrite'] as const;
 type Field = (typeof FIELDS)[number];
@@ -56,8 +58,7 @@ export function PricesEditor() {
         <For each={settings.providers}>
           {(entry) => (
             <label class="af-settings-check">
-              <input
-                type="checkbox"
+              <Checkbox
                 checked={settings.usage.freeProviders.includes(entry.id)}
                 onChange={(event) => {
                   const free = event.currentTarget.checked;
@@ -103,21 +104,20 @@ export function PricesEditor() {
                   )}
                 </For>
                 <td>
-                  <button
-                    type="button"
-                    class="af-button secondary small"
+                  <Button
+                    variant="secondary"
+                    size="sm"
                     onClick={() => void save(removeOverride(settings.usage.prices, price.model))}
                   >
                     {t('settings.usage.remove')}
-                  </button>
+                  </Button>
                 </td>
               </tr>
             )}
           </For>
           <tr>
             <td>
-              <input
-                class="af-input"
+              <Input
                 placeholder={t('settings.usage.price.modelPlaceholder')}
                 aria-label={t('settings.usage.price.model')}
                 value={draft().model}
@@ -139,9 +139,8 @@ export function PricesEditor() {
               )}
             </For>
             <td>
-              <button
-                type="button"
-                class="af-button small"
+              <Button
+                size="sm"
                 disabled={!draft().model.trim()}
                 onClick={() => {
                   void save(upsertOverride(settings.usage.prices, draft()));
@@ -149,15 +148,14 @@ export function PricesEditor() {
                 }}
               >
                 {t('settings.usage.price.add')}
-              </button>
+              </Button>
             </td>
           </tr>
         </tbody>
       </table>
 
       <h3 class="af-settings-subtitle">{t('settings.usage.shipped')}</h3>
-      <input
-        class="af-input"
+      <Input
         placeholder={t('settings.usage.shipped.filter')}
         aria-label={t('settings.usage.shipped.filter')}
         value={filter()}
@@ -179,9 +177,10 @@ export function PricesEditor() {
                   <td>{entry.model}</td>
                   <For each={FIELDS}>{(field) => <td class="numeric">{entry[field]}</td>}</For>
                   <td>
-                    <button
-                      type="button"
-                      class="af-settings-link"
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      icon="external-link"
                       title={entry.source}
                       onClick={() =>
                         ipc
@@ -190,7 +189,7 @@ export function PricesEditor() {
                       }
                     >
                       {t('settings.usage.price.updated', { date: entry.updated })}
-                    </button>
+                    </Button>
                   </td>
                 </tr>
               )}
@@ -213,8 +212,8 @@ export function PricesEditor() {
 
 function PriceInput(props: { value: number; label: string; onValue: (value: number) => void }) {
   return (
-    <input
-      class="af-input af-input-money"
+    <Input
+      class="af-input-money"
       inputmode="decimal"
       aria-label={props.label}
       value={String(props.value)}

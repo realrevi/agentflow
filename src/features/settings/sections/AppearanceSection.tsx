@@ -6,6 +6,8 @@ import { t } from '../../i18n';
 import { settings, updateSettings } from '../settingsStore';
 import { ColorField } from './ColorField';
 import { Row, Section } from './Section';
+import { Button } from '../../../shared/ui/Button';
+import { Select, Toggle } from '../../../shared/ui/Field';
 
 export function AppearanceSection() {
   let fileInput: HTMLInputElement | undefined;
@@ -32,9 +34,8 @@ export function AppearanceSection() {
   return (
     <Section title={t('settings.appearance')}>
       <Row label={t('settings.theme')} for="af-theme">
-        <select
+        <Select
           id="af-theme"
-          class="af-select"
           value={settings.appearance.themeId}
           onChange={(event) => selectTheme(event.currentTarget.value)}
         >
@@ -48,10 +49,10 @@ export function AppearanceSection() {
               </For>
             </optgroup>
           </Show>
-        </select>
-        <button type="button" class="af-button secondary" onClick={() => fileInput?.click()}>
+        </Select>
+        <Button variant="secondary" onClick={() => fileInput?.click()}>
           {t('settings.theme.import')}
-        </button>
+        </Button>
         <input
           ref={fileInput}
           type="file"
@@ -93,11 +94,8 @@ export function AppearanceSection() {
         />
       </Row>
       <Row label={t('settings.agentBold.glow')} for="af-bold-glow">
-        <input
+        <Toggle
           id="af-bold-glow"
-          type="checkbox"
-          class="af-switch"
-          role="switch"
           checked={settings.appearance.agentBold.glow}
           onChange={(event) => {
             const glow = event.currentTarget.checked;

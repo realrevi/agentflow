@@ -5,6 +5,7 @@ import { Avatar, characters, loadCharacters } from '../../features/characters';
 import { reportError, t } from '../../features/i18n';
 import { focusedAgent, openPanels, setPanelCharacter } from '../../features/layout';
 import { settings } from '../../features/settings';
+import { SegmentedControl } from '../../shared/ui/Segmented';
 
 const GALLERY_SCALE = 3;
 
@@ -29,21 +30,15 @@ export function CharactersView() {
           ? t('characters.view.assignTo', { panel: target()?.title ?? '' })
           : t('characters.view.noPanel')}
       </p>
-      <div class="af-segmented" role="radiogroup" aria-label={t('characters.view.colors')}>
-        <For each={colors()}>
-          {(index) => (
-            <button
-              type="button"
-              class="af-segment"
-              role="radio"
-              aria-checked={palette() === index}
-              onClick={() => setPalette(index)}
-            >
-              {t('characters.palette', { n: index + 1 })}
-            </button>
-          )}
-        </For>
-      </div>
+      <SegmentedControl
+        label={t('characters.view.colors')}
+        value={String(palette())}
+        onChange={(value) => setPalette(Number(value))}
+        options={colors().map((index) => ({
+          value: String(index),
+          label: t('characters.palette', { n: index + 1 }),
+        }))}
+      />
       <ul class="af-gallery">
         <For each={characters()}>
           {(sheet) => {

@@ -11,6 +11,8 @@ export {
   openTerminal,
   resetLayout,
   setPanelCharacter,
+  togglePanelArea,
 } from './layoutStore';
+export { roleVisible, type ToggleRole } from './visibility';
 export type { OpenPanel } from './layoutStore';
 export type { PanelKind } from './panels';

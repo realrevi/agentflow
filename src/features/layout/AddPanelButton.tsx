@@ -1,9 +1,8 @@
 import { createSignal, Match, Switch } from 'solid-js';
 import type { PtyKind } from '../../shared/types';
-import { plusIcon } from '../../shared/ui/icons';
 import { InlinePrompt } from '../../shared/ui/InlinePrompt';
 import { Menu, type MenuItem } from '../../shared/ui/Menu';
-import { PixelIcon } from '../../shared/ui/PixelIcon';
+import { Icon } from '../../shared/ui/Icon';
 import { NewChatPrompt } from '../chat';
 import { t } from '../i18n';
 import { AGENT_KINDS, cliFor, kindLabel, loadCliStatus, newTerminalConfig } from '../terminal';
@@ -84,7 +83,7 @@ export function AddPanelButton(props: { groupId: string }) {
         aria-expanded={mode() !== 'closed'}
         onClick={toggle}
       >
-        <PixelIcon art={plusIcon} />
+        <Icon name="plus" size={16} />
       </button>
       <Switch>
         <Match when={mode() === 'menu' && button}>

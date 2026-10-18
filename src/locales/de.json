@@ -858,5 +858,8 @@
   "settings.workstreams.stageScale": "Figurengröße auf der Bühne",
   "settings.workstreams.stageAnimations": "Bühnenanimationen (Pakete, Pulse)",
   "workstream.remind": "{name} an das Format erinnern",
-  "workstream.openManager": "Manager öffnen"
+  "workstream.openManager": "Manager öffnen",
+  "sidebar.show": "Seitenleiste einblenden",
+  "status.toggleTerminal": "Terminalbereich ein-/ausblenden",
+  "status.toggleFiles": "Dateien-Panel ein-/ausblenden"
 }

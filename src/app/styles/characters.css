@@ -1,40 +1,12 @@
 /* The Characters sidebar view: color switch and the animated gallery. */
 .af-view-hint {
   margin: 8px 4px;
-  font-size: 12px;
+  font-size: var(--af-text-sm);
   color: var(--af-fg-muted);
 }
 
-.af-segmented {
-  display: flex;
-  margin: 4px 4px 10px;
-  border: 1px solid var(--af-widget-border);
-  border-radius: 4px;
-  overflow: hidden;
-}
-
-.af-segment {
-  flex: 1;
-  padding: 3px 6px;
-  border: none;
-  background: none;
-  color: var(--af-fg-muted);
-  font: inherit;
-  font-size: 12px;
-  cursor: pointer;
-}
-
-.af-segment + .af-segment {
-  border-left: 1px solid var(--af-widget-border);
-}
-
-.af-segment:hover {
-  background: var(--af-list-hover-bg);
-}
-
-.af-segment[aria-checked='true'] {
-  background: var(--af-list-active-bg);
-  color: var(--af-list-active-fg);
+.af-characters .af-segmented {
+  margin: var(--af-space-1) var(--af-space-1) var(--af-space-3);
 }
 
 .af-gallery {
@@ -54,7 +26,7 @@
   width: 100%;
   padding: 8px 2px 6px;
   border: 1px solid transparent;
-  border-radius: 6px;
+  border-radius: var(--af-radius-md);
   background: none;
   color: inherit;
   cursor: pointer;
@@ -75,5 +47,5 @@
 
 .af-gallery-name {
   font-family: var(--af-font-pixel);
-  font-size: 12px;
+  font-size: var(--af-text-sm);
 }

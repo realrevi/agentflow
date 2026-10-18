@@ -11,6 +11,8 @@ import { reasonText } from './HandoffCards';
 import { memberName, type Workstream } from './model';
 import { dispatch, removeWorkstream, workstreams } from './store';
 import { memberStatus, type MemberStatus } from './status';
+import { Button } from '../../shared/ui/Button';
+import { SegmentedControl } from '../../shared/ui/Segmented';
 
 export interface MemberView {
   title: string;
@@ -41,21 +43,12 @@ const STATUS: Record<MemberStatus, I18nKey> = {
 
 export function ModeSwitch(props: { ws: Workstream }) {
   return (
-    <div class="af-mode-pill" role="radiogroup" aria-label={t('workstream.mode')}>
-      <For each={MODES}>
-        {(entry) => (
-          <button
-            type="button"
-            role="radio"
-            aria-checked={props.ws.mode === entry.mode}
-            classList={{ active: props.ws.mode === entry.mode }}
-            onClick={() => dispatch(props.ws.id, { type: 'mode', mode: entry.mode })}
-          >
-            {t(entry.key)}
-          </button>
-        )}
-      </For>
-    </div>
+    <SegmentedControl
+      label={t('workstream.mode')}
+      value={props.ws.mode}
+      onChange={(mode) => dispatch(props.ws.id, { type: 'mode', mode })}
+      options={MODES.map((entry) => ({ value: entry.mode, label: t(entry.key) }))}
+    />
   );
 }
 
@@ -112,9 +105,9 @@ function Item(props: { ws: Workstream } & WorkstreamsSectionProps) {
           <span class="af-ws-chip" aria-hidden="true" />
           {props.ws.name}
         </button>
-        <button type="button" class="af-link-btn" onClick={() => props.onTimeline(props.ws.id)}>
+        <Button variant="ghost" size="sm" onClick={() => props.onTimeline(props.ws.id)}>
           {t('workstream.timeline')}
-        </button>
+        </Button>
       </div>
       <Show when={open()}>
         <div class="af-ws-body">
@@ -129,31 +122,23 @@ function Item(props: { ws: Workstream } & WorkstreamsSectionProps) {
               when={running()}
               fallback={
                 <Show when={props.ws.mode === 'auto' && props.ws.status === 'paused'}>
-                  <button
-                    type="button"
-                    class="af-button small"
-                    onClick={() => dispatch(props.ws.id, { type: 'resume' })}
-                  >
+                  <Button size="sm" onClick={() => dispatch(props.ws.id, { type: 'resume' })}>
                     {t('workstream.resume')}
-                  </button>
+                  </Button>
                 </Show>
               }
             >
-              <button
-                type="button"
-                class="af-button danger small"
+              <Button
+                variant="danger"
+                size="sm"
                 onClick={() => dispatch(props.ws.id, { type: 'stop' })}
               >
                 {t('workstream.stop')}
-              </button>
+              </Button>
             </Show>
-            <button
-              type="button"
-              class="af-button secondary small"
-              onClick={() => removeWorkstream(props.ws.id)}
-            >
+            <Button variant="secondary" size="sm" onClick={() => removeWorkstream(props.ws.id)}>
               {t('workstream.remove')}
-            </button>
+            </Button>
           </div>
         </div>
       </Show>
@@ -174,9 +159,9 @@ export function WorkstreamsSection(props: WorkstreamsSectionProps) {
         </ul>
       </Show>
       <div class="af-button-column">
-        <button type="button" class="af-button secondary" onClick={() => props.onNew()}>
+        <Button variant="secondary" onClick={() => props.onNew()}>
           {t('workstream.new')}
-        </button>
+        </Button>
       </div>
     </section>
   );

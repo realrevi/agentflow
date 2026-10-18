@@ -25,7 +25,7 @@
   height: 40px;
   padding: 0;
   border: 1px solid transparent;
-  border-radius: 6px;
+  border-radius: var(--af-radius-md);
   background: none;
   cursor: pointer;
 }
@@ -48,7 +48,7 @@
 .af-picker-name {
   flex: 1;
   font-family: var(--af-font-pixel);
-  font-size: 12px;
+  font-size: var(--af-text-sm);
   color: var(--af-bold-color);
 }
 
@@ -57,7 +57,7 @@
   height: 16px;
   padding: 0;
   border: 2px solid var(--af-widget-border);
-  border-radius: 3px;
+  border-radius: var(--af-radius-sm);
   cursor: pointer;
 }
 

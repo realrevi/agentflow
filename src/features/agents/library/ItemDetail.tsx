@@ -12,6 +12,7 @@ import { formatTokens } from '../../tokens';
 import { CustomizeAi } from './CustomizeAi';
 import { TrustBadge } from './ItemCard';
 import { FLAG_LABELS, FORMAT_LABELS, KIND_LABELS } from './labels';
+import { Button } from '../../../shared/ui/Button';
 
 const FRONTMATTER = /^---\r?\n[\s\S]*?\r?\n---\r?\n?/;
 
@@ -66,9 +67,9 @@ export function ItemDetail(props: {
   return (
     <section class="af-wizard-step af-lib-detail">
       <div class="af-wizard-actions start">
-        <button type="button" class="af-button secondary" onClick={() => props.onBack()}>
+        <Button variant="secondary" onClick={() => props.onBack()}>
           {t('installer.back')}
-        </button>
+        </Button>
       </div>
       <header class="af-plan-head">
         <h3 class="af-installer-subtitle">{item().name}</h3>
@@ -82,9 +83,9 @@ export function ItemDetail(props: {
       <dl class="af-lib-meta">
         <dt>{t('library.source')}</dt>
         <dd>
-          <button type="button" class="af-link-btn" onClick={open}>
+          <Button variant="ghost" size="sm" onClick={open}>
             {item().repo}/{item().path}
-          </button>
+          </Button>
         </dd>
         <dt>{t('library.author')}</dt>
         <dd>{item().author}</dd>
@@ -165,21 +166,16 @@ export function ItemDetail(props: {
               {(template) => (
                 <>
                   <div class="af-wizard-actions start">
-                    <button
-                      type="button"
-                      class="af-button"
-                      onClick={() => props.onInstall(template(), item())}
-                    >
+                    <Button onClick={() => props.onInstall(template(), item())}>
                       {t('library.install')}
-                    </button>
-                    <button
-                      type="button"
-                      class="af-button secondary"
+                    </Button>
+                    <Button
+                      variant="secondary"
                       aria-expanded={customizing()}
                       onClick={() => setCustomizing((on) => !on)}
                     >
                       {t('library.customize')}
-                    </button>
+                    </Button>
                   </div>
                   <Show when={customizing()}>
                     <CustomizeAi

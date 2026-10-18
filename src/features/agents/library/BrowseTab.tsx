@@ -13,6 +13,8 @@ import { ItemDetail } from './ItemDetail';
 import { KIND_LABELS, resetTime } from './labels';
 import { catalog, openLibrary, refreshing, refreshLibrary } from './libraryStore';
 import { SourcesSection } from './SourcesSection';
+import { Button } from '../../../shared/ui/Button';
+import { Input, Select } from '../../../shared/ui/Field';
 
 const PAGE = 40;
 const SORTS: readonly {
@@ -62,22 +64,21 @@ export function BrowseTab(props: {
                   })
                 : t('library.neverRefreshed')}
             </span>
-            <button
-              type="button"
-              class="af-button secondary"
+            <Button
+              variant="secondary"
               disabled={refreshing()}
               onClick={() => void refreshLibrary()}
             >
               {refreshing() ? t('library.refreshing') : t('library.refresh')}
-            </button>
-            <button
-              type="button"
-              class="af-link-btn"
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
               aria-expanded={showSources()}
               onClick={() => setShowSources((on) => !on)}
             >
               {t('library.sources')}
-            </button>
+            </Button>
           </div>
           <Show when={limited()}>
             {(at) => (
@@ -93,16 +94,15 @@ export function BrowseTab(props: {
             <SourcesSection catalog={catalog()} />
           </Show>
           <div class="af-lib-filters">
-            <input
-              class="af-input af-lib-search"
+            <Input
+              class="af-lib-search"
               type="search"
               aria-label={t('library.search')}
               placeholder={t('library.search')}
               value={filters.query}
               onInput={(e) => set('query', e.currentTarget.value)}
             />
-            <select
-              class="af-select"
+            <Select
               aria-label={t('library.filter.source')}
               value={filters.source}
               onChange={(e) => set('source', e.currentTarget.value)}
@@ -111,9 +111,8 @@ export function BrowseTab(props: {
               <For each={catalog()?.sources ?? []}>
                 {(source) => <option value={source.id}>{source.name}</option>}
               </For>
-            </select>
-            <select
-              class="af-select"
+            </Select>
+            <Select
               aria-label={t('library.filter.trust')}
               value={filters.trust}
               onChange={(e) => set('trust', e.currentTarget.value as Filters['trust'])}
@@ -121,9 +120,8 @@ export function BrowseTab(props: {
               <option value="all">{t('library.filter.anyTrust')}</option>
               <option value="verified">{t('library.verified')}</option>
               <option value="unverified">{t('library.unverified')}</option>
-            </select>
-            <select
-              class="af-select"
+            </Select>
+            <Select
               aria-label={t('library.filter.kind')}
               value={filters.kind}
               onChange={(e) => set('kind', e.currentTarget.value as Filters['kind'])}
@@ -132,9 +130,8 @@ export function BrowseTab(props: {
               <For each={KINDS}>
                 {(kind) => <option value={kind}>{t(KIND_LABELS[kind])}</option>}
               </For>
-            </select>
-            <select
-              class="af-select"
+            </Select>
+            <Select
               aria-label={t('library.filter.target')}
               value={filters.target}
               onChange={(e) => set('target', e.currentTarget.value as Filters['target'])}
@@ -143,9 +140,8 @@ export function BrowseTab(props: {
               <For each={TARGETS}>
                 {(target) => <option value={target.id}>{t(target.label)}</option>}
               </For>
-            </select>
-            <select
-              class="af-select"
+            </Select>
+            <Select
               aria-label={t('library.filter.tag')}
               value={filters.tag}
               onChange={(e) => set('tag', e.currentTarget.value)}
@@ -158,15 +154,14 @@ export function BrowseTab(props: {
                   </option>
                 )}
               </For>
-            </select>
-            <select
-              class="af-select"
+            </Select>
+            <Select
               aria-label={t('library.sort')}
               value={filters.sort}
               onChange={(e) => set('sort', e.currentTarget.value as SortKey)}
             >
               <For each={SORTS}>{(sort) => <option value={sort.id}>{t(sort.label)}</option>}</For>
-            </select>
+            </Select>
           </div>
           <p class="af-installer-hint">{t('library.count', { count: items().length })}</p>
           <div class="af-lib-grid">
@@ -175,13 +170,9 @@ export function BrowseTab(props: {
             </For>
           </div>
           <Show when={items().length > limit()}>
-            <button
-              type="button"
-              class="af-button secondary"
-              onClick={() => setLimit((n) => n + PAGE)}
-            >
+            <Button variant="secondary" onClick={() => setLimit((n) => n + PAGE)}>
               {t('library.more', { count: items().length - limit() })}
-            </button>
+            </Button>
           </Show>
         </section>
       }

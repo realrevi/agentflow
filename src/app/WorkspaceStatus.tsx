@@ -7,9 +7,8 @@ import {
   recentWorkspaces,
   setWorkspace,
 } from '../features/workspace';
-import { explorerIcon } from '../shared/ui/icons';
 import { Menu, type MenuItem } from '../shared/ui/Menu';
-import { PixelIcon } from '../shared/ui/PixelIcon';
+import { Icon } from '../shared/ui/Icon';
 
 const OPEN_ID = 'open';
 
@@ -55,7 +54,7 @@ export function WorkspaceStatus() {
         aria-expanded={open()}
         onClick={() => setOpen((value) => !value)}
       >
-        <PixelIcon art={explorerIcon} scale={1} />
+        <Icon name="folder" size={13} />
         {label()}
       </button>
       <Show when={open() && button}>

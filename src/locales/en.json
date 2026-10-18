@@ -858,5 +858,8 @@
   "settings.workstreams.stageScale": "Stage character size",
   "settings.workstreams.stageAnimations": "Stage animations (packets, pulses)",
   "workstream.remind": "Remind {name} of the format",
-  "workstream.openManager": "Open the manager"
+  "workstream.openManager": "Open the manager",
+  "sidebar.show": "Show sidebar",
+  "status.toggleTerminal": "Show or hide the terminal area",
+  "status.toggleFiles": "Show or hide the Files panel"
 }

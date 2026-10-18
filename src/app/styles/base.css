@@ -1,14 +1,9 @@
 /*
- * Global resets and design tokens. The theme engine overwrites the --af-* colors at runtime;
- * the values here match "AgentFlow Dark" so the first paint already looks right.
+ * Global resets and first-paint colors. The theme engine overwrites the --af-* colors at
+ * runtime; the values here match "AgentFlow Dark". Spacing, type, radii and motion tokens
+ * live in shared/ui/tokens.css.
  */
 :root {
-  --af-font-ui:
-    system-ui, -apple-system, 'Segoe UI', 'Noto Sans', 'PingFang SC', 'Microsoft YaHei', Ubuntu,
-    Cantarell, sans-serif;
-  --af-font-mono: 'JetBrains Mono', ui-monospace, 'Cascadia Code', Menlo, Consolas, monospace;
-  --af-font-pixel: 'Pixelify Sans', var(--af-font-ui);
-
   --af-bg: #16171d;
   --af-fg: #d5d8e0;
   --af-fg-muted: #8a8f9c;
@@ -49,8 +44,9 @@ body {
   background: var(--af-bg);
   color: var(--af-fg);
   font-family: var(--af-font-ui);
-  font-size: 13px;
-  line-height: 1.45;
+  font-size: var(--af-text-md);
+  line-height: var(--af-leading);
+  font-feature-settings: 'cv11', 'ss01';
   -webkit-font-smoothing: antialiased;
   user-select: none;
 }
@@ -68,8 +64,8 @@ pre {
 }
 
 :focus-visible {
-  outline: 1px solid var(--af-focus);
-  outline-offset: -1px;
+  outline: 2px solid var(--af-focus);
+  outline-offset: 1px;
 }
 
 ::selection {
@@ -85,7 +81,7 @@ pre {
   background: var(--af-scrollbar);
   border: 2px solid transparent;
   background-clip: content-box;
-  border-radius: 6px;
+  border-radius: var(--af-radius-md);
 }
 
 ::-webkit-scrollbar-thumb:hover {

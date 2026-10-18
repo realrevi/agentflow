@@ -4,6 +4,7 @@ import { For, Show } from 'solid-js';
 import { t } from '../../i18n';
 import { hintFor, TARGETS } from './answers';
 import type { Wizard } from './wizardStore';
+import { Button } from '../../../shared/ui/Button';
 
 export function StepDone(props: { wizard: Wizard; onOpenFile: (path: string) => void }) {
   const w = props.wizard;
@@ -21,13 +22,9 @@ export function StepDone(props: { wizard: Wizard; onOpenFile: (path: string) => 
                 {(file) => (
                   <li>
                     <Show when={file.scope === 'project'} fallback={<code>{file.display}</code>}>
-                      <button
-                        type="button"
-                        class="af-link-btn"
-                        onClick={() => props.onOpenFile(file.path)}
-                      >
+                      <Button variant="ghost" size="sm" onClick={() => props.onOpenFile(file.path)}>
                         {file.display}
-                      </button>
+                      </Button>
                     </Show>
                   </li>
                 )}
@@ -53,9 +50,7 @@ export function StepDone(props: { wizard: Wizard; onOpenFile: (path: string) => 
         )}
       </Show>
       <div class="af-wizard-actions">
-        <button type="button" class="af-button" onClick={() => w.reset()}>
-          {t('installer.another')}
-        </button>
+        <Button onClick={() => w.reset()}>{t('installer.another')}</Button>
       </div>
     </section>
   );

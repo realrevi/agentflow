@@ -17,6 +17,7 @@ import { StepQuestions } from './wizard/StepQuestions';
 import { StepTargets } from './wizard/StepTargets';
 import { StepTemplate } from './wizard/StepTemplate';
 import { createWizard, type Step } from './wizard/wizardStore';
+import { Tabs } from '../../shared/ui/Segmented';
 
 export interface InstallerHooks {
   Diff: Component<DiffProps>;
@@ -50,35 +51,16 @@ export default function InstallerPanel(props: { hooks: InstallerHooks }) {
     <div class="af-installer">
       <header class="af-installer-head">
         <h2 class="af-installer-title">{t('installer.title')}</h2>
-        <div class="af-mode-pill" role="tablist">
-          <button
-            type="button"
-            role="tab"
-            aria-selected={tab() === 'install'}
-            classList={{ active: tab() === 'install' }}
-            onClick={() => setTab('install')}
-          >
-            {t('installer.tab.install')}
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={tab() === 'browse'}
-            classList={{ active: tab() === 'browse' }}
-            onClick={() => setTab('browse')}
-          >
-            {t('installer.tab.browse')}
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={tab() === 'installed'}
-            classList={{ active: tab() === 'installed' }}
-            onClick={() => setTab('installed')}
-          >
-            {t('installer.tab.installed')}
-          </button>
-        </div>
+        <Tabs
+          label={t('installer.title')}
+          value={tab()}
+          onChange={setTab}
+          options={[
+            { value: 'install', label: t('installer.tab.install') },
+            { value: 'browse', label: t('installer.tab.browse') },
+            { value: 'installed', label: t('installer.tab.installed') },
+          ]}
+        />
       </header>
       <Show
         when={currentWorkspace()}

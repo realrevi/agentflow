@@ -12,15 +12,9 @@ import {
   Switch,
 } from 'solid-js';
 import type { EntryKind } from '../../shared/types';
-import {
-  collapseIcon,
-  explorerIcon,
-  newFileIcon,
-  newFolderIcon,
-  refreshIcon,
-} from '../../shared/ui/icons';
 import { Menu, type MenuItem } from '../../shared/ui/Menu';
-import { PixelIcon, type PixelArt } from '../../shared/ui/PixelIcon';
+import type { IconName } from '../../shared/ui/Icon';
+import { EmptyState } from '../../shared/ui/Surface';
 import { t, type I18nKey } from '../i18n';
 import {
   currentWorkspace,
@@ -35,6 +29,7 @@ import type { TreeRow } from './treeModel';
 import { treeKeyAction } from './treeKeys';
 import { createTreeStore, targetFolder } from './treeStore';
 import { TreeView, type DisplayRow, type TreeViewHandle } from './TreeView';
+import { Button, IconButton } from '../../shared/ui/Button';
 
 type Edit = { mode: 'rename'; path: string } | { mode: 'create'; parent: string; kind: EntryKind };
 
@@ -48,29 +43,21 @@ function withEditRow(rows: readonly TreeRow[], edit: Edit | null): DisplayRow[] 
   return display;
 }
 
-function ToolButton(props: { icon: PixelArt; label: I18nKey; onClick: () => void }) {
-  return (
-    <button
-      type="button"
-      class="af-icon-btn"
-      title={t(props.label)}
-      aria-label={t(props.label)}
-      onClick={() => props.onClick()}
-    >
-      <PixelIcon art={props.icon} />
-    </button>
-  );
+function ToolButton(props: { icon: IconName; label: I18nKey; onClick: () => void }) {
+  return <IconButton icon={props.icon} label={t(props.label)} onClick={() => props.onClick()} />;
 }
 
 function NoWorkspace(props: { error: boolean }) {
   return (
-    <div class="af-files-empty">
-      <PixelIcon art={explorerIcon} scale={4} />
-      <p>{t(props.error ? 'files.unavailable' : 'files.noWorkspace')}</p>
-      <button type="button" class="af-button" onClick={() => void openFolder()}>
-        {t('workspace.open')}
-      </button>
-    </div>
+    <EmptyState
+      icon="folder-open"
+      text={t(props.error ? 'files.unavailable' : 'files.noWorkspace')}
+      action={
+        <Button icon="folder-open" onClick={() => void openFolder()}>
+          {t('workspace.open')}
+        </Button>
+      }
+    />
   );
 }
 
@@ -175,18 +162,18 @@ export function FilesPanel(props: FileCallbacks) {
                   {folderName(root())}
                 </span>
                 <ToolButton
-                  icon={newFileIcon}
+                  icon="file-plus"
                   label="files.newFile"
                   onClick={() => void startCreate('file', selectedRow())}
                 />
                 <ToolButton
-                  icon={newFolderIcon}
+                  icon="folder-plus"
                   label="files.newFolder"
                   onClick={() => void startCreate('dir', selectedRow())}
                 />
-                <ToolButton icon={refreshIcon} label="files.refresh" onClick={tree.refresh} />
+                <ToolButton icon="refresh-cw" label="files.refresh" onClick={tree.refresh} />
                 <ToolButton
-                  icon={collapseIcon}
+                  icon="chevrons-down-up"
                   label="files.collapseAll"
                   onClick={tree.collapseAll}
                 />

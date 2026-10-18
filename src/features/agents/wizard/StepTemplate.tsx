@@ -5,6 +5,7 @@ import type { AgentTemplate } from '../../../shared/types';
 import { reportError, t } from '../../i18n';
 import { CreateWithAi } from './CreateWithAi';
 import type { Wizard } from './wizardStore';
+import { Button } from '../../../shared/ui/Button';
 
 export function StepTemplate(props: { wizard: Wizard; workspace: string | null }) {
   const [starters] = createResource(() => ipc.agentsStarters().catch(() => [] as AgentTemplate[]));
@@ -22,12 +23,12 @@ export function StepTemplate(props: { wizard: Wizard; workspace: string | null }
   return (
     <section class="af-wizard-step">
       <div class="af-wizard-actions start">
-        <button type="button" class="af-button secondary" onClick={() => void importFile()}>
+        <Button variant="secondary" onClick={() => void importFile()}>
           {t('installer.import')}
-        </button>
-        <button type="button" class="af-button secondary" onClick={() => setCreating(!creating())}>
+        </Button>
+        <Button variant="secondary" onClick={() => setCreating(!creating())}>
           {t('installer.createWithAi')}
-        </button>
+        </Button>
       </div>
       <Show when={creating()}>
         <CreateWithAi
@@ -44,7 +45,7 @@ export function StepTemplate(props: { wizard: Wizard; workspace: string | null }
           {(template) => (
             <button
               type="button"
-              class="af-starter"
+              class="af-card af-starter"
               onClick={() => void props.wizard.start(template)}
             >
               <strong>{template.name}</strong>

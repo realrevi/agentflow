@@ -858,5 +858,8 @@
   "settings.workstreams.stageScale": "舞台角色大小",
   "settings.workstreams.stageAnimations": "舞台动画(数据包、脉冲)",
   "workstream.remind": "提醒 {name} 使用格式",
-  "workstream.openManager": "打开经理"
+  "workstream.openManager": "打开经理",
+  "sidebar.show": "显示侧边栏",
+  "status.toggleTerminal": "显示/隐藏终端区域",
+  "status.toggleFiles": "显示/隐藏文件面板"
 }

@@ -3,6 +3,7 @@
 import { For, Match, Show, Switch } from 'solid-js';
 import type { AnswerValue, Question } from '../../../shared/types';
 import { t } from '../../i18n';
+import { Checkbox, Input, Select, Textarea, Toggle } from '../../../shared/ui/Field';
 
 const HEX = /#[0-9a-fA-F]{3,8}\b/g;
 
@@ -37,52 +38,37 @@ export function QuestionField(props: {
       </label>
       <Switch
         fallback={
-          <input
-            id={id()}
-            class="af-input"
-            value={text()}
-            onInput={(e) => props.onChange(e.currentTarget.value)}
-          />
+          <Input id={id()} value={text()} onInput={(e) => props.onChange(e.currentTarget.value)} />
         }
       >
         <Match when={props.question.type === 'multiline'}>
-          <textarea
+          <Textarea
             id={id()}
-            class="af-input"
             rows={3}
             value={text()}
             onInput={(e) => props.onChange(e.currentTarget.value)}
           />
         </Match>
         <Match when={props.question.type === 'boolean'}>
-          <input
+          <Toggle
             id={id()}
-            type="checkbox"
-            class="af-switch"
-            role="switch"
             checked={props.value === true}
             onChange={(e) => props.onChange(e.currentTarget.checked)}
           />
         </Match>
         <Match when={props.question.type === 'choice'}>
-          <select
-            id={id()}
-            class="af-select"
-            value={text()}
-            onChange={(e) => props.onChange(e.currentTarget.value)}
-          >
+          <Select id={id()} value={text()} onChange={(e) => props.onChange(e.currentTarget.value)}>
             <For each={props.question.options ?? []}>
               {(option) => <option value={option}>{option}</option>}
             </For>
-          </select>
+          </Select>
         </Match>
         <Match when={props.question.type === 'multiChoice'}>
           <div id={id()} class="af-question-options" role="group">
             <For each={props.question.options ?? []}>
               {(option) => (
                 <label class="af-check">
-                  <input
-                    type="checkbox"
+                  <Checkbox
                     checked={list().includes(option)}
                     onChange={(e) => {
                       const on = e.currentTarget.checked;
@@ -100,9 +86,8 @@ export function QuestionField(props: {
         </Match>
         <Match when={props.question.type === 'color'}>
           <div class="af-question-color">
-            <input
+            <Input
               id={id()}
-              class="af-input"
               value={text()}
               placeholder={t('installer.colorPlaceholder')}
               onInput={(e) => props.onChange(e.currentTarget.value)}
@@ -125,12 +110,7 @@ export function QuestionField(props: {
           </div>
         </Match>
         <Match when={props.question.type === 'font'}>
-          <input
-            id={id()}
-            class="af-input"
-            value={text()}
-            onInput={(e) => props.onChange(e.currentTarget.value)}
-          />
+          <Input id={id()} value={text()} onInput={(e) => props.onChange(e.currentTarget.value)} />
           <Show when={text().trim()}>
             <p class="af-question-font" style={{ 'font-family': text() }}>
               {t('installer.fontSample')}

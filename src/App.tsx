@@ -25,6 +25,7 @@ import {
   workstreams,
 } from './features/workstreams';
 import { NewWorkstreamDialog } from './app/workstreams/NewWorkstreamDialog';
+import { installToggleShortcuts } from './app/panelToggles';
 
 /** Commands of the palette's `>` mode. */
 const commands = (): PaletteCommand[] => [
@@ -53,6 +54,7 @@ export default function App() {
     const uninstall = [
       installNewShellShortcut(() => openTerminal(newTerminalConfig('shell'))),
       installQuickOpenShortcut(),
+      installToggleShortcuts(),
       installQuitGuard(),
       watchProfiles(),
       installWorkstreams({

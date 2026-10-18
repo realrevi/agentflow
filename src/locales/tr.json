@@ -858,5 +858,8 @@
   "settings.workstreams.stageScale": "Sahne karakter boyutu",
   "settings.workstreams.stageAnimations": "Sahne animasyonları (paketler, nabızlar)",
   "workstream.remind": "{name} için biçimi hatırlat",
-  "workstream.openManager": "Yöneticiyi aç"
+  "workstream.openManager": "Yöneticiyi aç",
+  "sidebar.show": "Kenar çubuğunu göster",
+  "status.toggleTerminal": "Terminal alanını göster/gizle",
+  "status.toggleFiles": "Dosyalar panelini göster/gizle"
 }

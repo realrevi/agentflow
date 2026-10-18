@@ -52,7 +52,7 @@
 
 .af-md code {
   padding: 1px 4px;
-  border-radius: 3px;
+  border-radius: var(--af-radius-sm);
   background: var(--af-input-bg);
   font-family: var(--af-font-mono);
   font-size: 0.92em;
@@ -78,7 +78,7 @@
   margin: 0 0 10px;
   overflow: hidden;
   border: 1px solid var(--af-widget-border);
-  border-radius: 6px;
+  border-radius: var(--af-radius-md);
   background: var(--af-terminal-bg);
 }
 
@@ -88,14 +88,14 @@
   justify-content: space-between;
   padding: 2px 4px 2px 10px;
   border-bottom: 1px solid var(--af-widget-border);
-  font-size: 11px;
+  font-size: var(--af-text-xs);
   color: var(--af-fg-muted);
 }
 
 .af-code-copy {
   padding: 2px 8px;
   border: none;
-  border-radius: 3px;
+  border-radius: var(--af-radius-sm);
   background: none;
   color: inherit;
   font: inherit;
@@ -117,6 +117,6 @@
   padding: 0;
   background: none;
   color: var(--af-terminal-fg);
-  font-size: 12.5px;
+  font-size: var(--af-text-sm);
   white-space: pre;
 }

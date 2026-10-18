@@ -30,7 +30,7 @@
   resize: none;
   overflow-y: auto;
   border: 1px solid var(--af-input-border);
-  border-radius: 4px;
+  border-radius: var(--af-radius-sm);
   background: var(--af-input-bg);
   color: var(--af-input-fg);
   font-family: var(--af-font-mono);

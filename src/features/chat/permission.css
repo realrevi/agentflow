@@ -4,7 +4,7 @@
   margin: 4px 0 12px;
   padding: 8px 10px;
   border: 1px solid var(--af-accent);
-  border-radius: 6px;
+  border-radius: var(--af-radius-md);
   background: var(--af-widget-bg);
 }
 
@@ -24,7 +24,7 @@
   flex: 1;
   min-width: 0;
   font-family: var(--af-font-mono);
-  font-size: 12px;
+  font-size: var(--af-text-sm);
   overflow-wrap: anywhere;
 }
 
@@ -33,13 +33,13 @@
   padding: 6px 8px;
   border-left: 3px solid var(--af-warning);
   background: var(--af-list-hover-bg);
-  font-size: 12px;
+  font-size: var(--af-text-sm);
 }
 
 .af-permission-diff {
   margin: 6px 0;
   border: 1px solid var(--af-widget-border);
-  border-radius: 4px;
+  border-radius: var(--af-radius-sm);
   overflow: hidden;
 }
 
@@ -49,7 +49,7 @@
   gap: 4px 16px;
   margin: 4px 0 0;
   color: var(--af-fg-muted);
-  font-size: 12px;
+  font-size: var(--af-text-sm);
   overflow-wrap: anywhere;
 }
 

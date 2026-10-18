@@ -10,7 +10,7 @@
 
 .af-tool-card {
   border: 1px solid var(--af-widget-border);
-  border-radius: 4px;
+  border-radius: var(--af-radius-sm);
   background: var(--af-widget-bg);
 }
 
@@ -30,7 +30,7 @@
   background: none;
   color: var(--af-fg);
   font: inherit;
-  font-size: 12px;
+  font-size: var(--af-text-sm);
   text-align: left;
   cursor: pointer;
 }
@@ -57,10 +57,10 @@
 .af-tool-chip {
   flex: none;
   padding: 0 6px;
-  border-radius: 8px;
+  border-radius: var(--af-radius-lg);
   background: color-mix(in srgb, var(--af-error) 18%, transparent);
   color: var(--af-error);
-  font-size: 11px;
+  font-size: var(--af-text-xs);
 }
 
 .af-tool-state {
@@ -111,7 +111,7 @@
 .af-tool-label {
   margin: 6px 0 2px;
   color: var(--af-fg-muted);
-  font-size: 11px;
+  font-size: var(--af-text-xs);
   text-transform: uppercase;
 }
 
@@ -121,11 +121,11 @@
   margin: 0;
   padding: 6px 8px;
   overflow: auto;
-  border-radius: 4px;
+  border-radius: var(--af-radius-sm);
   background: var(--af-input-bg);
   color: var(--af-fg);
   font-family: var(--af-font-mono);
-  font-size: 12px;
+  font-size: var(--af-text-sm);
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
@@ -133,7 +133,7 @@
 .af-tool-empty {
   margin: 2px 0;
   color: var(--af-fg-muted);
-  font-size: 12px;
+  font-size: var(--af-text-sm);
 }
 
 .af-tool-group-items {
@@ -168,8 +168,8 @@
   margin-bottom: 14px;
   padding: 6px 8px;
   border: 1px dashed var(--af-widget-border);
-  border-radius: 4px;
-  font-size: 12px;
+  border-radius: var(--af-radius-sm);
+  font-size: var(--af-text-sm);
 }
 
 .af-turn-footer.undone {
@@ -198,9 +198,9 @@
   margin-bottom: 10px;
   padding: 6px 10px;
   border-left: 3px solid var(--af-accent);
-  border-radius: 4px;
+  border-radius: var(--af-radius-sm);
   background: var(--af-list-hover-bg);
-  font-size: 12px;
+  font-size: var(--af-text-sm);
 }
 
 .af-notice-strip.maxIterations {

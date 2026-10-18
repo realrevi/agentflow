@@ -27,7 +27,7 @@
 .af-placeholder h2,
 .af-watermark h2 {
   margin: 4px 0 0;
-  font-size: 18px;
+  font-size: var(--af-text-xl);
   color: var(--af-fg);
 }
 

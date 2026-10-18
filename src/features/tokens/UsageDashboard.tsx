@@ -2,7 +2,7 @@
 // 7 / 30 days, the daily chart, cache savings and unpriced tokens, breakdowns by model,
 // workspace and panel, and the CLI readers' status. Live via the usage store (no polling).
 import './usage.css';
-import { createMemo, createSignal, For, Show } from 'solid-js';
+import { createMemo, createSignal, Show } from 'solid-js';
 import type { Totals, UsageGroup } from '../../shared/types';
 import { t, type I18nKey } from '../i18n';
 import { settings } from '../settings/settingsStore';
@@ -12,6 +12,8 @@ import { costText, formatCost, formatTokens, totalTokens } from './format';
 import { UsageChart } from './UsageChart';
 import { UsageTable } from './UsageTable';
 import { usageSummary } from './usageStore';
+import { Button } from '../../shared/ui/Button';
+import { SegmentedControl, Tabs } from '../../shared/ui/Segmented';
 
 type Period = 'today' | 'week' | 'month';
 type Breakdown = 'models' | 'workspaces' | 'panels';
@@ -57,34 +59,25 @@ export function UsageDashboard(props: UsageDashboardProps) {
       <Show when={summary()} fallback={<p class="af-usage-muted">{t('panel.loading')}</p>}>
         {(current) => (
           <Show when={current().month.requests > 0} fallback={<EmptyState />}>
-            <div class="af-segmented" role="radiogroup" aria-label={t('usage.period.label')}>
-              <For each={PERIODS}>
-                {(entry) => (
-                  <button
-                    type="button"
-                    class="af-segment"
-                    role="radio"
-                    aria-checked={period() === entry.id}
-                    onClick={() => setPeriod(entry.id)}
-                  >
-                    {t(entry.label)}
-                  </button>
-                )}
-              </For>
-            </div>
+            <SegmentedControl
+              label={t('usage.period.label')}
+              value={period()}
+              onChange={setPeriod}
+              options={PERIODS.map((entry) => ({ value: entry.id, label: t(entry.label) }))}
+            />
             <Show when={totals()}>
               {(shown) => <TotalsCards totals={shown()} subscription={subscription()} />}
             </Show>
 
             <div class="af-usage-heading">
               <span>{t('usage.chart.title')}</span>
-              <button
-                type="button"
-                class="af-usage-link"
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={() => setMetric(chartMetric() === 'cost' ? 'tokens' : 'cost')}
               >
                 {t(chartMetric() === 'cost' ? 'usage.chart.showTokens' : 'usage.chart.showCost')}
-              </button>
+              </Button>
             </div>
             <UsageChart days={current().days} metric={chartMetric()} />
 
@@ -96,29 +89,21 @@ export function UsageDashboard(props: UsageDashboardProps) {
             <Show when={(totals()?.unpricedTokens ?? 0) > 0}>
               <p class="af-usage-line">
                 {t('usage.unpriced', { count: formatTokens(totals()?.unpricedTokens ?? 0) })}{' '}
-                <button type="button" class="af-usage-link" onClick={() => props.onOpenSettings()}>
+                <Button variant="ghost" size="sm" onClick={() => props.onOpenSettings()}>
                   {t('usage.unpriced.add')}
-                </button>
+                </Button>
               </p>
             </Show>
 
             <div class="af-usage-heading">
               <span>{t('usage.breakdown.title')}</span>
             </div>
-            <div class="af-usage-tabs" role="tablist">
-              <For each={BREAKDOWNS}>
-                {(entry) => (
-                  <button
-                    type="button"
-                    role="tab"
-                    aria-selected={breakdown() === entry.id}
-                    onClick={() => setBreakdown(entry.id)}
-                  >
-                    {t(entry.label)}
-                  </button>
-                )}
-              </For>
-            </div>
+            <Tabs
+              label={t('usage.breakdown.title')}
+              value={breakdown()}
+              onChange={setBreakdown}
+              options={BREAKDOWNS.map((entry) => ({ value: entry.id, label: t(entry.label) }))}
+            />
             <UsageTable
               groups={current()[breakdown()]}
               name={groupName(breakdown())}
@@ -146,9 +131,9 @@ export function UsageDashboard(props: UsageDashboardProps) {
       </Show>
       <Show when={props.compact && props.onOpenPanel}>
         {(open) => (
-          <button type="button" class="af-button secondary small af-usage-open" onClick={open()}>
+          <Button class="af-usage-open" variant="secondary" size="sm" onClick={open()}>
             {t('usage.openPanel')}
-          </button>
+          </Button>
         )}
       </Show>
     </div>

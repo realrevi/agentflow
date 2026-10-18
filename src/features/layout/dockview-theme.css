@@ -1,7 +1,7 @@
 /* Maps dockview's --dv-* variables onto AgentFlow's --af-* theme variables. */
 .af-dockview {
   --dv-paneview-active-outline-color: var(--af-focus);
-  --dv-tabs-and-actions-container-font-size: 12px;
+  --dv-tabs-and-actions-container-font-size: var(--af-text-sm);
   --dv-tabs-and-actions-container-height: 34px;
   --dv-drag-over-background-color: var(--af-accent-soft);
   --dv-drag-over-border-color: var(--af-accent);
@@ -21,7 +21,7 @@
   --dv-spacing-padding: 0px;
   --dv-tab-border-radius: 0px;
   --dv-sash-border-radius: 0px;
-  --dv-dropdown-border-radius: 6px;
+  --dv-dropdown-border-radius: var(--af-radius-md);
   --dv-tab-close-icon-size: inherit;
   --dv-floating-group-border: none;
   --dv-drag-over-border: none;
@@ -138,7 +138,7 @@
   flex: none;
   padding: 1px;
   border: none;
-  border-radius: 3px;
+  border-radius: var(--af-radius-sm);
   background: none;
   cursor: pointer;
 }

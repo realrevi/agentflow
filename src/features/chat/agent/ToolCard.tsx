@@ -2,7 +2,7 @@
 // once) and, expanded, its input and output (capped, "show all").
 import { createSignal, Match, Show, Switch } from 'solid-js';
 import type { ToolCall, ToolResult } from '../../../shared/types';
-import { PixelIcon } from '../../../shared/ui/PixelIcon';
+import { Icon } from '../../../shared/ui/Icon';
 import { t, type I18nKey } from '../../i18n';
 import type { LiveTool } from './liveTurn';
 import { toolIcon } from './toolIcons';
@@ -53,7 +53,7 @@ export function ToolCard(props: {
         aria-expanded={open()}
         onClick={() => setOpen((value) => !value)}
       >
-        <PixelIcon art={toolIcon(props.call.name)} class="af-tool-icon" />
+        <Icon name={toolIcon(props.call.name)} size={14} class="af-tool-icon" />
         <span class="af-tool-summary">{toolSummary(props.call, result())}</span>
         <Show when={state() === 'denied' || state() === 'skipped'}>
           <span class="af-tool-chip">{t(STATE_LABEL[state()])}</span>

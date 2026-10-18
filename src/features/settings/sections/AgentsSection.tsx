@@ -6,6 +6,8 @@ import type { PermissionMode } from '../../../shared/types';
 import { t } from '../../i18n';
 import { settings, updateSettings } from '../settingsStore';
 import { Row, Section } from './Section';
+import { Button } from '../../../shared/ui/Button';
+import { Input, Select, Toggle } from '../../../shared/ui/Field';
 
 const LIMITS = {
   iterations: { min: 1, max: 200 },
@@ -27,9 +29,8 @@ export function AgentsSection() {
     apply: (value: number) => void,
   ) => (
     <Row label={label} for={id}>
-      <input
+      <Input
         id={id}
-        class="af-input"
         type="number"
         min={limit.min}
         max={limit.max}
@@ -45,9 +46,8 @@ export function AgentsSection() {
   return (
     <Section title={t('settings.agents')} hint={t('settings.agents.hint')}>
       <Row label={t('settings.agents.mode')} for="af-agents-mode">
-        <select
+        <Select
           id="af-agents-mode"
-          class="af-select"
           value={settings.agent.defaultMode}
           onChange={(event) => {
             const mode = event.currentTarget.value as PermissionMode;
@@ -57,14 +57,11 @@ export function AgentsSection() {
           <option value="ask">{t('agent.mode.ask')}</option>
           <option value="autoEdit">{t('agent.mode.autoEdit')}</option>
           <option value="readOnly">{t('agent.mode.readOnly')}</option>
-        </select>
+        </Select>
       </Row>
       <Row label={t('settings.agents.prompt')} for="af-agents-prompt">
-        <input
+        <Toggle
           id="af-agents-prompt"
-          type="checkbox"
-          class="af-switch"
-          role="switch"
           checked={settings.agent.defaultPrompt}
           onChange={(event) => {
             const on = event.currentTarget.checked;
@@ -74,11 +71,8 @@ export function AgentsSection() {
       </Row>
       <p class="af-settings-hint">{t('settings.agents.promptHint')}</p>
       <Row label={t('settings.agents.reasoning')} for="af-agents-reasoning">
-        <input
+        <Toggle
           id="af-agents-reasoning"
-          type="checkbox"
-          class="af-switch"
-          role="switch"
           checked={settings.agent.showReasoning}
           onChange={(event) => {
             const on = event.currentTarget.checked;
@@ -113,8 +107,7 @@ export function AgentsSection() {
       <For each={settings.agent.toolModels}>
         {(entry, index) => (
           <div class="af-settings-row">
-            <input
-              class="af-input"
+            <Input
               spellcheck={false}
               aria-label={t('settings.agents.model')}
               placeholder={t('settings.agents.model')}
@@ -127,8 +120,7 @@ export function AgentsSection() {
                 });
               }}
             />
-            <select
-              class="af-select"
+            <Select
               aria-label={t('settings.agents.tools')}
               value={entry.tools ? 'on' : 'off'}
               onChange={(event) => {
@@ -141,24 +133,24 @@ export function AgentsSection() {
             >
               <option value="on">{t('settings.agents.toolsOn')}</option>
               <option value="off">{t('settings.agents.toolsOff')}</option>
-            </select>
-            <button
-              type="button"
-              class="af-button secondary small"
+            </Select>
+            <Button
+              variant="secondary"
+              size="sm"
               onClick={() => updateSettings((s) => s.agent.toolModels.splice(index(), 1))}
             >
               {t('settings.agents.remove')}
-            </button>
+            </Button>
           </div>
         )}
       </For>
-      <button
-        type="button"
-        class="af-button secondary small"
+      <Button
+        variant="secondary"
+        size="sm"
         onClick={() => updateSettings((s) => s.agent.toolModels.push({ model: '', tools: false }))}
       >
         {t('settings.agents.add')}
-      </button>
+      </Button>
     </Section>
   );
 }

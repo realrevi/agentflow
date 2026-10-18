@@ -1,8 +1,7 @@
 // Small popover menu anchored to a trigger element. Closes on outside click, Escape or select.
 import { For, onCleanup, onMount, Show, type JSX } from 'solid-js';
 import { Portal } from 'solid-js/web';
-import { checkIcon } from './icons';
-import { PixelIcon } from './PixelIcon';
+import { Icon } from './Icon';
 
 export interface MenuItem {
   id: string;
@@ -107,7 +106,7 @@ export function Menu(props: MenuProps): JSX.Element {
               >
                 <span class="af-menu-check">
                   <Show when={item.checked}>
-                    <PixelIcon art={checkIcon} />
+                    <Icon name="check" size={14} />
                   </Show>
                 </span>
                 {item.label}

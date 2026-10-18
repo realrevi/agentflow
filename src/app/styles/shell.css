@@ -49,27 +49,75 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 48px;
-  height: 44px;
+  width: 40px;
+  height: 40px;
+  margin: 2px 4px;
   border: none;
+  border-radius: var(--af-radius-md);
   background: none;
   color: var(--af-activitybar-inactive-fg);
   cursor: pointer;
+  transition:
+    color var(--af-duration) var(--af-ease),
+    background-color var(--af-duration) var(--af-ease),
+    transform var(--af-duration-fast) var(--af-ease);
 }
 
-.af-activity:hover,
+.af-activity:hover {
+  color: var(--af-activitybar-fg);
+  background: var(--af-list-hover-bg);
+}
+
+.af-activity:active {
+  transform: scale(0.92);
+}
+
+.af-activity:focus-visible {
+  outline: none;
+  box-shadow: var(--af-focus-ring);
+}
+
 .af-activity.active {
   color: var(--af-activitybar-fg);
 }
 
-.af-activity.active::before {
+.af-activity::before {
   content: '';
   position: absolute;
-  top: 8px;
-  bottom: 8px;
-  left: 0;
-  width: 2px;
+  top: 10px;
+  bottom: 10px;
+  left: -4px;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
   background: var(--af-activitybar-active-border);
+  box-shadow: var(--af-accent-glow);
+  transform: scaleY(0);
+  transition: transform var(--af-duration) var(--af-ease);
+}
+
+.af-activity.active::before {
+  transform: scaleY(1);
+}
+
+/* Shown while the sidebar is hidden: click or drag it back out. */
+.af-sidebar-handle {
+  flex: none;
+  width: 6px;
+  padding: 0;
+  border: none;
+  border-right: 1px solid var(--af-sidebar-border);
+  background: var(--af-sidebar-bg);
+  cursor: col-resize;
+  transition:
+    background-color var(--af-duration) var(--af-ease),
+    width var(--af-duration) var(--af-ease);
+}
+
+.af-sidebar-handle:hover,
+.af-sidebar-handle:focus-visible {
+  width: 8px;
+  outline: none;
+  background: color-mix(in srgb, var(--af-accent) 55%, var(--af-sidebar-bg));
 }
 
 /* Sidebar */
@@ -94,7 +142,7 @@
 .af-sidebar-title {
   margin: 0;
   font-family: var(--af-font-pixel);
-  font-size: 12px;
+  font-size: var(--af-text-sm);
   font-weight: 600;
   letter-spacing: 1px;
   text-transform: uppercase;
@@ -119,7 +167,7 @@
 .af-sidebar-sash:hover {
   background: var(--af-accent);
   opacity: 0.6;
-  transition: opacity 0.1s 0.3s;
+  transition: opacity var(--af-duration) var(--af-ease) 0.3s;
 }
 
 .af-view {
@@ -128,7 +176,7 @@
 
 .af-view-heading {
   margin: 8px 4px 6px;
-  font-size: 11px;
+  font-size: var(--af-text-xs);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.6px;
@@ -153,7 +201,7 @@
   width: 100%;
   padding: 4px 8px;
   border: none;
-  border-radius: 4px;
+  border-radius: var(--af-radius-sm);
   background: none;
   color: inherit;
   font: inherit;
@@ -199,7 +247,7 @@
 }
 
 .af-view-folder span {
-  font-size: 12px;
+  font-size: var(--af-text-sm);
   color: var(--af-fg-muted);
 }
 

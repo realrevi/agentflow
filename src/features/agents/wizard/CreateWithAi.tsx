@@ -7,6 +7,8 @@ import type { AgentTemplate } from '../../../shared/types';
 import { locale, reportError, t } from '../../i18n';
 import { providerName } from '../../providers';
 import { settings } from '../../settings/settingsStore';
+import { Button } from '../../../shared/ui/Button';
+import { Input, Select, Textarea } from '../../../shared/ui/Field';
 
 export function CreateWithAi(props: {
   workspace: string | null;
@@ -46,17 +48,15 @@ export function CreateWithAi(props: {
         <label class="af-question-label" for="af-ai-description">
           {t('installer.ai.describe')}
         </label>
-        <textarea
+        <Textarea
           id="af-ai-description"
-          class="af-input"
           rows={4}
           placeholder={t('installer.ai.placeholder')}
           value={description()}
           onInput={(e) => setDescription(e.currentTarget.value)}
         />
         <div class="af-create-ai-row">
-          <select
-            class="af-select"
+          <Select
             aria-label={t('chat.provider')}
             value={providerId()}
             onChange={(e) => {
@@ -68,9 +68,8 @@ export function CreateWithAi(props: {
             <For each={settings.providers}>
               {(entry) => <option value={entry.id}>{providerName(entry)}</option>}
             </For>
-          </select>
-          <input
-            class="af-input"
+          </Select>
+          <Input
             aria-label={t('chat.model')}
             placeholder={t('chat.model.placeholder')}
             value={model()}
@@ -98,14 +97,12 @@ export function CreateWithAi(props: {
             {t('installer.ai.own')}
           </label>
         </fieldset>
-        <button
-          type="button"
-          class="af-button"
+        <Button
           disabled={busy() || !description().trim() || !model().trim()}
           onClick={() => void generate()}
         >
           {busy() ? t('installer.ai.working') : t('installer.ai.generate')}
-        </button>
+        </Button>
       </Show>
     </div>
   );

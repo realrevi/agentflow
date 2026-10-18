@@ -17,7 +17,7 @@ import {
   snapshotWorkstreams,
   unlinkPanel,
 } from '../workstreams/store';
-import { hasAgentUi, type TerminalConfig } from '../terminal';
+import { hasAgentUi, newTerminalConfig, type TerminalConfig } from '../terminal';
 import {
   characterOf,
   ensureCharacters,
@@ -45,6 +45,7 @@ import {
   snapshotRoles,
 } from './roles';
 import { parseSavedLayout, serializeLayout } from './savedLayout';
+import { revealGroup, syncVisibility, toggleRoleGroups, type ToggleRole } from './visibility';
 
 export interface OpenPanel {
   id: string;
@@ -72,6 +73,7 @@ export function attachLayout(dock: DockviewApi): () => void {
   api = dock;
   restore(dock);
   assignCharacters();
+  syncVisibility(dock);
 
   const persistLayout = debounce(
     () =>
@@ -89,6 +91,7 @@ export function attachLayout(dock: DockviewApi): () => void {
     dock.onDidLayoutChange(() => {
       persistLayout();
       syncOpenPanels();
+      syncVisibility(dock);
     }),
     dock.onDidAddPanel((panel) => {
       ensureRole(panel.group);
@@ -240,7 +243,16 @@ export function consumeFreshPanel(id: string): boolean {
 export function addPanel(dock: DockviewApi, params: PanelParams, groupId?: string): void {
   const target =
     (groupId ? dock.getGroup(groupId) : undefined) ?? groupForRole(dock, roleForPanel(params));
+  revealGroup(dock, target.id);
   dock.addPanel({ ...panelOptions(params), position: { referenceGroup: target.id } });
+}
+
+/** Toggles the bottom terminal group or the Files group; opens one if there is none. */
+export function togglePanelArea(role: ToggleRole): void {
+  if (!api) return;
+  if (toggleRoleGroups(api, role)) return;
+  if (role === 'files') openPanel('files');
+  else openTerminal(newTerminalConfig('shell'));
 }
 
 /** Opens (or focuses) the Files or Settings panel. */

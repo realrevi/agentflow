@@ -13,6 +13,7 @@ import { settings } from '../../features/settings';
 import { agentState, attentionOf, glowing } from '../../features/agentui';
 import { newTerminalConfig, terminalStatus } from '../../features/terminal';
 import { openNewWorkstream, WorkstreamsSection } from '../../features/workstreams';
+import { Button } from '../../shared/ui/Button';
 
 export function AgentsView() {
   return (
@@ -76,16 +77,12 @@ export function AgentsView() {
       />
       <ChatList />
       <div class="af-button-column">
-        <button
-          type="button"
-          class="af-button"
-          onClick={() => openTerminal(newTerminalConfig('shell'))}
-        >
+        <Button onClick={() => openTerminal(newTerminalConfig('shell'))}>
           {t('sidebar.agents.newShell')}
-        </button>
-        <button type="button" class="af-button secondary" onClick={() => openPanel('files')}>
+        </Button>
+        <Button variant="secondary" onClick={() => openPanel('files')}>
           {t('sidebar.agents.showFiles')}
-        </button>
+        </Button>
       </div>
     </div>
   );

@@ -858,5 +858,8 @@
   "settings.workstreams.stageScale": "Размер персонажей на сцене",
   "settings.workstreams.stageAnimations": "Анимации сцены (пакеты, пульсация)",
   "workstream.remind": "Напомнить {name} формат",
-  "workstream.openManager": "Открыть менеджера"
+  "workstream.openManager": "Открыть менеджера",
+  "sidebar.show": "Показать боковую панель",
+  "status.toggleTerminal": "Показать или скрыть область терминала",
+  "status.toggleFiles": "Показать или скрыть панель файлов"
 }
