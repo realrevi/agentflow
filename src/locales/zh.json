@@ -861,5 +861,7 @@
   "workstream.openManager": "打开经理",
   "sidebar.show": "显示侧边栏",
   "status.toggleTerminal": "显示/隐藏终端区域",
-  "status.toggleFiles": "显示/隐藏文件面板"
+  "status.toggleFiles": "显示/隐藏文件面板",
+  "settings.workstreams.autoRemind": "提醒一次管理者使用格式",
+  "settings.workstreams.autoRemindHint": "管理者回复中没有有效的 AgentFlow 块时，暂停前先发送一次提醒。"
 }

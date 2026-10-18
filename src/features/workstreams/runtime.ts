@@ -110,11 +110,25 @@ async function deliver(ws: Workstream, handoff: Handoff, hooks: RuntimeHooks): P
   log(ws, handoff, hooks).catch((err: unknown) => reportError('error.workstreamLog', err));
 }
 
+/** The one automatic format reminder after a reply without a valid block. */
+async function autoRemind(ws: Workstream): Promise<void> {
+  const port = portOf(ws.manager);
+  let sent = false;
+  try {
+    sent = Boolean(port?.ready()) && (await port?.deliver(FORMAT_REMINDER)) === true;
+  } catch {
+    sent = false;
+  }
+  if (!sent) dispatch(ws.id, { type: 'error', panel: ws.manager, message: null });
+}
+
 /** Starts the runtime once (app start). Returns a cleanup function. */
 export function installWorkstreams(hooks: RuntimeHooks): () => void {
   setActionRunner((ws, action) => {
     if (action.type === 'attention') {
       requestAttention(action.panel, action.reason, memberName(ws, action.panel));
+    } else if (action.type === 'remind') {
+      void autoRemind(ws);
     } else {
       void deliver(ws, action.handoff, hooks);
     }

@@ -104,6 +104,20 @@ export function WorkstreamsSection() {
           <For each={STAGE_SCALES}>{(scale) => <option value={scale}>{`${scale}×`}</option>}</For>
         </Select>
       </Row>
+      <Row
+        label={t('settings.workstreams.autoRemind')}
+        hint={t('settings.workstreams.autoRemindHint')}
+        for="af-ws-remind"
+      >
+        <Toggle
+          id="af-ws-remind"
+          checked={ws().autoRemind}
+          onChange={(e) => {
+            const on = e.currentTarget.checked;
+            updateSettings((s) => (s.workstreams.autoRemind = on));
+          }}
+        />
+      </Row>
       <Row label={t('settings.workstreams.stageAnimations')} for="af-ws-anim">
         <Toggle
           id="af-ws-anim"

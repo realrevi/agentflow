@@ -7,6 +7,7 @@ mod library;
 mod migrate;
 mod model;
 mod normalize;
+mod onboarding;
 mod providers;
 mod store;
 mod usage;
@@ -22,6 +23,7 @@ pub use model::{
     CURRENT_VERSION, CURSOR_STYLES, DEFAULT_BOLD_COLOR, DEFAULT_LANGUAGE, DEFAULT_THEME_ID,
     MAX_RECENT_WORKSPACES, SIDEBAR_VIEWS, SUPPORTED_LANGUAGES,
 };
+pub use onboarding::OnboardingSettings;
 pub use providers::{
     is_valid_provider_id, ProviderEntry, ANTHROPIC_PRESET, OPENAI_PRESETS, PROVIDER_KINDS,
 };

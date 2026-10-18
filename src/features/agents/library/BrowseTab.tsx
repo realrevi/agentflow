@@ -2,12 +2,21 @@
 // refresh status (rate limit, offline), the sources, and an item's detail view. Install
 // and Customize with AI hand the item's template to the wizard.
 import './library.css';
-import { createMemo, createSignal, For, onMount, Show } from 'solid-js';
-import { createStore } from 'solid-js/store';
+import { createMemo, createSignal, For, onCleanup, onMount, Show } from 'solid-js';
 import type { AgentTemplate, LibraryItem, TemplateKind } from '../../../shared/types';
 import { t } from '../../i18n';
 import { TARGETS } from '../wizard/answers';
-import { DEFAULT_FILTERS, filterItems, tagFacets, type Filters, type SortKey } from './filters';
+import {
+  filters,
+  limit,
+  rememberScroll,
+  savedScroll,
+  selected,
+  setFilter,
+  setSelected,
+  showMore,
+} from './browseState';
+import { filterItems, tagFacets, type Filters, type SortKey } from './filters';
 import { ItemCard } from './ItemCard';
 import { ItemDetail } from './ItemDetail';
 import { KIND_LABELS, resetTime } from './labels';
@@ -16,7 +25,6 @@ import { SourcesSection } from './SourcesSection';
 import { Button } from '../../../shared/ui/Button';
 import { Input, Select } from '../../../shared/ui/Field';
 
-const PAGE = 40;
 const SORTS: readonly {
   id: SortKey;
   label:
@@ -34,16 +42,18 @@ export function BrowseTab(props: {
   onInstall: (template: AgentTemplate, item: LibraryItem) => void;
 }) {
   onMount(() => void openLibrary());
-  const [filters, setFilters] = createStore<Filters>({ ...DEFAULT_FILTERS });
-  const [limit, setLimit] = createSignal(PAGE);
-  const [selected, setSelected] = createSignal<LibraryItem | null>(null);
   const [showSources, setShowSources] = createSignal(false);
   const items = createMemo(() => filterItems(catalog()?.items ?? [], { ...filters }));
   const tags = createMemo(() => tagFacets(catalog()?.items ?? []));
-  const set = <K extends keyof Filters>(key: K, value: Filters[K]) => {
-    setFilters(key, value);
-    setLimit(PAGE);
+  const set = <K extends keyof Filters>(key: K, value: Filters[K]) => setFilter(key, value);
+  // The list keeps its scroll position for the session (tabs, detail view, panel close).
+  const keepScroll = (section: HTMLElement) => {
+    const scroller = section.closest<HTMLElement>('.af-installer');
+    if (!scroller) return;
+    requestAnimationFrame(() => (scroller.scrollTop = savedScroll()));
+    onCleanup(() => rememberScroll(scroller.scrollTop));
   };
+
   const limited = () =>
     catalog()?.sources.find((s) => s.error?.kind === 'rateLimited')?.error?.resetAt ?? null;
   const offline = () =>
@@ -53,7 +63,7 @@ export function BrowseTab(props: {
     <Show
       when={selected()}
       fallback={
-        <section class="af-wizard-step af-lib">
+        <section class="af-wizard-step af-lib" ref={(el) => onMount(() => keepScroll(el))}>
           <div class="af-lib-status">
             <span class="af-installer-hint">
               {catalog()?.refreshedAt
@@ -170,7 +180,7 @@ export function BrowseTab(props: {
             </For>
           </div>
           <Show when={items().length > limit()}>
-            <Button variant="secondary" onClick={() => setLimit((n) => n + PAGE)}>
+            <Button variant="secondary" onClick={showMore}>
               {t('library.more', { count: items().length - limit() })}
             </Button>
           </Show>

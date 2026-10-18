@@ -861,5 +861,7 @@
   "workstream.openManager": "Открыть менеджера",
   "sidebar.show": "Показать боковую панель",
   "status.toggleTerminal": "Показать или скрыть область терминала",
-  "status.toggleFiles": "Показать или скрыть панель файлов"
+  "status.toggleFiles": "Показать или скрыть панель файлов",
+  "settings.workstreams.autoRemind": "Один раз напомнить менеджеру о формате",
+  "settings.workstreams.autoRemindHint": "Если в ответе менеджера нет корректного блока AgentFlow, перед паузой отправить одно напоминание."
 }

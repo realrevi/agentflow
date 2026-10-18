@@ -59,6 +59,8 @@ export interface Workstream {
   pending: Handoff | null;
   /** Panels whose next turn end answers a delivery. */
   awaiting: string[];
+  /** The format reminder went out after an invalid manager reply (one per stretch). */
+  reminded?: boolean;
 }
 
 export const WORKSTREAM_COLORS = [

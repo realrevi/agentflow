@@ -861,5 +861,7 @@
   "workstream.openManager": "Yöneticiyi aç",
   "sidebar.show": "Kenar çubuğunu göster",
   "status.toggleTerminal": "Terminal alanını göster/gizle",
-  "status.toggleFiles": "Dosyalar panelini göster/gizle"
+  "status.toggleFiles": "Dosyalar panelini göster/gizle",
+  "settings.workstreams.autoRemind": "Yöneticiye biçimi bir kez hatırlat",
+  "settings.workstreams.autoRemindHint": "Yönetici yanıtında geçerli bir AgentFlow bloğu yoksa duraklamadan önce bir hatırlatma gönder."
 }

@@ -861,5 +861,7 @@
   "workstream.openManager": "Manager öffnen",
   "sidebar.show": "Seitenleiste einblenden",
   "status.toggleTerminal": "Terminalbereich ein-/ausblenden",
-  "status.toggleFiles": "Dateien-Panel ein-/ausblenden"
+  "status.toggleFiles": "Dateien-Panel ein-/ausblenden",
+  "settings.workstreams.autoRemind": "Den Manager einmal an das Format erinnern",
+  "settings.workstreams.autoRemindHint": "Fehlt in einer Antwort des Managers ein gültiger AgentFlow-Block, vor dem Pausieren einmal erinnern."
 }

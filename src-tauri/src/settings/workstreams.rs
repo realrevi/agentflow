@@ -41,6 +41,9 @@ pub struct WorkstreamSettings {
     pub stage_scale: u8,
     /// Packets, pulses and walking on the Stage (reduced motion turns them off too).
     pub stage_animations: bool,
+    /// Send the manager one format reminder before pausing on a reply without a valid
+    /// AgentFlow block.
+    pub auto_remind: bool,
 }
 
 impl Default for WorkstreamSettings {
@@ -54,6 +57,7 @@ impl Default for WorkstreamSettings {
             report_cap_kb: 30,
             stage_scale: 4,
             stage_animations: true,
+            auto_remind: true,
         }
     }
 }

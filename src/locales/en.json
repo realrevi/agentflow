@@ -861,5 +861,7 @@
   "workstream.openManager": "Open the manager",
   "sidebar.show": "Show sidebar",
   "status.toggleTerminal": "Show or hide the terminal area",
-  "status.toggleFiles": "Show or hide the Files panel"
+  "status.toggleFiles": "Show or hide the Files panel",
+  "settings.workstreams.autoRemind": "Remind the manager of the format once",
+  "settings.workstreams.autoRemindHint": "When a manager reply has no valid AgentFlow block, send one reminder before pausing."
 }

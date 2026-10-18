@@ -10,11 +10,12 @@ export function Section(props: { title: string; hint?: string; children: JSX.Ele
   );
 }
 
-export function Row(props: { label: string; for?: string; children: JSX.Element }) {
+export function Row(props: { label: string; hint?: string; for?: string; children: JSX.Element }) {
   return (
     <div class="af-settings-row">
       <label class="af-settings-label" for={props.for}>
         {props.label}
+        {props.hint && <span class="af-settings-hint">{props.hint}</span>}
       </label>
       <div class="af-settings-control">{props.children}</div>
     </div>
