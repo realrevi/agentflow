@@ -1,9 +1,10 @@
-// Markdown for assistant replies: marked (GFM, line breaks) with raw HTML shown as text,
-// then DOMPurify with a small allow-list as a second line of defense. Code blocks get a
-// copy button (handled by delegation in the message list); bold uses the agent-bold style.
+// Markdown for assistant replies and library items: marked (GFM, line breaks) with raw
+// HTML shown as text, then DOMPurify with a small allow-list as a second line of defense.
+// Code blocks get a copy button when a label is given (the chat handles it by delegation);
+// bold uses the agent-bold style. Only lazy panels import this (marked + DOMPurify).
+import './markdown.css';
 import DOMPurify from 'dompurify';
 import { Marked } from 'marked';
-import { t } from '../i18n';
 
 const ESCAPES: Record<string, string> = {
   '&': '&amp;',
@@ -17,6 +18,9 @@ export function escapeHtml(text: string): string {
   return text.replace(/[&<>"']/g, (c) => ESCAPES[c] ?? c);
 }
 
+/** The copy button's label for the current render (none = no button). */
+let copyLabel: string | null = null;
+
 const marked = new Marked({ gfm: true, breaks: true, async: false });
 marked.use({
   renderer: {
@@ -26,11 +30,14 @@ marked.use({
     },
     code({ text, lang }) {
       const language = (lang ?? '').trim().split(/\s+/)[0] ?? '';
-      const label = escapeHtml(t('chat.copyCode'));
+      const label = copyLabel === null ? null : escapeHtml(copyLabel);
+      const button =
+        label === null
+          ? ''
+          : `<button type="button" class="af-code-copy" data-copy="code" aria-label="${label}" title="${label}">${label}</button>`;
       return (
         `<div class="af-code"><div class="af-code-bar"><span class="af-code-lang">${escapeHtml(language)}</span>` +
-        `<button type="button" class="af-code-copy" data-copy="code" aria-label="${label}" title="${label}">${label}</button></div>` +
-        `<pre><code>${escapeHtml(text)}</code></pre></div>`
+        `${button}</div><pre><code>${escapeHtml(text)}</code></pre></div>`
       );
     },
     strong({ tokens }) {
@@ -112,6 +119,12 @@ export function sanitizeHtml(html: string): string {
   });
 }
 
-export function renderMarkdown(text: string): string {
-  return sanitizeHtml(marked.parse(text, { async: false }));
+/** Safe HTML for `text`; code blocks get a copy button labelled `options.copyLabel`. */
+export function renderMarkdown(text: string, options: { copyLabel?: string } = {}): string {
+  copyLabel = options.copyLabel ?? null;
+  try {
+    return sanitizeHtml(marked.parse(text, { async: false }));
+  } finally {
+    copyLabel = null;
+  }
 }

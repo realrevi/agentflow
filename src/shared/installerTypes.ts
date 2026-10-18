@@ -24,7 +24,7 @@ export interface Question {
 
 export interface TargetOptions {
   claudeCode?: { tools?: string[]; model?: string };
-  codex?: Record<string, never>;
+  codex?: { model?: string; reasoningEffort?: string; sandboxMode?: string };
   gemini?: Record<string, never>;
   cursor?: { globs?: string[]; alwaysApply?: boolean };
   agentflow?: {
@@ -49,6 +49,31 @@ export interface AgentTemplate {
   instructions: string;
   questions?: Question[];
   targets?: TargetOptions;
+  /** Default `agent`; skills carry `files`, library templates their `source`. */
+  kind?: TemplateKind;
+  files?: TemplateFile[];
+  source?: TemplateSource;
+}
+
+export type TemplateKind = 'agent' | 'skill' | 'rule' | 'command';
+
+export interface TemplateFile {
+  /** Relative to the skill folder. */
+  path: string;
+  /** Text, or base64 when `binary`. */
+  content: string;
+  binary?: boolean;
+}
+
+/** Where a library template came from (attribution and update checks). */
+export interface TemplateSource {
+  repo: string;
+  path: string;
+  commit: string;
+  sha: string;
+  license: string;
+  verified?: boolean;
+  format?: string;
 }
 
 export type InstallTarget = 'claudeCode' | 'codex' | 'gemini' | 'cursor' | 'agentflow';
@@ -141,6 +166,8 @@ export interface GenerateRequest {
   model: string;
   description: string;
   language: string;
+  /** "Customize with AI": adapt this template (its text stays as it is). */
+  base?: AgentTemplate;
 }
 
 export interface GenerateResult {

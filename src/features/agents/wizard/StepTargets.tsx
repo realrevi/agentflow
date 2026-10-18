@@ -5,7 +5,7 @@ import { For, Show } from 'solid-js';
 import { ipc } from '../../../shared/ipc';
 import { showToast } from '../../../shared/toast';
 import { reportError, t } from '../../i18n';
-import { TARGETS } from './answers';
+import { supportsTarget, TARGETS } from './answers';
 import { TemplateEditor } from './TemplateEditor';
 import type { Wizard } from './wizardStore';
 
@@ -13,9 +13,13 @@ export function StepTargets(props: { wizard: Wizard }) {
   const w = props.wizard;
   const existing = (target: string) =>
     (w.detection()?.existing ?? []).filter((file) => file.target === target).map((f) => f.path);
-  const allowed = (userScope: boolean) => w.scope() === 'project' || userScope;
-  const chosen = () =>
-    TARGETS.filter((target) => w.targets().has(target.id) && allowed(target.userScope));
+  const supported = (id: (typeof TARGETS)[number]['id']) => {
+    const template = w.template();
+    return template !== null && supportsTarget(template, id);
+  };
+  const usable = (target: (typeof TARGETS)[number]) =>
+    supported(target.id) && (w.scope() === 'project' || target.userScope);
+  const chosen = () => TARGETS.filter((target) => w.targets().has(target.id) && usable(target));
 
   const exportTemplate = async () => {
     const template = w.template();
@@ -48,11 +52,11 @@ export function StepTargets(props: { wizard: Wizard }) {
         <legend>{t('installer.targets')}</legend>
         <For each={TARGETS}>
           {(target) => (
-            <label class="af-check af-target" classList={{ disabled: !allowed(target.userScope) }}>
+            <label class="af-check af-target" classList={{ disabled: !usable(target) }}>
               <input
                 type="checkbox"
-                disabled={!allowed(target.userScope)}
-                checked={w.targets().has(target.id) && allowed(target.userScope)}
+                disabled={!usable(target)}
+                checked={w.targets().has(target.id) && usable(target)}
                 onChange={(e) => w.toggleTarget(target.id, e.currentTarget.checked)}
               />
               <span>{t(target.label)}</span>
@@ -61,7 +65,10 @@ export function StepTargets(props: { wizard: Wizard }) {
                   {t('installer.existing', { files: existing(target.id).join(', ') })}
                 </span>
               </Show>
-              <Show when={!allowed(target.userScope)}>
+              <Show when={!supported(target.id)}>
+                <span class="af-target-existing">{t('installer.notForKind')}</span>
+              </Show>
+              <Show when={supported(target.id) && !usable(target)}>
                 <span class="af-target-existing">{t('installer.projectOnly')}</span>
               </Show>
             </label>
@@ -102,7 +109,7 @@ export function StepTargets(props: { wizard: Wizard }) {
           disabled={chosen().length === 0}
           onClick={() => {
             for (const target of TARGETS) {
-              if (!allowed(target.userScope)) w.toggleTarget(target.id, false);
+              if (!usable(target)) w.toggleTarget(target.id, false);
             }
             w.setStep('questions');
           }}

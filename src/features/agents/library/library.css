@@ -1,0 +1,181 @@
+/* Browse tab of the Agents library panel (phase 10). */
+.af-lib-status,
+.af-lib-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.af-lib-status .af-installer-hint {
+  flex: 1 1 200px;
+}
+
+.af-lib-search {
+  flex: 1 1 220px;
+}
+
+.af-lib-filters .af-select {
+  flex: 0 1 auto;
+  max-width: 180px;
+}
+
+.af-lib-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 8px;
+}
+
+.af-lib-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px;
+  border: 1px solid var(--af-widget-border);
+  border-radius: 6px;
+  background: var(--af-widget-bg);
+  color: var(--af-fg);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.af-lib-card:hover,
+.af-lib-card:focus-visible {
+  border-color: var(--af-accent);
+}
+
+.af-lib-card-head,
+.af-lib-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--af-fg-muted);
+}
+
+.af-lib-card-name {
+  flex: 1;
+  font-size: 13px;
+  color: var(--af-fg);
+}
+
+.af-lib-card-desc {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  font-size: 12px;
+}
+
+.af-lib-tokens {
+  margin-left: auto;
+}
+
+.af-lib-target {
+  padding: 0 4px;
+  border: 1px solid var(--af-widget-border);
+  border-radius: 3px;
+  font-family: var(--af-font-mono);
+  font-size: 10px;
+}
+
+.af-lib-target.native {
+  border-color: var(--af-accent);
+  color: var(--af-accent);
+}
+
+.af-lib-verified {
+  color: var(--af-success);
+}
+
+.af-lib-unverified {
+  color: var(--af-warning);
+}
+
+.af-lib-flag {
+  padding: 0 4px;
+  border-radius: 3px;
+  background: var(--af-list-hover-bg);
+  color: var(--af-warning);
+  font-size: 11px;
+}
+
+.af-lib-meta {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 2px 12px;
+  margin: 0;
+  font-size: 12px;
+}
+
+.af-lib-meta dt {
+  color: var(--af-fg-muted);
+}
+
+.af-lib-meta dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.af-lib-flags,
+.af-lib-files,
+.af-lib-source {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+}
+
+.af-lib-flags ul,
+.af-lib-files ul,
+.af-lib-unsupported {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding-left: 16px;
+}
+
+.af-lib-flags li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.af-lib-excerpt,
+.af-lib-flag-file {
+  font-family: var(--af-font-mono);
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
+
+.af-lib-frontmatter pre {
+  margin: 4px 0 0;
+  padding: 6px 8px;
+  overflow-x: auto;
+  border-radius: 4px;
+  background: var(--af-input-bg);
+  font-family: var(--af-font-mono);
+  font-size: 11px;
+}
+
+.af-lib-markdown {
+  padding: 8px 10px;
+  border: 1px solid var(--af-widget-border);
+  border-radius: 6px;
+  font-size: 13px;
+}
+
+.af-lib-sources {
+  gap: 10px;
+}
+
+.af-lib-custom {
+  display: flex;
+  gap: 8px;
+  margin: 0;
+  font-size: 12px;
+}

@@ -133,3 +133,23 @@ export function newer(available: string, installed: string): boolean {
   }
   return false;
 }
+
+/** Whether a template installs for a tool (mirrors `targets::supports` in Rust): skills
+ * where the tool has skill folders, Gemini commands only for Gemini CLI. */
+export function supportsTarget(template: AgentTemplate, target: InstallTarget): boolean {
+  switch (template.kind ?? 'agent') {
+    case 'skill':
+      return target !== 'agentflow';
+    case 'command':
+      return target === 'gemini';
+    default:
+      return true;
+  }
+}
+
+/** How to use the installed template in a tool (skills and commands differ from agents). */
+export function hintFor(template: AgentTemplate, target: TargetInfo): I18nKey {
+  if (template.kind === 'skill') return 'installer.hint.skill';
+  if (template.kind === 'command') return 'installer.hint.command';
+  return target.hint;
+}
