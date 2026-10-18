@@ -64,7 +64,11 @@ const PATTERNS: &[(&str, &str)] = &[
     ),
     (
         "disablePermissions",
-        r"\b(never|do not|don't)\s+ask\s+(the user\s+)?(for\s+)?(permission|approval|confirmation)",
+        r"\b(never|do not|don't)\s+ask\s+(the user\s+)?(for\s+)?(permission|approval)",
+    ),
+    (
+        "disablePermissions",
+        r"\b(never|do not|don't)\s+(ask|wait)\s+(the user\s+)?(for\s+)?confirmation\s+(before|to)\s",
     ),
     ("disablePermissions", r"\bauto-?approve\s+(all|every|any)\b"),
     // Overriding the user or the system instructions, or hiding things from the user.
@@ -87,11 +91,11 @@ const PATTERNS: &[(&str, &str)] = &[
     // Sending data out: uploads to a URL, posting to webhooks or paste sites.
     (
         "sendsData",
-        r"\bcurl\b[^\n]*\s(-d|--data(-binary|-raw|-urlencode)?|-F|--form|-T|--upload-file)\s[^\n]*https?://",
+        r"\bcurl\b[^\n]*\s(?-i:-d|--data(-binary|-raw|-urlencode)?|-F|--form|-T|--upload-file)\s[^\n]*https?://",
     ),
     (
         "sendsData",
-        r"\bcurl\b[^\n]*https?://[^\n]*\s(-d|--data(-binary|-raw|-urlencode)?|-F|--form|-T|--upload-file)\s",
+        r"\bcurl\b[^\n]*https?://[^\n]*\s(?-i:-d|--data(-binary|-raw|-urlencode)?|-F|--form|-T|--upload-file)\s",
     ),
     (
         "sendsData",
@@ -202,7 +206,11 @@ pub fn scan_text(file: &str, text: &str) -> Vec<Flag> {
     };
     for (id, re) in patterns() {
         for m in re.find_iter(text).take(MAX_HITS) {
-            push(id, excerpt(text, m.start(), m.end()));
+            let line = excerpt(text, m.start(), m.end());
+            if *id == "sendsData" && is_placeholder_host(&line) {
+                continue;
+            }
+            push(id, line);
         }
     }
     if let Some(re) = blob() {
@@ -215,6 +223,21 @@ pub fn scan_text(file: &str, text: &str) -> Vec<Flag> {
         }
     }
     flags
+}
+
+/// Code samples posting to `example.com` or the local machine send nothing anywhere.
+fn is_placeholder_host(line: &str) -> bool {
+    let lower = line.to_ascii_lowercase();
+    [
+        "example.com",
+        "example.org",
+        "example.net",
+        "localhost",
+        "127.0.0.1",
+        "0.0.0.0",
+    ]
+    .iter()
+    .any(|host| lower.contains(host))
 }
 
 pub fn is_executable(path: &str) -> bool {

@@ -16,7 +16,7 @@ use super::select;
 use crate::util::now_ms;
 
 /// Raw file downloads in flight per source.
-const PARALLEL: usize = 8;
+const PARALLEL: usize = 12;
 /// Bytes a source may add to the cache in one refresh.
 const MAX_SOURCE_BYTES: u64 = 24 * 1024 * 1024;
 /// Tree entries kept (GitHub's own cap is 100 000).
@@ -140,6 +140,12 @@ pub async fn fetch_files(
     commit: &str,
     files: Vec<TreeFile>,
 ) -> Result<(), GhError> {
+    // The same content in several places (shared LICENSE files) is downloaded once.
+    let mut seen = std::collections::HashSet::new();
+    let files: Vec<TreeFile> = files
+        .into_iter()
+        .filter(|f| seen.insert(f.sha.clone()))
+        .collect();
     let mut pending = files.into_iter();
     let mut running = JoinSet::new();
     let mut failure = None;
