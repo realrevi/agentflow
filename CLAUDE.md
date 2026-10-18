@@ -28,14 +28,11 @@ src-tauri/src/
   prompts/            prompt history per workspace (app data dir)
   providers/          Provider trait, Anthropic + OpenAI-compatible adapters, SSE, keys, errors
   conversations/      API chats per workspace (app data dir, one JSON file per conversation)
-  chat/               ChatManager (one stream per chat, cancel), request building (blocks, cache
-                      breakpoints, attachment dedup), Compact, pre-send estimate, Channel events
+  chat/               ChatManager (one stream per chat), request building, Compact, estimate
   agent/              API agent loop, tools/, permissions, dangerous commands, checkpoints, prompt
-  agents/             installer: templates, renderers per tool, managed sections, plan/apply,
-                      registry, detectors, AgentFlow profiles, Create with AI, starters/
+  agents/             installer: templates, per-tool renderers, sections, plan/apply, registry
   tokens/             UsageTracker: JSONL ledger, buckets, prices, budgets, CLI log readers
-  turns/              CLI turn ends, reports and tool activity from the session logs (phase 9)
-  workstreams/        the workstream log (handoffs per workspace, JSONL)
+  turns/, workstreams/  CLI turn ends + activity from session logs; handoff log (JSONL)
   util/               atomic_write, run_blocking, lock/Signal, workspace_key, hex color, test_dir
 src/
   main.tsx, App.tsx   entry: bootstrap (settings -> locale -> theme -> workspace fs), then render
@@ -121,8 +118,7 @@ other. `workstreams` and `stage` import core features only (the Stage gets `Stag
 - **Permission answers** come only from a trusted click/keypress on that request's card
   (`liveTurn.answer`: `isTrusted`, pending id) and carry the conversation id; the gate rejects
   unknown, answered or foreign ids. A turn that ends (cancel, panel close, reload) never allows.
-- Events: `reasoning`, `status`, `toolStart`, `toolEnd`, `permission`, `notice`, `message`. UI:
-  `chat/agent/` (`timeline.ts` cards, `liveTurn.ts` in flight); the layout lends `ChatHooks`.
+- UI: `chat/agent/` (`timeline.ts` cards, `liveTurn.ts` in flight); the layout lends `ChatHooks`.
 
 ## Agent installer (phase 8)
 
@@ -135,44 +131,36 @@ other. `workstreams` and `stage` import core features only (the Stage gets `Stag
   CRLF kept, idempotent. Every install is planned and previewed first (`plan.rs`); files we did
   not create or that changed since (hash in `.agentflow/installed.json`) need a confirmation;
   user scope only into documented home folders, after its own confirmation (`roots.rs`).
-- Profiles narrow tools and never loosen the mode. New tool format = a target fn + snapshot test.
+  Profiles narrow tools, never loosen the mode. New tool format = a target fn + snapshot test.
 
 ## Workstreams & Agent Stage (phase 9)
 
-- **Turn detection** (docs/turn-signals.md): API chats end on `stop` (report = final message);
-  Claude Code / Codex from their session logs via `turns/` (phase 6 readers, cwd + time window;
-  `turns_subscribe` Channel: attached, activity, draft, turnEnded); Gemini and custom CLIs by the
-  idle heuristic (`terminal/turnFallback.ts`, marked approximate). No hooks; PTYs drop a parent
-  Claude session's markers (`pty/session_env.rs`). Prompts: text, then Enter 80 ms later.
-- **Protocol** (`workstreams/protocol.ts`): a manager ends each reply with one fenced
-  `agentflow-send to="<name>"` / `agentflow-ask` / `agentflow-done` (CommonMark fences; last block
-  wins, warning). No/bad block or unknown worker = pause, never a guess. Reports: "Report from
-  <worker> (turn N):", cut at `workstreams.reportCapKb`, whole in the log. API managers get the
-  instructions as `extraSystem` (never stored); CLI managers a setup message per CLI session.
-- **Engine** (`engine.ts`, pure): manual / semi-auto (preview cards) / auto. Auto stops on ask or
-  done, any permission (never answered), errors or bad replies, max rounds, a budget hit, the user
-  typing into a member, Stop. Deliveries go only to members (`canRoute`) through `agentui` ports
-  (the prompt bar path). Workstreams + Stage positions persist in layout v3.
-- **Glow** (`agentui/attention.ts`): turn ended, permission, question, error; clears on focus +
-  interaction (`interactionClears`); `--af-attention`; optional OS notification when unfocused.
-- **Stage**: one canvas on the shared animator, running only while something moves and never
-  hidden or unfocused; DOM bubbles; reduced motion = no travel or pulse.
+- **Turn ends** (docs/turn-signals.md): API on `stop`; Claude Code / Codex from session logs
+  (`turns/`, `turns_subscribe`); Gemini / custom by the idle heuristic (approximate). PTYs drop
+  a parent Claude session's markers (`pty/session_env.rs`); prompts: text, then Enter 80 ms later.
+- **Protocol** (`protocol.ts`): one fenced `agentflow-send to="<name>"` / `-ask` / `-done` per
+  manager reply (CommonMark fences, last wins); no/bad block or unknown worker = pause, never a
+  guess. Reports capped at `reportCapKb`, whole in the log. API managers get `extraSystem`
+  (never stored); CLI managers a setup message per CLI session.
+- **Engine** (`engine.ts`, pure): manual / semi-auto / auto; auto stops on ask/done, any
+  permission (never answered), errors, bad replies, max rounds, budgets, user typing, Stop.
+  Deliveries only to members (`canRoute`) via `agentui` ports. Persisted in layout v3.
+- **Glow** (`agentui/attention.ts`) clears on focus + interaction. **Stage**: one canvas on the
+  shared animator, idle = no frames, paused hidden/unfocused; reduced motion = no travel.
 
 ## Usage tracking (phase 6)
 
-- `tokens/tracker.rs`: monthly JSONL ledger in `<app data>/usage` (append-only, dedup by `id`),
-  15-minute buckets for 62 days, cost at query time (`pricing.json`, OpenRouter cache,
-  overrides; no price = "—"). Lock order: `cli` before `state`. CLI logs are tailed from saved
-  byte offsets and watched with notify; `pty_spawn(panel)` matches CLI usage to its panel.
-- ONE `usage_subscribe` Channel (`tokens/usageStore.ts`); hard stop = API chats only (kind
-  `budget`, "Allow once" token -> resend). Anthropic cache: max 4 breakpoints.
+- `tokens/tracker.rs`: monthly JSONL ledger (append-only, dedup by `id`), 15-minute buckets,
+  cost at query time (no price = "—"). Lock order: `cli` before `state`. CLI logs tailed from
+  saved offsets; `pty_spawn(panel)` matches CLI usage to its panel. ONE `usage_subscribe`
+  Channel; hard stop = API chats only ("Allow once" token). Anthropic cache: max 4 breakpoints.
 
 ## Layout, characters & prompt bar
 
 - Groups have a role (`layout/roles.ts`): `agents` (center), `files` (right, ~22%), `terminal`
   (~30% under the center). New panels open in the last focused group of their role
-  (`placement.ts`); a Stage moved left gets a `stage` group. Saved layout `{ version: 3, dock,
-roles, workstreams, stage }` (v2 upgrades as is); bump `LAYOUT_VERSION` on changes.
+  (`placement.ts`); a Stage moved left gets a `stage` group. Saved layout v3 (`dock`, `roles`,
+  `workstreams`, `stage`; v2 upgrades as is); bump `LAYOUT_VERSION` on changes.
 - Sprites: `characters/sprites/*.json`, 8 states (idle walk think work receive done error sleep)
   of 2-4 frames, `.` = transparent, else a base-36 palette index (`validate.ts`); names are
   never translated. ONE animation loop (`animator.ts`), only while visible; `reducedMotion()`.
@@ -185,8 +173,8 @@ roles, workstreams, stage }` (v2 upgrades as is); bump `LAYOUT_VERSION` on chang
   hard-code colors. Overrides (text, accent, agent bold `#F5C542`, `--af-glow`): `overrides.ts`.
 - Flat dotted keys in `src/locales/en.json`; `I18nKey = keyof typeof en`; every visible string
   uses `t('key', { param })`. New keys go into **all five** locales (typecheck + tests check).
-- Rust owns `settings.json` (v8: `workstreams`): bump `CURRENT_VERSION` + a `migrate.rs` step on shape
-  changes; `normalized()` repairs values; `defaults.test.ts` checks TS defaults against Rust.
+- Rust owns `settings.json` (v8): bump `CURRENT_VERSION` + a `migrate.rs` step on shape changes;
+  `normalized()` repairs values; `defaults.test.ts` checks TS defaults against Rust.
 
 ## Commands
 
