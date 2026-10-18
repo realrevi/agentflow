@@ -65,7 +65,11 @@ impl Default for Registry {
 }
 
 pub fn hash(text: &str) -> String {
-    let digest = Sha256::digest(text.as_bytes());
+    hash_bytes(text.as_bytes())
+}
+
+pub fn hash_bytes(bytes: &[u8]) -> String {
+    let digest = Sha256::digest(bytes);
     digest.iter().map(|b| format!("{b:02x}")).collect()
 }
 

@@ -47,7 +47,10 @@ The JSON Schema is [`schemas/agent-template.schema.json`](../schemas/agent-templ
 | `author`, `license`, `tags` | optional; at most 10 tags of `a-z0-9-`                                                 |
 | `character`                 | optional suggested pixel character for AgentFlow (`owl`, `fox`, ...)                   |
 | `language`                  | the language the instructions are written in (`en`, `pt-BR`, ...)                      |
-| `instructions`              | the role, Markdown, up to 20 000 characters, with `{{placeholders}}`                   |
+| `kind`                      | `agent` (default), `skill`, `rule` or `command` (see below)                            |
+| `instructions`              | the role, Markdown, up to 100 000 characters, with `{{placeholders}}`                  |
+| `files`                     | skills only: other files of the skill folder (`path`, `content`, `binary`)             |
+| `source`                    | library templates: `repo`, `path`, `commit`, `sha`, `license`, `verified`, `format`    |
 | `questions`                 | up to 30, see below                                                                    |
 | `targets`                   | optional per-tool options, see below                                                   |
 
@@ -73,7 +76,8 @@ it): `languages`, `packageManager`, `testFramework`, `testCommand`, `uiFramework
 `{{workspaceName}}`. Rendering is plain substitution, nothing is evaluated. A placeholder
 that names no question is a validation error; a `required` question without an answer is an
 error at install. A line whose placeholders all come out empty is dropped, so optional
-answers leave no stubs. Templates and answers may not contain `<!-- agentflow:` (the
+answers leave no stubs. `\{{` writes a literal `{{` (the library escapes imported text
+this way, so it is never taken for a placeholder). Templates and answers may not contain `<!-- agentflow:` (the
 managed-section marker).
 
 ## Targets
@@ -81,13 +85,26 @@ managed-section marker).
 | Key          | Options                                                                        |
 | ------------ | ------------------------------------------------------------------------------ |
 | `claudeCode` | `tools` (Claude Code tool names; none = all), `model` (`inherit`, ...)         |
-| `codex`      | none yet                                                                       |
+| `codex`      | `model`, `reasoningEffort`, `sandboxMode`                                      |
 | `gemini`     | none yet                                                                       |
 | `cursor`     | `globs` (files the rule attaches to), `alwaysApply`                            |
 | `agentflow`  | `permissionMode` (`ask`, `autoEdit`, `readOnly`), `tools`, `provider`, `model` |
 
 An AgentFlow profile's `permissionMode` is never looser than the user's default, and its
 `tools` only narrow what that mode allows.
+
+## Kinds
+
+- `agent` and `rule`: the per-tool files below.
+- `skill`: a folder `<skill folder>/<id>/` with `SKILL.md` (frontmatter `name`,
+  `description`, `license`, `metadata.source`; Claude Code also `allowed-tools`) and every
+  entry of `files` at its relative path. Paths are plain `a/b/c` (no absolute paths, `..`,
+  drive letters or reserved names); binary files are base64. Scripts are copied as files and
+  never run. Only tools with skill folders are offered (not AgentFlow).
+- `command`: a Gemini CLI custom command, `.gemini/commands/<id>.toml`.
+
+Library templates carry their `source`; the files get an attribution
+(`source: owner/repo@abc1234 (MIT)` in frontmatter, `# Source: ...` in TOML).
 
 ## What gets written
 

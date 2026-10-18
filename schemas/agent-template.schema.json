@@ -7,22 +7,62 @@
   "additionalProperties": false,
   "required": ["schema", "id", "name", "description", "version", "instructions"],
   "properties": {
-    "schema": { "const": 1 },
-    "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]{1,47}$" },
-    "name": { "type": "string", "minLength": 1, "maxLength": 80 },
-    "description": { "type": "string", "minLength": 1, "maxLength": 500, "pattern": "^[^\\n]*$" },
-    "version": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
-    "author": { "type": "string" },
-    "license": { "type": "string" },
+    "schema": {
+      "const": 1
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]{1,47}$"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 80
+    },
+    "description": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 500,
+      "pattern": "^[^\\n]*$"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "author": {
+      "type": "string"
+    },
+    "license": {
+      "type": "string"
+    },
     "tags": {
       "type": "array",
       "maxItems": 10,
-      "items": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]{0,31}$" }
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z0-9][a-z0-9-]{0,31}$"
+      }
     },
-    "character": { "type": "string" },
-    "language": { "type": "string", "pattern": "^[a-zA-Z]{2,3}(-[a-zA-Z0-9]{2,8})*$" },
-    "instructions": { "type": "string", "minLength": 1, "maxLength": 20000 },
-    "questions": { "type": "array", "maxItems": 30, "items": { "$ref": "#/$defs/question" } },
+    "character": {
+      "type": "string"
+    },
+    "language": {
+      "type": "string",
+      "pattern": "^[a-zA-Z]{2,3}(-[a-zA-Z0-9]{2,8})*$"
+    },
+    "instructions": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 100000,
+      "description": "Markdown with {{placeholders}}; a literal {{ is written as a backslash followed by {{ (library imports keep their own braces this way)."
+    },
+    "questions": {
+      "type": "array",
+      "maxItems": 30,
+      "items": {
+        "$ref": "#/$defs/question"
+      }
+    },
     "targets": {
       "type": "object",
       "additionalProperties": false,
@@ -31,25 +71,59 @@
           "type": "object",
           "additionalProperties": false,
           "properties": {
-            "tools": { "type": "array", "items": { "type": "string" } },
-            "model": { "type": "string" }
+            "tools": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "model": {
+              "type": "string"
+            }
           }
         },
-        "codex": { "type": "object", "additionalProperties": false },
-        "gemini": { "type": "object", "additionalProperties": false },
+        "codex": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "model": {
+              "type": "string"
+            },
+            "reasoningEffort": {
+              "type": "string"
+            },
+            "sandboxMode": {
+              "type": "string"
+            }
+          }
+        },
+        "gemini": {
+          "type": "object",
+          "additionalProperties": false
+        },
         "cursor": {
           "type": "object",
           "additionalProperties": false,
           "properties": {
-            "globs": { "type": "array", "items": { "type": "string", "minLength": 1 } },
-            "alwaysApply": { "type": "boolean" }
+            "globs": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "alwaysApply": {
+              "type": "boolean"
+            }
           }
         },
         "agentflow": {
           "type": "object",
           "additionalProperties": false,
           "properties": {
-            "permissionMode": { "enum": ["ask", "autoEdit", "readOnly"] },
+            "permissionMode": {
+              "enum": ["ask", "autoEdit", "readOnly"]
+            },
             "tools": {
               "type": "array",
               "items": {
@@ -64,9 +138,74 @@
                 ]
               }
             },
-            "provider": { "type": "string" },
-            "model": { "type": "string" }
+            "provider": {
+              "type": "string"
+            },
+            "model": {
+              "type": "string"
+            }
           }
+        }
+      }
+    },
+    "kind": {
+      "description": "agent (default), skill (a folder with SKILL.md and files), rule, or command (a Gemini CLI custom command).",
+      "enum": ["agent", "skill", "rule", "command"]
+    },
+    "files": {
+      "description": "A skill's other files, copied as they are (never run).",
+      "type": "array",
+      "maxItems": 200,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path", "content"],
+        "properties": {
+          "path": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 240,
+            "description": "Relative, '/'-separated; no '..', no absolute paths."
+          },
+          "content": {
+            "type": "string",
+            "description": "UTF-8 text, or base64 when binary."
+          },
+          "binary": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    "source": {
+      "description": "Where a library template came from.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repo", "path", "commit", "sha", "license"],
+      "properties": {
+        "repo": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$"
+        },
+        "path": {
+          "type": "string"
+        },
+        "commit": {
+          "type": "string"
+        },
+        "sha": {
+          "type": "string"
+        },
+        "license": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "verified": {
+          "type": "boolean"
+        },
+        "format": {
+          "type": "string"
         }
       }
     }
@@ -77,14 +216,30 @@
       "additionalProperties": false,
       "required": ["id", "label", "type"],
       "properties": {
-        "id": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9_]{0,39}$" },
-        "label": { "type": "string", "minLength": 1, "maxLength": 120 },
-        "help": { "type": "string" },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-zA-Z0-9_]{0,39}$"
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "help": {
+          "type": "string"
+        },
         "type": {
           "enum": ["text", "multiline", "choice", "multiChoice", "color", "font", "boolean"]
         },
-        "default": { "type": ["string", "boolean", "array"] },
-        "options": { "type": "array", "items": { "type": "string" } },
+        "default": {
+          "type": ["string", "boolean", "array"]
+        },
+        "options": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
         "detect": {
           "enum": [
             "languages",
@@ -98,8 +253,12 @@
             "breakpoints"
           ]
         },
-        "required": { "type": "boolean" },
-        "group": { "type": "string" }
+        "required": {
+          "type": "boolean"
+        },
+        "group": {
+          "type": "string"
+        }
       }
     }
   }
