@@ -36,6 +36,7 @@ import type {
   SessionInfo,
   Settings,
   TurnEvent,
+  UpdateProgress,
   UsageEvent,
 } from './types';
 
@@ -119,6 +120,15 @@ async function chatSend(
     detach();
     throw err;
   }
+}
+
+/**
+ * Downloads, verifies and installs the update found by `updateCheck`; on success the app
+ * restarts, so the promise may never resolve.
+ */
+async function updateInstall(onEvent: (event: UpdateProgress) => void): Promise<void> {
+  const channel = new Channel<UpdateProgress>(onEvent);
+  await call('update_install', { onEvent: channel });
 }
 
 /** The local UTC offset in minutes east of UTC, as the usage commands expect it. */
@@ -360,6 +370,9 @@ export const ipc = {
     call('workstream_log_append', { workspace, entry }),
   workstreamLogRead: (workspace: string | null, workstream: string) =>
     call('workstream_log_read', { workspace, workstream }),
+  // App updates (phase 12): never installed without a click.
+  updateCheck: () => call('update_check', {}),
+  updateInstall,
   notify,
   onWindowClose,
   pickFolder,

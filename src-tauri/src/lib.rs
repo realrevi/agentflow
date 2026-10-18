@@ -5,6 +5,7 @@ mod agents;
 pub mod chat;
 mod commands;
 pub mod conversations;
+mod crash;
 pub mod error;
 mod fs;
 mod library;
@@ -15,6 +16,7 @@ pub mod settings;
 pub mod themes;
 mod tokens;
 mod turns;
+mod updates;
 mod util;
 mod workstreams;
 
@@ -35,6 +37,7 @@ use crate::settings::{Settings, SettingsStore};
 use crate::themes::ThemeStore;
 use crate::tokens::{CliRoots, UsageTracker};
 use crate::turns::TurnWatcher;
+use crate::updates::Updates;
 use crate::workstreams::WorkstreamLog;
 
 const SETTINGS_FILE: &str = "settings.json";
@@ -50,12 +53,15 @@ const LIBRARY_DIR: &str = "library";
 /// Starts the desktop app. Called from `main.rs`.
 pub fn run() {
     init_tracing();
+    // reqwest (ours and the updater's) is built without a bundled crypto provider: ring.
+    let _ = rustls::crypto::ring::default_provider().install_default();
 
     let app = tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_notification::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .on_page_load(|webview, payload| {
             // A reload drops every terminal channel, so the old sessions can never be shown
             // again: stop them instead of leaving shells and agent CLIs running unseen.
@@ -73,6 +79,7 @@ pub fn run() {
                 Some(dir) => (dir.join("config"), dir.join("data")),
                 None => (app.path().app_config_dir()?, app.path().app_data_dir()?),
             };
+            crash::install_hook(&data_dir);
             manage_stores(app, &config_dir, &data_dir);
             Ok(())
         })
@@ -147,6 +154,8 @@ pub fn run() {
             commands::turns::turns_subscribe,
             commands::workstreams::workstream_log_append,
             commands::workstreams::workstream_log_read,
+            commands::updates::update_check,
+            commands::updates::update_install,
         ])
         .build(tauri::generate_context!());
 
@@ -194,6 +203,7 @@ fn manage_stores(app: &tauri::App, config_dir: &Path, data_dir: &Path) {
     app.manage(ChatManager::new());
     app.manage(WorkstreamLog::new(data_dir.join(WORKSTREAMS_DIR)));
     app.manage(Library::new(data_dir.join(LIBRARY_DIR)));
+    app.manage(Updates::default());
     app.manage(AgentServices {
         gate: PermissionGate::new(),
         checkpoints: CheckpointStore::new(data_dir.join(CHECKPOINTS_DIR)),

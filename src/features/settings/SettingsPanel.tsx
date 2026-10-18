@@ -1,5 +1,6 @@
 // Lazy-loaded settings view (see layout/renderers.tsx). Default export for `lazy()`.
 import './settings.css';
+import { AboutSection } from './sections/AboutSection';
 import { AppearanceSection } from './sections/AppearanceSection';
 import { CharactersSection } from './sections/CharactersSection';
 import { FilesSection } from './sections/FilesSection';
@@ -24,6 +25,7 @@ export default function SettingsPanel() {
       <FilesSection />
       <LanguageSection />
       <LayoutSection />
+      <AboutSection />
     </div>
   );
 }
