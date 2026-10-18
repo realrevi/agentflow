@@ -6,6 +6,7 @@
 
 mod apply;
 mod binary;
+mod customize;
 mod detect;
 mod detect_style;
 mod generate;
@@ -29,10 +30,18 @@ mod tests;
 pub use apply::{install, uninstall, uninstall_plan};
 pub use detect::{detect, Detection};
 pub use generate::{generate, GenerateRequest, GenerateResult};
+pub use placeholders::escape as escape_placeholders;
 pub use plan::{plan, Confirmations, InstallRequest, Plan};
 pub use profiles::{get_profile, list_profiles, AgentProfile};
-pub use registry::{Installed, Registry};
+pub use registry::{hash_bytes, Installed, Registry};
+pub use relpath::safe_relative;
 pub use roots::Roots;
 pub use starters::starters;
-pub use template::Template;
-pub use validate::validate;
+#[cfg(test)]
+pub(crate) use targets::Scope;
+pub use targets::{supports, Target};
+pub use template::{
+    ClaudeOptions, CodexOptions, CursorOptions, TargetOptions, Template, TemplateFile,
+    TemplateKind, TemplateSource,
+};
+pub use validate::{validate, MAX_FILES, MAX_FILES_BYTES, MAX_TAGS};

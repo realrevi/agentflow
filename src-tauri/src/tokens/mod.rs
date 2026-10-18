@@ -23,7 +23,7 @@ pub use allow::AllowOnceGrant;
 pub use backfill::chat_record;
 pub use budget::BudgetStatus;
 pub use cli::{CliKind, CliRoots};
-pub use estimate::{is_exact, request_tokens, Estimate};
+pub use estimate::{count as count_tokens, is_exact, request_tokens, Estimate};
 pub use events::UsageEvent;
 pub use queries::{CliSupport, PriceList};
 pub use record::{Source, UsageRecord};

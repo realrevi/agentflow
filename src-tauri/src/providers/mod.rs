@@ -21,7 +21,7 @@ mod url;
 
 pub use cancel::{cancel_pair, CancelHandle, CancelToken};
 pub use error::{redact, ErrorKind, ProviderError};
-pub use http::Http;
+pub use http::{secret_header, Http};
 #[cfg(test)]
 pub use keys::MemoryStore;
 pub use keys::{KeyStatus, KeyVault, OsKeychain, SecretStore};

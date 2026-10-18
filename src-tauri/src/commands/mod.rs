@@ -6,6 +6,7 @@ pub mod chat;
 pub mod conversations;
 pub mod fs;
 pub mod installer;
+pub mod library;
 pub mod prompts;
 pub mod providers;
 pub mod pty;

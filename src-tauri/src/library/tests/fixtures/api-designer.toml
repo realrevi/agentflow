@@ -1,0 +1,10 @@
+# Codex agent
+name = "api-designer"
+description = "Designs REST and GraphQL APIs."
+model = "gpt-5.3-codex"
+model_reasoning_effort = "high"
+sandbox_mode = "read-only"
+developer_instructions = """
+You design APIs.
+Quote "names" and keep \\ backslashes; template syntax like {{name}} stays.
+"""

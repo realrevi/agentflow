@@ -31,7 +31,8 @@
         {
           "format": "claudeSkill",
           "include": ["skills/.curated/*/SKILL.md"],
-          "exclude": ["skills/.curated/figma*/**", "skills/.curated/notion-*/**"]
+          "exclude": ["skills/.curated/figma*/**", "skills/.curated/notion-*/**"],
+          "targets": ["codex"]
         }
       ]
     },
@@ -41,7 +42,12 @@
       "repo": "obra/superpowers",
       "branch": "main",
       "license": "MIT",
-      "entries": [{ "format": "claudeSkill", "include": ["skills/*/SKILL.md"] }]
+      "entries": [
+        {
+          "format": "claudeSkill",
+          "include": ["skills/*/SKILL.md"]
+        }
+      ]
     },
     {
       "id": "wshobson-agents",
@@ -50,8 +56,14 @@
       "branch": "main",
       "license": "MIT",
       "entries": [
-        { "format": "claudeSubagent", "include": ["plugins/*/agents/*.md"] },
-        { "format": "claudeSkill", "include": ["plugins/*/skills/*/SKILL.md"] }
+        {
+          "format": "claudeSubagent",
+          "include": ["plugins/*/agents/*.md"]
+        },
+        {
+          "format": "claudeSkill",
+          "include": ["plugins/*/skills/*/SKILL.md"]
+        }
       ]
     },
     {
@@ -74,7 +86,12 @@
       "repo": "VoltAgent/awesome-codex-subagents",
       "branch": "main",
       "license": "MIT",
-      "entries": [{ "format": "codexAgent", "include": ["categories/*/*.toml"] }]
+      "entries": [
+        {
+          "format": "codexAgent",
+          "include": ["categories/*/*.toml"]
+        }
+      ]
     },
     {
       "id": "awesome-cursorrules",
@@ -82,7 +99,12 @@
       "repo": "PatrickJS/awesome-cursorrules",
       "branch": "main",
       "license": "CC0-1.0",
-      "entries": [{ "format": "cursorRule", "include": ["rules/*.mdc"] }]
+      "entries": [
+        {
+          "format": "cursorRule",
+          "include": ["rules/*.mdc"]
+        }
+      ]
     },
     {
       "id": "cursor-rules-mdc",
@@ -90,7 +112,12 @@
       "repo": "sanjeed5/awesome-cursor-rules-mdc",
       "branch": "main",
       "license": "CC0-1.0",
-      "entries": [{ "format": "cursorRule", "include": ["rules-mdc/*.mdc"] }]
+      "entries": [
+        {
+          "format": "cursorRule",
+          "include": ["rules-mdc/*.mdc"]
+        }
+      ]
     },
     {
       "id": "gemini-cli",
@@ -99,8 +126,16 @@
       "branch": "main",
       "license": "Apache-2.0",
       "entries": [
-        { "format": "geminiCommand", "include": [".gemini/commands/**/*.toml"] },
-        { "format": "claudeSkill", "include": [".gemini/skills/*/SKILL.md"] }
+        {
+          "format": "geminiCommand",
+          "include": [".gemini/commands/**/*.toml"],
+          "targets": ["gemini"]
+        },
+        {
+          "format": "claudeSkill",
+          "include": [".gemini/skills/*/SKILL.md"],
+          "targets": ["gemini"]
+        }
       ]
     }
   ]
