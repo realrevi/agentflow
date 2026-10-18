@@ -13,6 +13,7 @@ import { CustomizeAi } from './CustomizeAi';
 import { TrustBadge } from './ItemCard';
 import { FLAG_LABELS, FORMAT_LABELS, KIND_LABELS } from './labels';
 import { Button } from '../../../shared/ui/Button';
+import { LinkIcon } from '../../../shared/ui/LinkIcon';
 
 const FRONTMATTER = /^---\r?\n[\s\S]*?\r?\n---\r?\n?/;
 
@@ -84,6 +85,7 @@ export function ItemDetail(props: {
         <dt>{t('library.source')}</dt>
         <dd>
           <Button variant="ghost" size="sm" onClick={open}>
+            <LinkIcon url={item().url} />
             {item().repo}/{item().path}
           </Button>
         </dd>

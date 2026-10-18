@@ -120,3 +120,17 @@
   font-size: var(--af-text-sm);
   white-space: pre;
 }
+
+/* Brand icon before web links (shared/linkSites.ts draws the masks). */
+.af-md a[data-site]::before {
+  content: '';
+  display: inline-block;
+  width: 0.95em;
+  height: 0.95em;
+  margin-right: 0.3em;
+  vertical-align: -0.12em;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-size: contain;
+  mask-size: contain;
+}
