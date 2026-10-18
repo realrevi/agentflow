@@ -7,6 +7,8 @@ import { frameAt, playbackOf } from './playback';
 import { deviceScale, drawFrame, strip } from './renderer';
 import type { CharacterRef, SpriteState } from './types';
 
+/** Tiny avatars (tabs, lists) do not breathe: one pixel of bob is noise there, not life. */
+const BREATHE_MIN_SCALE = 2;
 /** Length of the state-change squash and hop (characters.css). */
 const HOP_MS = 260;
 
@@ -116,7 +118,8 @@ export function Avatar(props: AvatarProps) {
       ref={canvas}
       class={`af-avatar ${props.class ?? ''}`}
       classList={{
-        'af-avatar-breathe': props.state === 'idle' && moving() && !hop(),
+        'af-avatar-breathe':
+          props.state === 'idle' && props.scale >= BREATHE_MIN_SCALE && moving() && !hop(),
         'af-avatar-hop': hop(),
       }}
       role="img"

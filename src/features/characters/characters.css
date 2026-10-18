@@ -11,6 +11,10 @@
   animation: af-breathe 2.8s step-end infinite;
 }
 
+.af-at-rest .af-avatar-breathe {
+  animation-play-state: paused;
+}
+
 @keyframes af-breathe {
   0%,
   100% {
