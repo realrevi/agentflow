@@ -64,8 +64,9 @@ cargo test
    tauri.conf.json together.
 2. Add a `## [1.2.3] - YYYY-MM-DD` section to `CHANGELOG.md` (user-facing notes) and update the
    compare links at the bottom; run `pnpm notices` if dependencies changed.
-3. Commit (`chore: release 1.2.3`), merge to `main`, then tag and push: `git tag v1.2.3 &&
-git push origin v1.2.3`. A `-rc.N` suffix (`v1.2.3-rc.1`) makes a pre-release for testing.
+3. Commit (`chore: release 1.2.3`) and merge to `main`. Then tag that commit and push the tag:
+   `git tag v1.2.3`, `git push origin v1.2.3`. A `-rc.N` suffix (`v1.2.3-rc.1`) makes a
+   pre-release for testing.
 4. The Release workflow builds every installer and the updater's `latest.json` into a **draft**
    release. Check the files, then publish it on GitHub. Installed apps see the update once it
    is published (pre-releases and drafts are never offered).
