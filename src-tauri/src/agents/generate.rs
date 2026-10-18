@@ -5,6 +5,7 @@
 
 use serde::{Deserialize, Serialize};
 
+use super::customize;
 use super::template::Template;
 use super::validate::validate;
 use crate::chat::ChatDeps;
@@ -34,6 +35,9 @@ pub struct GenerateRequest {
     pub description: String,
     /// Language the instructions are written in (`en`, or the workspace's language).
     pub language: String,
+    /// "Customize with AI" (library): the template to adapt; its text stays as it is.
+    #[serde(default)]
+    pub base: Option<Template>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -98,7 +102,7 @@ impl EventSink for Collect {
 
 pub async fn generate(deps: ChatDeps, request: GenerateRequest) -> AppResult<GenerateResult> {
     let description = request.description.trim();
-    if description.is_empty() {
+    if description.is_empty() && request.base.is_none() {
         return Err(AppError::InvalidInput("describe the agent first".into()));
     }
     let entry = deps
@@ -116,13 +120,24 @@ pub async fn generate(deps: ChatDeps, request: GenerateRequest) -> AppResult<Gen
     let secret = key.as_ref().map(|k| k.expose().to_owned());
     let provider = build_provider(&entry, key)?;
     let http = deps.manager.http()?;
-    let mut turns = vec![ChatTurn::user(description.to_owned())];
+    let (system_text, first) = match &request.base {
+        Some(base) => (
+            customize::system(&request.language),
+            customize::prompt(base, description),
+        ),
+        None => (system(&request.language), description.to_owned()),
+    };
+    let parse = |text: &str| match &request.base {
+        Some(base) => customize::parse_reply(base, text),
+        None => parse_reply(text),
+    };
+    let mut turns = vec![ChatTurn::user(first)];
     let mut total = TokenUsage::default();
     let mut last_error = String::new();
     for attempt in 1..=MAX_ATTEMPTS {
         let chat = ChatRequest {
             model: request.model.clone(),
-            system: system(&request.language),
+            system: system_text.clone(),
             turns: turns.clone(),
             max_tokens: entry.max_tokens.max(MIN_OUTPUT_TOKENS),
             temperature: None,
@@ -145,7 +160,7 @@ pub async fn generate(deps: ChatDeps, request: GenerateRequest) -> AppResult<Gen
         let parsed = if cut_off {
             Err("the reply was cut off at the output limit".to_owned())
         } else {
-            parse_reply(&sink.text)
+            parse(&sink.text)
         };
         match parsed {
             Ok(template) => {
@@ -162,7 +177,8 @@ pub async fn generate(deps: ChatDeps, request: GenerateRequest) -> AppResult<Gen
                     blocks: vec![TurnBlock::text(sink.text)],
                 });
                 turns.push(ChatTurn::user(if cut_off {
-                    "Your reply was cut off at the output limit. Reply again with a shorter                      template (concise instructions, at most 6 questions), JSON only."
+                    "Your reply was cut off at the output limit. Reply again, shorter (concise \
+                     instructions, at most 6 questions), JSON only."
                         .to_owned()
                 } else {
                     format!(
