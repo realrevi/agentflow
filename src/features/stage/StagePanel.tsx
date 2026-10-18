@@ -31,6 +31,7 @@ import { StageHistory } from './StageHistory';
 import { StageOverlay } from './StageOverlay';
 import { StageRenderer } from './StageRenderer';
 import { Button } from '../../shared/ui/Button';
+import { EmptyState } from '../../shared/ui/Surface';
 
 const PAD = 24;
 const TOP = 40;
@@ -251,7 +252,7 @@ export default function StagePanel(props: { api: DockviewPanelApi; hooks: StageH
           hover={hover()}
         />
         <Show when={agents().length === 0}>
-          <p class="af-stage-empty">{t('stage.empty')}</p>
+          <EmptyState icon="drama" class="af-stage-empty" text={t('stage.empty')} />
         </Show>
         <Show when={history()} keyed>
           {(open) => (

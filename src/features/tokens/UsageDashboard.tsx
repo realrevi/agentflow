@@ -14,6 +14,7 @@ import { UsageTable } from './UsageTable';
 import { usageSummary } from './usageStore';
 import { Button } from '../../shared/ui/Button';
 import { SegmentedControl, Tabs } from '../../shared/ui/Segmented';
+import { EmptyState as SurfaceEmpty } from '../../shared/ui/Surface';
 
 type Period = 'today' | 'week' | 'month';
 type Breakdown = 'models' | 'workspaces' | 'panels';
@@ -166,8 +167,11 @@ function TotalsCards(props: { totals: Totals; subscription: boolean }) {
 function EmptyState() {
   return (
     <div class="af-usage-empty">
-      <p>{t('usage.empty.title')}</p>
-      <p class="af-usage-muted">{t('usage.empty.hint')}</p>
+      <SurfaceEmpty
+        icon="chart-column"
+        title={t('usage.empty.title')}
+        text={t('usage.empty.hint')}
+      />
       <CliStatusList />
     </div>
   );

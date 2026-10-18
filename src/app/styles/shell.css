@@ -292,3 +292,48 @@
 .af-chat-new {
   margin: 6px 4px 0;
 }
+
+/* Tips card after the first-run flow (TipsCard.tsx). */
+.af-tips {
+  position: fixed;
+  left: 64px;
+  bottom: 36px;
+  z-index: 900;
+  width: 300px;
+  padding: var(--af-space-3) var(--af-space-4);
+  border: var(--af-border-width) solid var(--af-widget-border);
+  border-radius: var(--af-radius-lg);
+  background: var(--af-widget-bg);
+  color: var(--af-widget-fg);
+  box-shadow: var(--af-elevation-2);
+  animation: af-pop-in var(--af-duration-slow) var(--af-ease);
+}
+
+.af-tips-head {
+  display: flex;
+  align-items: center;
+  gap: var(--af-space-2);
+  color: var(--af-bold-color);
+}
+
+.af-tips-head strong {
+  flex: 1;
+  color: var(--af-fg);
+}
+
+.af-tips ul {
+  display: flex;
+  flex-direction: column;
+  gap: var(--af-space-1);
+  margin: var(--af-space-2) 0 0;
+  padding-left: var(--af-space-4);
+  font-size: var(--af-text-sm);
+}
+
+.af-tips kbd {
+  margin-left: var(--af-space-1);
+  padding: 0 var(--af-space-1);
+  border: var(--af-border-width) solid var(--af-widget-border);
+  border-radius: var(--af-radius-sm);
+  font-size: var(--af-text-xs);
+}

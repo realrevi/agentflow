@@ -13,6 +13,7 @@ import { PlanList, type DiffProps } from './wizard/StepPreview';
 import type { Wizard } from './wizard/wizardStore';
 import { Button } from '../../shared/ui/Button';
 import { Checkbox } from '../../shared/ui/Field';
+import { EmptyState } from '../../shared/ui/Surface';
 
 export function InstalledList(props: {
   workspace: string | null;
@@ -22,6 +23,7 @@ export function InstalledList(props: {
   version: () => number;
   onEdit: () => void;
   onChanged: () => void;
+  onBrowse: () => void;
 }) {
   const [installed, { refetch }] = createResource(
     () => [props.workspace, props.version()] as const,
@@ -88,7 +90,17 @@ export function InstalledList(props: {
     <section class="af-wizard-step">
       <Show
         when={(installed() ?? []).length > 0}
-        fallback={<p class="af-installer-hint">{t('installer.none')}</p>}
+        fallback={
+          <EmptyState
+            icon="library-big"
+            text={t('installer.none')}
+            action={
+              <Button variant="secondary" icon="search" onClick={() => props.onBrowse()}>
+                {t('installer.browseLibrary')}
+              </Button>
+            }
+          />
+        }
       >
         <For each={installed() ?? []}>
           {(agent) => (

@@ -1,4 +1,4 @@
-import { onCleanup, onMount } from 'solid-js';
+import { lazy, onCleanup, onMount, Show, Suspense } from 'solid-js';
 import { AppShell } from './app/AppShell';
 import { installQuitGuard } from './app/quitGuard';
 import { Dialogs } from './app/Dialogs';
@@ -26,6 +26,10 @@ import {
 } from './features/workstreams';
 import { NewWorkstreamDialog } from './app/workstreams/NewWorkstreamDialog';
 import { installToggleShortcuts } from './app/panelToggles';
+import { TipsCard } from './app/TipsCard';
+
+// Loaded only while the first-run flow is not done.
+const Onboarding = lazy(() => import('./app/onboarding/Onboarding'));
 
 /** Commands of the palette's `>` mode. */
 const commands = (): PaletteCommand[] => [
@@ -73,6 +77,14 @@ export default function App() {
       <QuickOpen onOpen={openEditor} commands={commands} />
       <HandoffCards onFocus={focusPanel} />
       <NewWorkstreamDialog />
+      <Show when={settings.onboarding.done && !settings.onboarding.tipsDismissed}>
+        <TipsCard />
+      </Show>
+      <Show when={!settings.onboarding.done}>
+        <Suspense>
+          <Onboarding />
+        </Suspense>
+      </Show>
       <Dialogs />
       <Toasts />
     </>

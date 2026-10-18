@@ -7,7 +7,7 @@ import { createResource, createSignal, Match, Show, Switch, type Component } fro
 import { ipc } from '../../shared/ipc';
 import type { AgentTemplate, LibraryItem } from '../../shared/types';
 import { t, type I18nKey } from '../i18n';
-import { currentWorkspace } from '../workspace';
+import { currentWorkspace, openFolder } from '../workspace';
 import { InstalledList } from './InstalledList';
 import { BrowseTab } from './library/BrowseTab';
 import { refreshProfiles } from './profilesStore';
@@ -18,6 +18,8 @@ import { StepTargets } from './wizard/StepTargets';
 import { StepTemplate } from './wizard/StepTemplate';
 import { createWizard, type Step } from './wizard/wizardStore';
 import { Tabs } from '../../shared/ui/Segmented';
+import { EmptyState } from '../../shared/ui/Surface';
+import { Button } from '../../shared/ui/Button';
 
 export interface InstallerHooks {
   Diff: Component<DiffProps>;
@@ -64,7 +66,17 @@ export default function InstallerPanel(props: { hooks: InstallerHooks }) {
       </header>
       <Show
         when={currentWorkspace()}
-        fallback={<p class="af-installer-hint">{t('installer.noWorkspace')}</p>}
+        fallback={
+          <EmptyState
+            icon="folder-open"
+            text={t('installer.noWorkspace')}
+            action={
+              <Button icon="folder-open" onClick={() => void openFolder()}>
+                {t('workspace.open')}
+              </Button>
+            }
+          />
+        }
       >
         <Show when={tab() === 'install'}>
           <ol class="af-wizard-steps">
@@ -107,6 +119,7 @@ export default function InstallerPanel(props: { hooks: InstallerHooks }) {
             version={version}
             onEdit={() => setTab('install')}
             onChanged={changed}
+            onBrowse={() => setTab('browse')}
           />
         </Show>
       </Show>

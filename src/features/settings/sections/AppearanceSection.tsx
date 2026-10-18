@@ -109,6 +109,21 @@ export function AppearanceSection() {
           {t('settings.agentBold.previewText')}
         </p>
       </Row>
+      <Row label={t('settings.onboarding')} hint={t('settings.onboarding.hint')}>
+        <Button
+          variant="secondary"
+          size="sm"
+          icon="rocket"
+          onClick={() =>
+            updateSettings((s) => {
+              s.onboarding.done = false;
+              s.onboarding.tipsDismissed = false;
+            })
+          }
+        >
+          {t('settings.onboarding.open')}
+        </Button>
+      </Row>
     </Section>
   );
 }
