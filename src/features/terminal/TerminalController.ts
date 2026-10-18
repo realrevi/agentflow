@@ -12,7 +12,7 @@ import type { TerminalConfig } from './config';
 import { OutputDecoder } from './decoder';
 import { terminalShortcut } from './keys';
 import type { CursorCell } from '../agentui';
-import { encodePrompt } from './encode';
+import { ENTER, ENTER_DELAY_MS, encodePrompt } from './encode';
 import { AckBatcher, InputQueue, LatestQueue } from './queues';
 import { cursorCell, FONT_FAMILY, fontsReady, isExit, RESET_MODES, watchCursor } from './support';
 import type { ActivityHooks, TerminalStatus } from './types';
@@ -138,7 +138,11 @@ export class TerminalController {
   sendPrompt(text: string): boolean {
     if (this.status !== 'running' || !this.session) return false;
     this.markPrompt();
-    this.session.input.push(encodePrompt(text, this.term.modes.bracketedPasteMode));
+    const session = this.session;
+    session.input.push(encodePrompt(text, this.term.modes.bracketedPasteMode));
+    window.setTimeout(() => {
+      if (this.session === session) session.input.push(ENTER);
+    }, ENTER_DELAY_MS);
     return true;
   }
 

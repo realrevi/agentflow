@@ -14,7 +14,8 @@ import { parseReply, resolveWorker } from './protocol';
 
 export type Input =
   | { type: 'turn'; end: TurnEnd }
-  | { type: 'start'; setup: string | null }
+  /** The manager is there; `fresh`: its CLI just (re)started and lost the instructions. */
+  | { type: 'start'; setup: string | null; fresh?: boolean }
   | { type: 'permission'; panel: string }
   | { type: 'error'; panel: string; message: string | null }
   | { type: 'typed'; panel: string }
@@ -60,6 +61,11 @@ function offer(ws: Workstream, handoff: Handoff, limits: Limits): Step {
     };
   }
   if (autoOk) return deliver({ ...ws, pending: null }, handoff);
+  // A permission that stopped auto mode was answered once the turn ended: the handoff now
+  // just waits for the user's click.
+  if (ws.status === 'paused' && ws.reason === 'permission') {
+    ws = { ...ws, reason: 'review', detail: null };
+  }
   const status =
     ws.status === 'paused'
       ? ws
@@ -172,8 +178,9 @@ export function step(ws: Workstream, input: Input, limits: Limits, newId: NewId)
       return { ws, actions: [] };
     }
     case 'start': {
-      if (ws.setupSent || !input.setup)
-        return { ws: { ...ws, status: 'idle', reason: null }, actions: [] };
+      if (input.fresh) ws = { ...ws, setupSent: false };
+      const kept = ws.reason === 'restored' ? ws : { ...ws, status: 'idle' as const, reason: null };
+      if (ws.setupSent || !input.setup) return { ws: kept, actions: [] };
       const handoff: Handoff = {
         id: newId(),
         from: ws.manager,
@@ -183,7 +190,7 @@ export function step(ws: Workstream, input: Input, limits: Limits, newId: NewId)
         full: input.setup,
         truncated: false,
       };
-      return offer({ ...ws, status: 'idle' }, handoff, limits);
+      return offer(kept, handoff, limits);
     }
     case 'permission':
       return isMember(input.panel) ? autoStop(ws, 'permission') : { ws, actions: [] };

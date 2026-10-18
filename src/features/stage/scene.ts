@@ -7,10 +7,18 @@ export interface Point {
   y: number;
 }
 
-/** Point `t` (0..1) on an arc from `from` to `to` that rises above both. */
+/** Point `t` (0..1) on an arc from `from` to `to`, bent to the side of the line (up for
+ * a level line, sideways for a manager above its worker). */
 export function packetPoint(from: Point, to: Point, t: number): Point {
-  const lift = Math.max(40, Math.hypot(to.x - from.x, to.y - from.y) * 0.3);
-  const control = { x: (from.x + to.x) / 2, y: Math.min(from.y, to.y) - lift };
+  const dx = to.x - from.x;
+  const dy = to.y - from.y;
+  const length = Math.hypot(dx, dy) || 1;
+  const bend = Math.max(40, length * 0.3);
+  const normal = { x: dy / length, y: -dx / length };
+  const control = {
+    x: (from.x + to.x) / 2 + normal.x * bend,
+    y: (from.y + to.y) / 2 + normal.y * bend,
+  };
   const u = 1 - t;
   return {
     x: u * u * from.x + 2 * u * t * control.x + t * t * to.x,

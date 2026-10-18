@@ -168,9 +168,11 @@ export class StageRenderer {
   }
 
   private packet(ctx: CanvasRenderingContext2D, packet: PacketDraw, scale: number): void {
-    const size = Math.max(6, 2 * scale);
+    const size = Math.max(8, 3 * scale);
     const x = Math.round(packet.at.x - size / 2);
     const y = Math.round(packet.at.y - size / 2);
+    ctx.fillStyle = 'rgba(0,0,0,0.6)';
+    ctx.fillRect(x - 2, y - 2, size + 4, size + 4);
     ctx.fillStyle = packet.color;
     ctx.fillRect(x, y, size, size);
     ctx.fillStyle = 'rgba(255,255,255,0.85)';

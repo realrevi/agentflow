@@ -263,8 +263,12 @@ export default function StagePanel(props: { api: DockviewPanelApi; hooks: StageH
     const at = local(event);
     const panel = hit(at.x, at.y);
     if (!panel) return;
-    canvas?.setPointerCapture(event.pointerId);
     setDrag({ panel, start: at, at, moved: false });
+    try {
+      canvas?.setPointerCapture(event.pointerId);
+    } catch {
+      // Not every input device can be captured; dragging still works inside the canvas.
+    }
   };
   const onPointerMove = (event: PointerEvent) => {
     const at = local(event);

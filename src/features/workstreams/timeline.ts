@@ -8,7 +8,8 @@ export function filterEntries(
   pair: [string, string] | null,
 ): HandoffEntry[] {
   return entries.filter((entry) => {
-    if (pair) return pair.includes(entry.from) && pair.includes(entry.to);
+    if (pair)
+      return entry.from !== entry.to && pair.includes(entry.from) && pair.includes(entry.to);
     return !panel || entry.from === panel || entry.to === panel;
   });
 }

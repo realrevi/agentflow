@@ -132,6 +132,14 @@ describe('auto stop conditions', () => {
     const result = run(running(), [{ type: 'permission', panel: 'terminal-2' }]);
     expect([result.ws.status, result.ws.reason]).toEqual(['paused', 'permission']);
     expect(result.actions).toEqual([]);
+    // Answered by the user; the turn ends and its report waits for a click.
+    const after = run(result.ws, [turn('terminal-2', 'Done.')]);
+    expect([after.ws.status, after.ws.reason, after.ws.pending?.kind]).toEqual([
+      'paused',
+      'review',
+      'report',
+    ]);
+    expect(after.actions.some((a) => a.type === 'deliver')).toBe(false);
   });
 
   it('stops on an error or a malformed reply, and on no block at all', () => {
@@ -207,5 +215,14 @@ describe('CLI manager setup', () => {
     if (handoff?.type !== 'deliver') throw new Error('no delivery');
     expect(run(sent.ws, [{ type: 'delivered', handoff: handoff.handoff }]).ws.setupSent).toBe(true);
     expect(run(ws('auto'), [{ type: 'start', setup: null }]).actions).toEqual([]);
+  });
+
+  it('is offered again when the CLI manager restarted (a new session)', () => {
+    const restored = ws('auto', { setupSent: true, status: 'paused', reason: 'restored' });
+    expect(run(restored, [{ type: 'start', setup: 'instructions' }]).ws.pending).toBeNull();
+    const again = run(restored, [{ type: 'start', setup: 'instructions', fresh: true }]);
+    expect(again.ws.pending?.kind).toBe('setup');
+    expect([again.ws.status, again.ws.reason]).toEqual(['paused', 'restored']);
+    expect(again.actions.some((a) => a.type === 'deliver')).toBe(false);
   });
 });

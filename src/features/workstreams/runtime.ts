@@ -157,12 +157,39 @@ export function installWorkstreams(hooks: RuntimeHooks): () => void {
         if (port?.kind === 'api') {
           setExtraSystem(ws.manager, managerInstructions(ws.name, workers(ws)));
         }
-        if (!port || started.has(ws.id)) continue;
-        started.add(ws.id);
-        if (ws.reason === 'restored') continue;
-        const setup = port.kind === 'cli' ? setupMessage(ws.name, workers(ws)) : null;
         const id = ws.id;
-        queueMicrotask(() => dispatch(id, { type: 'start', setup }));
+        // A CLI manager whose process (re)started is a new session without the setup.
+        const running = port?.kind === 'cli' && port.ready();
+        if (running && cliWasDown.get(ws.manager)) {
+          started.delete(id);
+          fresh.add(id);
+        }
+        if (port?.kind === 'cli') cliWasDown.set(ws.manager, !running);
+        if (!port || started.has(id)) continue;
+        if (ws.reason === 'restored' && !fresh.has(id)) {
+          started.add(id);
+          continue;
+        }
+        if (port.kind === 'api') {
+          started.add(id);
+          queueMicrotask(() => dispatch(id, { type: 'start', setup: null }));
+          continue;
+        }
+        // A CLI manager gets its setup once it runs and its startup output settled (text
+        // typed into a TUI that is still drawing can be lost).
+        if (!cliSettled(ws.manager) || settling.has(id)) continue;
+        settling.set(
+          id,
+          window.setTimeout(() => {
+            settling.delete(id);
+            const current = workstreamById(id);
+            if (!current || started.has(id) || !cliSettled(current.manager)) return;
+            started.add(id);
+            const again = fresh.delete(id);
+            const setup = setupMessage(current.name, workers(current));
+            dispatch(id, { type: 'start', setup, fresh: again });
+          }, SETTLE_MS),
+        );
       }
       for (const panel of extraHolders) if (!managers.has(panel)) setExtraSystem(panel, null);
       extraHolders.clear();
@@ -177,6 +204,17 @@ export function installWorkstreams(hooks: RuntimeHooks): () => void {
 }
 
 const extraHolders = new Set<string>();
+const settling = new Map<string, number>();
+const fresh = new Set<string>();
+/** Per CLI manager panel: its process was not running when last seen. */
+const cliWasDown = new Map<string, boolean>();
+const SETTLE_MS = 2500;
+
+/** Reactive: the CLI in `panel` runs and is not busy drawing or working. */
+function cliSettled(panel: string): boolean {
+  const state = agentState(panel);
+  return Boolean(portOf(panel)?.ready()) && state !== 'work' && state !== 'think';
+}
 
 /** The user asks to remind the manager of the block format (after no or a bad block). */
 export async function remindManager(id: string): Promise<void> {

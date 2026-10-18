@@ -1,7 +1,7 @@
 // "New workstream": a name, a color, the handoff mode, one manager and 1..n workers, each
 // an open agent panel (in no workstream yet) or a new one. New panels open first; members
 // are named after their pixel character ("Fox"), unique within the workstream.
-import { createSignal, For, onCleanup, onMount, Show } from 'solid-js';
+import { createSignal, For, Index, onCleanup, onMount, Show } from 'solid-js';
 import { Portal } from 'solid-js/web';
 import type { HandoffMode } from '../../shared/types';
 import { t, type I18nKey } from '../../features/i18n';
@@ -193,15 +193,15 @@ function Form(props: { preset: NewWorkstreamPreset }) {
         </div>
         <div class="af-ws-field">
           <span>{t('workstream.dialog.workers')}</span>
-          <For each={workers()}>
+          <Index each={workers()}>
             {(value, index) => (
               <div class="af-ws-worker-row">
                 <MemberSelect
-                  value={value}
+                  value={value()}
                   options={options}
-                  label={t('workstream.dialog.worker', { n: index() + 1 })}
+                  label={t('workstream.dialog.worker', { n: index + 1 })}
                   onChange={(next) =>
-                    setWorkers((list) => list.map((item, i) => (i === index() ? next : item)))
+                    setWorkers((list) => list.map((item, i) => (i === index ? next : item)))
                   }
                 />
                 <button
@@ -209,13 +209,13 @@ function Form(props: { preset: NewWorkstreamPreset }) {
                   class="af-icon-btn"
                   aria-label={t('workstream.dialog.removeWorker')}
                   title={t('workstream.dialog.removeWorker')}
-                  onClick={() => setWorkers((list) => list.filter((_, i) => i !== index()))}
+                  onClick={() => setWorkers((list) => list.filter((_, i) => i !== index))}
                 >
                   ×
                 </button>
               </div>
             )}
-          </For>
+          </Index>
           <button
             type="button"
             class="af-link-btn"
