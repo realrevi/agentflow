@@ -21,14 +21,14 @@ A light check for phase 11 (UI polish), before and after, on the same Windows 11
 
 ## Results
 
-| Metric                         | Before (phase 10)  | After (phase 11)   |
-| ------------------------------ | ------------------ | ------------------ |
-| Cold start to interactive      | 1249–1392 ms       | 1215–1514 ms       |
-| Idle RAM, working set (tree)   | 493–511 MB         | 515–535 MB         |
-| Idle RAM, private bytes (tree) | 262–281 MB         | 300–304 MB         |
-| Idle CPU (10 s)                | 0.01–0.07 %        | 0.03–0.17 %        |
-| Total JS (raw / gzip)          | 2429 KB / 708 KB   | 2561 KB / 747 KB   |
-| Initial JS (raw / gzip)        | 570 KB / 155 KB    | 651 KB / 179 KB    |
+| Metric                         | Before (phase 10) | After (phase 11) |
+| ------------------------------ | ----------------- | ---------------- |
+| Cold start to interactive      | 1249–1392 ms      | 1215–1514 ms     |
+| Idle RAM, working set (tree)   | 493–511 MB        | 515–535 MB       |
+| Idle RAM, private bytes (tree) | 262–281 MB        | 300–304 MB       |
+| Idle CPU (10 s)                | 0.01–0.07 %       | 0.03–0.17 %      |
+| Total JS (raw / gzip)          | 2429 KB / 708 KB  | 2561 KB / 747 KB |
+| Initial JS (raw / gzip)        | 570 KB / 155 KB   | 651 KB / 179 KB  |
 
 Three to five runs each. The start time and idle CPU stay within run-to-run noise. The idle
 CPU readings are a few tens of milliseconds over 10 s (the shell's PowerShell included), so

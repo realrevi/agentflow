@@ -13,22 +13,21 @@ Linux. Priorities: **low RAM, fast, clean code organization, fun look.**
   CodeMirror 6 (languages per file type), marked + DOMPurify (`shared/markdown`, chat + library); all lazy
 - **Layout/styling:** `dockview-core` behind a thin Solid wrapper (stylesheet from `dockview`,
   both pinned to the same version); plain CSS with `--af-*` variables, no React, Electron,
-  Tailwind or UI kits; bundled fonts JetBrains Mono (code), Pixelify Sans (small accents only).
+  Tailwind or UI kits; bundled fonts Inter (UI), JetBrains Mono (code/terminal only), Pixelify
+  Sans (small accents only).
 
 ## Folder map
 
 ```
 src-tauri/src/
   main.rs, lib.rs     app setup, managed state, command registration; error.rs: AppError
-  settings/           versioned settings JSON in the OS app config dir (atomic write, migrations)
-  themes/             built-in + imported VS Code themes: JSONC, validation, syntax colors, storage
+  settings/, themes/  versioned settings JSON (atomic, migrations); built-in + VS Code themes
   commands/           thin #[tauri::command] fns that delegate to modules
   pty/                PtyManager, sessions (reader/waiter/pump threads), shells, CLI detection
   fs/                 workspace: path checks, list/read/write/trash, quick open index, watcher
   providers/          Provider trait, Anthropic + OpenAI-compatible adapters, SSE, keys, errors
   prompts/, conversations/  prompt history; API chats (app data dir, one JSON per conversation)
-  chat/               ChatManager (one stream per chat), request building, Compact, estimate
-  agent/              API agent loop, tools/, permissions, dangerous commands, checkpoints, prompt
+  chat/, agent/       ChatManager, requests, Compact; agent loop, tools/, permissions, undo
   agents/             installer: templates, per-tool renderers, skills, sections, plan/apply, registry
   library/            community library: registry, GitHub client, cache, importers, safety scan
   tokens/             UsageTracker: JSONL ledger, buckets, prices, budgets, CLI log readers
@@ -36,24 +35,21 @@ src-tauri/src/
   util/               atomic_write, run_blocking, lock/Signal, workspace_key, hex color, test_dir
 src/
   main.tsx, App.tsx   entry: bootstrap (settings -> locale -> theme -> workspace fs), then render
-  app/                shell: ActivityBar, Sidebar (+ views), StatusBar, Toasts, Dialogs, styles/
+  app/                shell: ActivityBar, Sidebar (+ views), StatusBar, Toasts, Dialogs, styles/,
+                      panelToggles (Ctrl/Cmd+B/J/Shift+E), onboarding/ (first-run), TipsCard
   features/layout/    dockview host, panels, roles, placement, saved layout, tabs, characters
-  features/terminal/  TerminalController, lazy TerminalPanel, agent activity
-  features/chat/      lazy ChatPanel: session, agent/ (timeline, cards, undo), reveal, markdown
+  features/terminal/  TerminalController, lazy TerminalPanel; chat/: lazy ChatPanel, agent/ cards
   features/agentui/   corner overlay + prompt bar; activity, turn ends, attention, ports, input
-  features/providers/ presets (base URLs), model list and key status stores
-  features/characters/  sprites/*.json, renderer, shared rAF animator, Avatar, state heuristic
+  features/providers/ presets, models, key status; characters/: sprites, animator, Avatar
   features/workspace/ workspace folder, fs session (backend open + watcher events), path helpers
-  features/files/     Files panel: tree model/store, virtual TreeView, icons, quick open
-  features/editor/    lazy EditorPanel + EditorController (CodeMirror), languages, dirty store
-  features/theme/     VS Code -> --af-* mapping (+ syntax vars), user overrides, engine, store
-  features/i18n/      typed t(), lazy locale loading, reportError()
+  features/files/     tree store, virtual TreeView, quick open; editor/: lazy CodeMirror
+  features/theme/     VS Code -> --af-* mapping, overrides, engine; i18n/: typed t(), reportError()
   features/settings/  settings store (debounced save) + lazy SettingsPanel and sections
   features/tokens/    usage store (one Channel), formats, badge, chart, Usage view + lazy panel
   features/agents/    lazy Agents library panel (wizard/, library/ Browse tab, installed), profiles
   features/workstreams/ protocol, engine, store, runtime, cards, sidebar section, lazy Timeline
   features/stage/     lazy Agent Stage: layout, positions, scene, motion, canvas renderer
-  shared/             ipc (+ ipcCommands), types (+ chat/usage/agentTypes), errors, toast, dialog, ui/
+  shared/             ipc (+ ipcCommands), types, errors, toast, dialog, markdown, linkSites, ui/
   locales/            en.json (source of truth), tr, de, zh, ru
 themes/               built-in theme JSON (embedded into the Rust binary via include_str!)
 ```
@@ -159,7 +155,7 @@ other. `workstreams` and `stage` import core features only (the Stage gets `Stag
   (never stored); CLI managers a setup message per CLI session.
 - **Engine** (`engine.ts`, pure): manual / semi-auto / auto; auto stops on ask/done, any
   permission (never answered), errors, bad replies, max rounds, budgets, user typing, Stop.
-  Deliveries only to members (`canRoute`) via `agentui` ports. Persisted in layout v3.
+  One format reminder before a bad-reply pause (`autoRemind`). Only to members (`canRoute`).
 - **Glow** (`agentui/attention.ts`) clears on focus + interaction. **Stage**: one canvas on the
   shared animator, idle = no frames, paused hidden/unfocused; reduced motion = no travel.
 
@@ -177,8 +173,9 @@ other. `workstreams` and `stage` import core features only (the Stage gets `Stag
   (`placement.ts`); a Stage moved left gets a `stage` group. Saved layout v3 (`dock`, `roles`,
   `workstreams`, `stage`; v2 upgrades as is); bump `LAYOUT_VERSION` on changes.
 - Sprites: `characters/sprites/*.json`, 8 states (idle walk think work receive done error sleep)
-  of 2-4 frames, `.` = transparent, else a base-36 palette index (`validate.ts`); names are
+  of 2-6 frames, `.` = transparent, else a base-36 palette index (`validate.ts`); names are
   never translated. ONE animation loop (`animator.ts`), only while visible; `reducedMotion()`.
+  Eased movement snapped to sprite pixels (`motion.ts`); CSS breathing (scale >= 2) and hops.
 - Terminal (`stateMachine.ts`): prompt -> think, output -> work, 2 s quiet -> done, 5 s -> idle,
   exit 0 -> sleep else error. Chat: send -> think, delta/tool -> work (bubble = tool status).
 
@@ -188,8 +185,24 @@ other. `workstreams` and `stage` import core features only (the Stage gets `Stag
   hard-code colors. Overrides (text, accent, agent bold `#F5C542`, `--af-glow`): `overrides.ts`.
 - Flat dotted keys in `src/locales/en.json`; `I18nKey = keyof typeof en`; every visible string
   uses `t('key', { param })`. New keys go into **all five** locales (typecheck + tests check).
-- Rust owns `settings.json` (v9): bump `CURRENT_VERSION` + a `migrate.rs` step on shape changes;
-  `normalized()` repairs values; `defaults.test.ts` checks TS defaults against Rust.
+- Rust owns `settings.json` (v10; `onboarding { done, tipsDismissed }`): bump `CURRENT_VERSION`
+  and add a `migrate.rs` step on shape changes; `normalized()` repairs values; `defaults.test.ts`
+  checks TS defaults against Rust.
+
+## Design system (phase 11)
+
+- Tokens (`shared/ui/tokens.css`): `--af-space-*` (4-based), `--af-text-*`, radii, control
+  heights, elevation 1-3, `--af-ease` + 120/160/220 ms (0 with reduced motion), focus ring,
+  accent glow. Colors only from theme tokens; gold (`--af-glow`) = highlights and "needs you".
+- Shared components (`shared/ui/`): Button/IconButton, Input, Textarea, Select, Checkbox,
+  Toggle, SegmentedControl, Tabs, Badge, Tooltip, Menu, Dialog (focus trap + restore), Toast,
+  Card, EmptyState, Skeleton. **No one-off control styles**: new UI uses these (row-like list
+  buttons share one rule in `controls.css`); icon-only buttons need a label.
+- Icons, bundled, no network: Lucide (ISC, `shared/ui/lucide.ts` subset + `Icon`), Material
+  Icon Theme file icons (MIT, `shared/ui/file-icons/`, `fileIconName()`), Simple Icons brands
+  for links (CC0, `shared/linkSiteData.ts`, `siteForUrl()`; unknown = generic link). Licenses in
+  `src/assets/icons/` and `file-icons/`. Never name a component like a Solid built-in
+  (`Switch`, `Show`, `For`...): the JSX compiler resolves those to solid-js.
 
 ## Commands
 
@@ -202,9 +215,6 @@ cargo build    # in src-tauri: compile check, no bundling
 
 ## Roadmap (12 phases)
 
-Done: 1 skeleton, themes, i18n, layout · 2 PTY terminals · 3 file tree + editor · 4 pixel
-characters · 5 provider APIs + chat · 6 usage tracking · 7 API agent tools · 8 agent installer ·
-9 workstreams + Agent Stage · 10 community agent library. Next: 11 UI polish · 12
-cross-platform builds + CI.
-
-Only build what the current phase lists; leave future modules as empty stubs.
+Done: phases 1-11 (shell, terminals, files + editor, characters, provider chat, usage, API
+agents, installer, workstreams + Stage, community library, UI polish + first-run). Next: 12
+cross-platform builds + CI. Only build what the current phase lists; future modules = stubs.
