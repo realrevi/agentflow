@@ -6,9 +6,12 @@ import pkg from './package.json' with { type: 'json' };
 const host = process.env.TAURI_DEV_HOST;
 const isDebug = Boolean(process.env.TAURI_ENV_DEBUG);
 const isWindows = process.env.TAURI_ENV_PLATFORM === 'windows';
+// Component tests (jsdom) need Solid's browser build and no hot-reload wrapper.
+const isTest = Boolean(process.env.VITEST);
 
 export default defineConfig({
-  plugins: [solid()],
+  plugins: [solid({ hot: !isTest })],
+  resolve: isTest ? { conditions: ['browser', 'development'] } : {},
   define: {
     __APP_VERSION__: JSON.stringify(pkg.version),
   },
@@ -29,6 +32,6 @@ export default defineConfig({
   },
   test: {
     environment: 'node',
-    include: ['src/**/*.test.ts'],
+    include: ['src/**/*.test.{ts,tsx}'],
   },
 });
