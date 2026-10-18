@@ -3,7 +3,7 @@ import { SPRITE_STATES, type SpriteSheet } from './types';
 
 const HEX = /^#[0-9a-fA-F]{6}$/;
 export const SPRITE_SIZES: readonly number[] = [16, 32];
-export const FRAMES_PER_STATE = { min: 2, max: 4 } as const;
+export const FRAMES_PER_STATE = { min: 2, max: 6 } as const;
 export const PALETTES_PER_SHEET = { min: 2, max: 3 } as const;
 
 function isRecord(value: unknown): value is Record<string, unknown> {

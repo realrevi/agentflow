@@ -3,6 +3,49 @@
   display: block;
   image-rendering: pixelated;
   image-rendering: crisp-edges;
+  transform-origin: 50% 100%;
+}
+
+/* Resting characters breathe: one sprite pixel up and down, in whole steps (crisp). */
+.af-avatar-breathe {
+  animation: af-breathe 2.8s step-end infinite;
+}
+
+@keyframes af-breathe {
+  0%,
+  100% {
+    transform: none;
+  }
+  50% {
+    transform: translateY(calc(var(--af-px, 2px) * -1));
+  }
+}
+
+/* A state change: a quick squash, then a small hop. */
+.af-avatar-hop {
+  animation: af-hop 260ms var(--af-ease);
+}
+
+@keyframes af-hop {
+  0% {
+    transform: none;
+  }
+  30% {
+    transform: scale(1.08, 0.9);
+  }
+  65% {
+    transform: translateY(calc(var(--af-px, 2px) * -2)) scale(0.96, 1.05);
+  }
+  100% {
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .af-avatar-breathe,
+  .af-avatar-hop {
+    animation: none;
+  }
 }
 
 .af-picker {
