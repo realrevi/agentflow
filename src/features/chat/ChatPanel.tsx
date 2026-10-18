@@ -97,6 +97,7 @@ export default function ChatPanel(props: ChatPanelProps) {
       ready,
       deliver: (text) => bar?.deliver(text) ?? send(text),
       label: aiName,
+      role: () => session.conversation()?.agent?.profile?.name ?? null,
     },
     session,
   );

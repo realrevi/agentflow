@@ -12,6 +12,8 @@ export interface AgentPort {
   deliver(text: string): boolean | Promise<boolean>;
   /** e.g. "Claude Code", the API model. */
   label(): string;
+  /** The AgentFlow agent (profile) it runs, if any: managers see it in the worker list. */
+  role?(): string | null;
 }
 
 const ports = new Map<string, AgentPort>();

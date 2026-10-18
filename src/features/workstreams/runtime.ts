@@ -46,7 +46,11 @@ function kindOf(panel: string): string {
 }
 
 function workers(ws: Workstream): MemberInfo[] {
-  return ws.workers.map((id) => ({ name: memberName(ws, id), kind: kindOf(id) }));
+  return ws.workers.map((id) => ({
+    name: memberName(ws, id),
+    kind: kindOf(id),
+    role: portOf(id)?.role?.() ?? null,
+  }));
 }
 
 /** The sender's tokens since its last handoff, when the usage tracker knows them. */
