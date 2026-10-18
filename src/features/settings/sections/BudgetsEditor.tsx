@@ -9,7 +9,7 @@ import { settings, updateSettings } from '../settingsStore';
 import { Row } from './Section';
 import { moneyText, parseMoney, setProviderBudget } from './usageForm';
 import { Button } from '../../../shared/ui/Button';
-import { Input, Toggle } from '../../../shared/ui/Field';
+import { Input, Select, Toggle } from '../../../shared/ui/Field';
 
 const CLI_KEYS = ['claude-code', 'codex', 'gemini-cli'];
 
@@ -133,9 +133,8 @@ export function BudgetsEditor() {
       </Show>
       <Show when={candidates().length > 0}>
         <Row label={t('settings.usage.budget.add')} for="af-budget-add">
-          <select
+          <Select
             id="af-budget-add"
-            class="af-input"
             value={adding()}
             onChange={(event) => {
               const provider = event.currentTarget.value;
@@ -149,7 +148,7 @@ export function BudgetsEditor() {
             <For each={candidates()}>
               {(entry) => <option value={entry.id}>{entry.label}</option>}
             </For>
-          </select>
+          </Select>
         </Row>
       </Show>
       <Row label={t('settings.usage.budget.hardStop')} for="af-budget-stop">

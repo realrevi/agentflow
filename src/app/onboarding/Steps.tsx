@@ -87,7 +87,6 @@ export function CharacterStep(props: {
 export function ConnectStep() {
   const [adding, setAdding] = createSignal<string | null>(null);
   onMount(() => void loadCliStatus());
-  const preset = () => PRESETS[0]?.id ?? 'anthropic';
   const added = () => settings.providers.find((p) => p.id === adding());
   const add = (presetId: string) => {
     const entry = newProviderEntry(presetId as ProviderPreset);
@@ -120,7 +119,7 @@ export function ConnectStep() {
           <div class="af-onboarding-row">
             <Select
               aria-label={t('onboarding.connect.api')}
-              value={preset()}
+              value=""
               onChange={(e) => add(e.currentTarget.value)}
             >
               <option value="" disabled selected>

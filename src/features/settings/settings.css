@@ -346,3 +346,8 @@
   margin: 4px 0;
   font-size: var(--af-text-md);
 }
+
+.af-settings-label > .af-settings-hint {
+  display: block;
+  margin: 2px 0 0;
+}

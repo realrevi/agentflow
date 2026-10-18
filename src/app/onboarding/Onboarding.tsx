@@ -79,6 +79,7 @@ export default function Onboarding() {
       title={t(TITLES[step()])}
       class="af-onboarding"
       dismissable={false}
+      initialFocus=".af-onboarding-next"
       onClose={() => move(skip(state()))}
       actions={
         <>
@@ -89,7 +90,7 @@ export default function Onboarding() {
           <Button variant="secondary" disabled={index() === 0} onClick={() => move(back(state()))}>
             {t('onboarding.back')}
           </Button>
-          <Button onClick={() => move(next(state()))}>
+          <Button class="af-onboarding-next" onClick={() => move(next(state()))}>
             {t(index() === STEPS.length - 1 ? 'onboarding.finish' : 'onboarding.next')}
           </Button>
         </>
