@@ -257,14 +257,12 @@ fn user_scope_needs_its_own_confirmation_and_documented_folders() {
 #[test]
 fn project_paths_cannot_leave_the_workspace() {
     let fx = Fixture::new();
-    for rel in [
-        "../outside.md",
-        "/etc/passwd",
-        "a/../../b.md",
-        "C:/Windows/x.md",
-    ] {
+    for rel in ["../outside.md", "/etc/passwd", "a/../../b.md"] {
         assert!(fx.roots.resolve(Scope::Project, rel).is_err(), "{rel}");
     }
+    // A drive path is absolute only on Windows; elsewhere "C:" is just a folder name.
+    #[cfg(windows)]
+    assert!(fx.roots.resolve(Scope::Project, "C:/Windows/x.md").is_err());
     #[cfg(unix)]
     {
         let outside = fx

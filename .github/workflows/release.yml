@@ -1,0 +1,173 @@
+name: Release
+
+# Pushing a tag like v1.2.3 (or v1.2.3-rc.1, a pre-release) builds every installer and
+# attaches it, with the updater's latest.json, to a DRAFT release. Publish it by hand.
+on:
+  push:
+    tags: ['v*']
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: 0
+
+jobs:
+  draft:
+    name: Draft release
+    runs-on: ubuntu-latest
+    outputs:
+      release-id: ${{ steps.create.outputs.id }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Release notes from CHANGELOG.md
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          base="${version%%-*}"
+          awk -v v="$base" '/^## \[/ { if (found) exit; if (index($0, "[" v "]")) { found = 1; next } } found && !/^\[[^]]+\]: /' \
+            CHANGELOG.md > release-notes.md
+          if [ ! -s release-notes.md ]; then
+            echo "::error::CHANGELOG.md has no section for $base"
+            exit 1
+          fi
+          {
+            echo
+            echo "**Downloads:** Windows (.exe or .msi), macOS (.dmg: aarch64 = Apple silicon, x64 = Intel),"
+            echo "Linux (.AppImage, .deb, .rpm). Unsigned builds: see the README's Download section."
+          } >> release-notes.md
+      - name: Create the draft
+        id: create
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          flags=(--draft --verify-tag --title "AgentFlow $GITHUB_REF_NAME" --notes-file release-notes.md)
+          case "$GITHUB_REF_NAME" in *-*) flags+=(--prerelease) ;; esac
+          gh release create "$GITHUB_REF_NAME" "${flags[@]}"
+          id=$(gh api "repos/$GITHUB_REPOSITORY/releases" --paginate \
+            --jq ".[] | select(.tag_name == \"$GITHUB_REF_NAME\") | .id" | head -n 1)
+          echo "id=$id" >> "$GITHUB_OUTPUT"
+
+  build:
+    name: Build (${{ matrix.name }})
+    needs: draft
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Windows
+            platform: windows-latest
+            args: ''
+          - name: macOS Apple silicon
+            platform: macos-latest
+            args: '--target aarch64-apple-darwin'
+            rust-target: aarch64-apple-darwin
+          - name: macOS Intel
+            platform: macos-latest
+            args: '--target x86_64-apple-darwin'
+            rust-target: x86_64-apple-darwin
+          - name: Linux
+            platform: ubuntu-22.04
+            args: ''
+    runs-on: ${{ matrix.platform }}
+    env:
+      HAS_UPDATER_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY != '' }}
+      HAS_APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE != '' }}
+      HAS_APPLE_NOTARIZATION: ${{ secrets.APPLE_ID != '' }}
+      HAS_WINDOWS_CERTIFICATE: ${{ secrets.WINDOWS_CERTIFICATE != '' }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Updater key present
+        if: env.HAS_UPDATER_KEY != 'true'
+        shell: bash
+        run: |
+          echo "::error::Add the TAURI_SIGNING_PRIVATE_KEY and TAURI_SIGNING_PRIVATE_KEY_PASSWORD secrets (see CONTRIBUTING.md, Releasing)"
+          exit 1
+      - name: System libraries (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libsoup-3.0-dev \
+            libjavascriptcoregtk-4.1-dev build-essential curl wget file libxdo-dev \
+            libssl-dev libayatana-appindicator3-dev librsvg2-dev patchelf
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Rust toolchain (rust-toolchain.toml)
+        shell: bash
+        run: |
+          rustup toolchain install
+          if [ -n "${{ matrix.rust-target }}" ]; then rustup target add "${{ matrix.rust-target }}"; fi
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+          key: ${{ matrix.rust-target }}
+
+      # Optional code signing: only when the secrets exist, otherwise unsigned builds.
+      - name: macOS signing identity
+        if: runner.os == 'macOS'
+        shell: bash
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          if [ "$HAS_APPLE_CERTIFICATE" = "true" ]; then
+            {
+              echo "APPLE_CERTIFICATE=$APPLE_CERTIFICATE"
+              echo "APPLE_CERTIFICATE_PASSWORD=$APPLE_CERTIFICATE_PASSWORD"
+              echo "APPLE_SIGNING_IDENTITY=$APPLE_SIGNING_IDENTITY"
+            } >> "$GITHUB_ENV"
+            if [ "$HAS_APPLE_NOTARIZATION" = "true" ]; then
+              {
+                echo "APPLE_ID=$APPLE_ID"
+                echo "APPLE_PASSWORD=$APPLE_PASSWORD"
+                echo "APPLE_TEAM_ID=$APPLE_TEAM_ID"
+              } >> "$GITHUB_ENV"
+            fi
+          else
+            # Ad-hoc signature: Apple silicon refuses to run a bundle with none at all.
+            echo '{"bundle":{"macOS":{"signingIdentity":"-"}}}' > "$RUNNER_TEMP/sign.json"
+            echo "TAURI_SIGN_ARGS=--config $RUNNER_TEMP/sign.json" >> "$GITHUB_ENV"
+          fi
+      - name: Windows signing certificate
+        if: runner.os == 'Windows' && env.HAS_WINDOWS_CERTIFICATE == 'true'
+        shell: pwsh
+        env:
+          WINDOWS_CERTIFICATE: ${{ secrets.WINDOWS_CERTIFICATE }}
+          WINDOWS_CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
+        run: |
+          $pfx = Join-Path $env:RUNNER_TEMP 'certificate.pfx'
+          [IO.File]::WriteAllBytes($pfx, [Convert]::FromBase64String($env:WINDOWS_CERTIFICATE))
+          $password = ConvertTo-SecureString $env:WINDOWS_CERTIFICATE_PASSWORD -AsPlainText -Force
+          $cert = Import-PfxCertificate -FilePath $pfx -CertStoreLocation Cert:\CurrentUser\My -Password $password
+          Remove-Item $pfx
+          $sign = @{ bundle = @{ windows = @{
+            certificateThumbprint = $cert.Thumbprint
+            digestAlgorithm = 'sha256'
+            timestampUrl = 'http://timestamp.digicert.com'
+          } } } | ConvertTo-Json -Depth 5 -Compress
+          $file = Join-Path $env:RUNNER_TEMP 'sign.json'
+          Set-Content -Path $file -Value $sign
+          "TAURI_SIGN_ARGS=--config $file" >> $env:GITHUB_ENV
+
+      - uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        with:
+          releaseId: ${{ needs.draft.outputs.release-id }}
+          args: ${{ matrix.args }} ${{ env.TAURI_SIGN_ARGS }}
+          includeUpdaterJson: true
+          updaterJsonPreferNsis: true

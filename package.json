@@ -14,7 +14,9 @@
     "test": "vitest run",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "tauri": "tauri"
+    "tauri": "tauri",
+    "release:version": "node scripts/release-version.mjs",
+    "notices": "node scripts/notices.mjs"
   },
   "dependencies": {
     "@codemirror/commands": "6.11.1",

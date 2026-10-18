@@ -9,6 +9,8 @@ export interface Toast {
   detail?: string;
   /** One button, e.g. "Show" for a panel that waits; clicking it also dismisses. */
   action?: { label: string; run: () => void };
+  /** Stays until dismissed (e.g. an update offer), instead of closing on its own. */
+  sticky?: boolean;
   /** Set while its exit animation plays. */
   leaving?: boolean;
 }
@@ -26,7 +28,7 @@ export { toasts };
 export function showToast(toast: Omit<Toast, 'id'>): void {
   const id = nextId++;
   setToasts((list) => [...list, { ...toast, id }].slice(-MAX_TOASTS));
-  window.setTimeout(() => dismissToast(id), AUTO_DISMISS_MS[toast.kind]);
+  if (!toast.sticky) window.setTimeout(() => dismissToast(id), AUTO_DISMISS_MS[toast.kind]);
 }
 
 export function dismissToast(id: number): void {

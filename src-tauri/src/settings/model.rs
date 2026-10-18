@@ -8,11 +8,12 @@ use super::chat::ChatSettings;
 use super::library::LibrarySettings;
 use super::onboarding::OnboardingSettings;
 use super::providers::ProviderEntry;
+use super::updates::UpdateSettings;
 use super::usage::UsageSettings;
 use super::workstreams::WorkstreamSettings;
 
 /// Bump when the on-disk shape changes and add a step in `migrate.rs`.
-pub const CURRENT_VERSION: u32 = 10;
+pub const CURRENT_VERSION: u32 = 11;
 pub const SUPPORTED_LANGUAGES: [&str; 5] = ["en", "tr", "de", "zh", "ru"];
 pub const DEFAULT_LANGUAGE: &str = "en";
 pub const DEFAULT_THEME_ID: &str = "agentflow-dark";
@@ -50,6 +51,8 @@ pub struct Settings {
     pub library: LibrarySettings,
     /// The first-run flow and its tips card (phase 11).
     pub onboarding: OnboardingSettings,
+    /// Update checks on launch (phase 12).
+    pub updates: UpdateSettings,
     /// Opaque dockview layout owned by the frontend. `None` means "use the default layout".
     pub layout: Option<Value>,
 }
@@ -139,6 +142,7 @@ impl Default for Settings {
             workstreams: WorkstreamSettings::default(),
             library: LibrarySettings::default(),
             onboarding: OnboardingSettings::default(),
+            updates: UpdateSettings::default(),
             layout: None,
         }
     }

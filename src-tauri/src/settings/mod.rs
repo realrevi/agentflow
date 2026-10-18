@@ -10,6 +10,7 @@ mod normalize;
 mod onboarding;
 mod providers;
 mod store;
+mod updates;
 mod usage;
 mod workstreams;
 
@@ -28,5 +29,6 @@ pub use providers::{
     is_valid_provider_id, ProviderEntry, ANTHROPIC_PRESET, OPENAI_PRESETS, PROVIDER_KINDS,
 };
 pub use store::SettingsStore;
+pub use updates::UpdateSettings;
 pub use usage::{Budgets, PriceOverride, ProviderBudget, UsageSettings};
 pub use workstreams::{HandoffMode, WorkstreamSettings};

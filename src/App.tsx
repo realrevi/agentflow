@@ -27,6 +27,7 @@ import {
 import { NewWorkstreamDialog } from './app/workstreams/NewWorkstreamDialog';
 import { installToggleShortcuts } from './app/panelToggles';
 import { TipsCard } from './app/TipsCard';
+import { scheduleStartupCheck } from './features/updates';
 
 // Loaded only while the first-run flow is not done.
 const Onboarding = lazy(() => import('./app/onboarding/Onboarding'));
@@ -61,6 +62,7 @@ export default function App() {
       installToggleShortcuts(),
       installQuitGuard(),
       watchProfiles(),
+      scheduleStartupCheck(() => settings.updates.checkOnStartup),
       installWorkstreams({
         panelTitle,
         isWatched: (id) =>

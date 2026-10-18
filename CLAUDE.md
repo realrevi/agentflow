@@ -20,9 +20,8 @@ Linux. Priorities: **low RAM, fast, clean code organization, fun look.**
 
 ```
 src-tauri/src/
-  main.rs, lib.rs     app setup, managed state, command registration; error.rs: AppError
+  lib.rs, error.rs    app setup, state, command registration (commands/: thin wrappers); AppError
   settings/, themes/  versioned settings JSON (atomic, migrations); built-in + VS Code themes
-  commands/           thin #[tauri::command] fns that delegate to modules
   pty/                PtyManager, sessions (reader/waiter/pump threads), shells, CLI detection
   fs/                 workspace: path checks, list/read/write/trash, quick open index, watcher
   providers/          Provider trait, Anthropic + OpenAI-compatible adapters, SSE, keys, errors
@@ -32,6 +31,7 @@ src-tauri/src/
   library/            community library: registry, GitHub client, cache, importers, safety scan
   tokens/             UsageTracker: JSONL ledger, buckets, prices, budgets, CLI log readers
   turns/, workstreams/  CLI turn ends + activity from session logs; handoff log (JSONL)
+  updates.rs, crash.rs  updater check/install (signed latest.json); panic hook -> crash.log
   util/               atomic_write, run_blocking, lock/Signal, workspace_key, hex color, test_dir
 src/
   main.tsx, App.tsx   entry: bootstrap (settings -> locale -> theme -> workspace fs), then render
@@ -44,8 +44,8 @@ src/
   features/workspace/ workspace folder, fs session (backend open + watcher events), path helpers
   features/files/     tree store, virtual TreeView, quick open; editor/: lazy CodeMirror
   features/theme/     VS Code -> --af-* mapping, overrides, engine; i18n/: typed t(), reportError()
-  features/settings/  settings store (debounced save) + lazy SettingsPanel and sections
-  features/tokens/    usage store (one Channel), formats, badge, chart, Usage view + lazy panel
+  features/settings/  settings store (debounced save) + lazy SettingsPanel, sections (About)
+  features/tokens/    usage store (one Channel), badge, chart, Usage view; updates/: update check
   features/agents/    lazy Agents library panel (wizard/, library/ Browse tab, installed), profiles
   features/workstreams/ protocol, engine, store, runtime, cards, sidebar section, lazy Timeline
   features/stage/     lazy Agent Stage: layout, positions, scene, motion, canvas renderer
@@ -54,11 +54,11 @@ src/
 themes/               built-in theme JSON (embedded into the Rust binary via include_str!)
 ```
 
-Layering: `shared/` imports nothing from `features/` or `app/`. Core features (`i18n`,
-`settings`, `theme`, `characters`, `agentui`, `providers`, `tokens`) never import panel features. Panel
-features (`terminal`, `files`, `editor`, `chat`) import core features and `workspace`, never each
-other. `workstreams` and `stage` import core features only (the Stage gets `StageHooks`);
-`layout` and the settings panel compose panel features; `app/` composes all.
+Layering: `shared/` imports nothing from `features/` or `app/`. Core features (`i18n`, `settings`,
+`theme`, `characters`, `agentui`, `providers`, `tokens`, `updates`) never import panel features.
+Panel features (`terminal`, `files`, `editor`, `chat`) import core features and `workspace`, never
+each other. `workstreams` and `stage` import core only (the Stage gets `StageHooks`); `layout`
+and the settings panel compose panel features; `app/` composes all.
 
 ## Code rules
 
@@ -118,31 +118,25 @@ other. `workstreams` and `stage` import core features only (the Stage gets `Stag
 
 ## Agent installer (phase 8)
 
-- One template (`agents/template.rs`, schema 1; docs/agent-template.md + the JSON Schema in
-  `schemas/`, a test keeps them in step) -> `targets.rs` renders exact files per tool
-  (docs/agent-targets.md: Claude/Gemini subagent .md, Codex subagent .toml, Cursor .mdc,
-  `.agentflow/agents/<id>.md`). Placeholders are plain substitution; unknown ones are errors.
+- One template (`agents/template.rs`, schema 1 = docs/agent-template.md + `schemas/`, a test
+  keeps them in step) -> `targets.rs` renders exact files per tool (docs/agent-targets.md).
+  Placeholders are plain substitution; unknown ones are errors; `\{{` is a literal `{{`.
 - **Shared files** (CLAUDE.md, AGENTS.md, GEMINI.md) only get a section between
-  `<!-- agentflow:begin <id> -->` / `end` markers (`section.rs`): nothing outside is touched,
-  CRLF kept, idempotent. Every install is planned and previewed first (`plan.rs`); files we did
-  not create or that changed since (hash in `.agentflow/installed.json`) need a confirmation;
-  user scope only into documented home folders, after its own confirmation (`roots.rs`).
+  `<!-- agentflow:begin <id> -->` / `end` markers (`section.rs`): nothing else touched, CRLF
+  kept, idempotent. Every install is planned and previewed (`plan.rs`); foreign or changed
+  files (hash in `.agentflow/installed.json`) and user scope (`roots.rs`) need a confirmation.
   Profiles narrow tools, never loosen the mode. New tool format = a target fn + snapshot test.
-- Kinds: agent, rule, `skill` (folder `<tool skills dir>/<id>/` with SKILL.md + `files`, paths
-  via `relpath.rs`, binary as base64, scripts copied never run), `command` (Gemini only).
-  `\{{` is a literal `{{`. Library templates carry `source` (attribution line in each file).
+- Kinds: agent, rule, `skill` (folder with SKILL.md + `files`, binary as base64, scripts
+  copied never run), `command` (Gemini). Library templates carry `source` (attribution).
 
 ## Community library (phase 10)
 
-- `registry/sources.json` (docs/library-sources.md): newest from GitHub main (ETag), else the
-  cache, else bundled; user sources from settings are `unverified`. Per source and refresh:
-  repo + branch head (ETags), the recursive tree only on a new commit; files from
-  raw.githubusercontent by commit, cached by blob sha in `<app data>/library`. Rate limit read
-  from every answer; used up = no request until the reset. Auto refresh at most once a day.
-- Importers (`library/import/`) keep the original text, map frontmatter to target options and
-  list what they cannot convert (`Unsupported` + reason id). Per-skill LICENSE files decide
-  per-item licenses. Safety flags (warnings only): every pattern in `library/safety.rs` + tests.
-- The Browse tab hands templates to the wizard; updates = a different `source.sha` upstream.
+- `registry/sources.json` (docs/library-sources.md): GitHub main (ETag), else cache, else
+  bundled; settings sources are `unverified`. Tree only on a new commit; files by commit, cached
+  by blob sha; rate limit honoured (no request until the reset); auto refresh once a day.
+- Importers (`library/import/`) keep the original text and list what they cannot convert
+  (`Unsupported` + reason id); per-skill LICENSE files decide licenses. Safety flags (warnings
+  only) live in `library/safety.rs` + tests. Browse hands templates to the wizard.
 
 ## Workstreams & Agent Stage (phase 9)
 
@@ -185,7 +179,7 @@ other. `workstreams` and `stage` import core features only (the Stage gets `Stag
   hard-code colors. Overrides (text, accent, agent bold `#F5C542`, `--af-glow`): `overrides.ts`.
 - Flat dotted keys in `src/locales/en.json`; `I18nKey = keyof typeof en`; every visible string
   uses `t('key', { param })`. New keys go into **all five** locales (typecheck + tests check).
-- Rust owns `settings.json` (v10; `onboarding { done, tipsDismissed }`): bump `CURRENT_VERSION`
+- Rust owns `settings.json` (v11; `updates { checkOnStartup }`): bump `CURRENT_VERSION`
   and add a `migrate.rs` step on shape changes; `normalized()` repairs values; `defaults.test.ts`
   checks TS defaults against Rust.
 
@@ -204,17 +198,31 @@ other. `workstreams` and `stage` import core features only (the Stage gets `Stag
   `src/assets/icons/` and `file-icons/`. Never name a component like a Solid built-in
   (`Switch`, `Show`, `For`...): the JSX compiler resolves those to solid-js.
 
+## CI, releases & updater (phase 12)
+
+- CI (`.github/workflows/ci.yml`): Linux runs every check below, Windows `pnpm test` +
+  `cargo test`, macOS `cargo test`. Keep it green; new checks go into all three if relevant.
+- Release (`release.yml`, on `v*` tags): draft GitHub release with notes from CHANGELOG.md,
+  installers for Windows (NSIS + MSI), macOS (aarch64 + x64 dmg), Linux (deb, AppImage, rpm)
+  and the signed `latest.json`. Steps: `pnpm release:version x.y.z` -> CHANGELOG section ->
+  commit + merge -> `git tag vx.y.z` + push -> check and publish the draft by hand.
+- **Updater key:** only the PUBLIC key is in `tauri.conf.json`. The private key and its
+  password live outside the repo and in the secrets `TAURI_SIGNING_PRIVATE_KEY(_PASSWORD)`;
+  never commit, log or print them. Signing (`APPLE_*`, `WINDOWS_CERTIFICATE*`) is optional.
+- Updates never install silently: a check offers, only "Install and restart" installs. Panics
+  unwind and go to `crash.log`. `pnpm notices` after dependency/asset changes (About > Licenses).
+
 ## Commands
 
 ```sh
 pnpm install && pnpm tauri dev
-pnpm typecheck && pnpm test && pnpm build
+pnpm typecheck && pnpm test && pnpm build && pnpm format:check
 cd src-tauri && cargo fmt --check && cargo clippy --all-targets -- -D warnings && cargo test
-cargo build    # in src-tauri: compile check, no bundling
+pnpm notices; pnpm release:version x.y.z   # notices file; version in all four files
 ```
 
 ## Roadmap (12 phases)
 
-Done: phases 1-11 (shell, terminals, files + editor, characters, provider chat, usage, API
-agents, installer, workstreams + Stage, community library, UI polish + first-run). Next: 12
-cross-platform builds + CI. Only build what the current phase lists; future modules = stubs.
+Done: all 12 phases (shell, terminals, files + editor, characters, provider chat, usage, API
+agents, installer, workstreams + Stage, community library, UI polish + first-run, CI +
+releases + updater). New work: an issue first, small PRs, no features beyond what was agreed.

@@ -38,6 +38,7 @@ tiktoken-rs = "0.12"
 regex = "1"
 globset = "0.4"
 sha2 = "0.10"
+tauri-plugin-updater = "2.14"
 
 [dev-dependencies]
 socket2 = "0.6"
@@ -45,9 +46,11 @@ socket2 = "0.6"
 [target.'cfg(unix)'.dependencies]
 libc = "0.2"
 
+# Small, fast release binaries. Panics unwind (a panic in one worker thread or command
+# does not end the app) and are written to crash.log in the app data folder (crash.rs).
 [profile.release]
 codegen-units = 1
 lto = true
 opt-level = "s"
-panic = "abort"
+panic = "unwind"
 strip = true

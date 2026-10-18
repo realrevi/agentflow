@@ -8,7 +8,7 @@ use crate::error::AppResult;
 /// `STEPS[n]` upgrades a document from version `n` to `n + 1`.
 const STEPS: [fn(&mut Map<String, Value>); CURRENT_VERSION as usize] = [
     v0_to_v1, v1_to_v2, v2_to_v3, v3_to_v4, v4_to_v5, v5_to_v6, v6_to_v7, v7_to_v8, v8_to_v9,
-    v9_to_v10,
+    v9_to_v10, v10_to_v11,
 ];
 
 /// Migrates and deserializes a raw settings document. Missing fields get defaults,
@@ -115,6 +115,13 @@ fn v9_to_v10(doc: &mut Map<String, Value>) {
     if let Value::Object(map) = onboarding {
         map.entry("done").or_insert(Value::Bool(true));
     }
+}
+
+/// v11 adds update checks on launch (default on); defaults fill in on load.
+fn v10_to_v11(doc: &mut Map<String, Value>) {
+    doc.insert("version".into(), Value::from(11));
+    doc.entry("updates")
+        .or_insert_with(|| Value::Object(Map::new()));
 }
 
 #[cfg(test)]
@@ -375,6 +382,19 @@ mod tests {
         assert_eq!(settings.workstreams.max_rounds, 5, "workstreams are kept");
         assert!(settings.library.custom_sources.is_empty());
         assert!(settings.library.auto_refresh);
+        let again = migrate(serde_json::to_value(&settings).expect("json")).expect("migrate");
+        assert_eq!(again, settings);
+    }
+
+    #[test]
+    fn v10_document_gains_update_checks_on_startup() {
+        let raw = json!({ "version": 10, "onboarding": { "done": true, "tipsDismissed": true } });
+        let settings = migrate(raw).expect("migrate");
+        assert_eq!(settings.version, CURRENT_VERSION);
+        assert!(settings.updates.check_on_startup);
+        assert!(settings.onboarding.tips_dismissed, "onboarding is kept");
+        let off = json!({ "version": 11, "updates": { "checkOnStartup": false } });
+        assert!(!migrate(off).expect("migrate").updates.check_on_startup);
         let again = migrate(serde_json::to_value(&settings).expect("json")).expect("migrate");
         assert_eq!(again, settings);
     }
