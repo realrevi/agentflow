@@ -3,6 +3,7 @@
 mod agent;
 mod chat;
 mod io;
+mod library;
 mod migrate;
 mod model;
 mod normalize;
@@ -14,6 +15,7 @@ mod workstreams;
 pub use agent::{AgentSettings, ModelTools};
 pub use chat::{ChatSettings, ModelWindow, DEFAULT_CONTEXT_WINDOW};
 pub use io::{load_from_file, save_to_file};
+pub use library::{CustomSource, LibrarySettings, MAX_CUSTOM_SOURCES};
 pub use migrate::migrate;
 pub use model::{
     AgentBold, Appearance, CharacterSettings, FilesSettings, Settings, TerminalSettings, UiState,

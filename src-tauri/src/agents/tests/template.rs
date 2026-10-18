@@ -178,7 +178,8 @@ fn the_json_schema_matches_the_rust_rules() {
         crate::agents::validate::MAX_INSTRUCTIONS
     );
     for kind in props["kind"]["enum"].as_array().expect("kinds") {
-        let parsed: Result<crate::agents::template::TemplateKind, _> = serde_json::from_value(kind.clone());
+        let parsed: Result<crate::agents::template::TemplateKind, _> =
+            serde_json::from_value(kind.clone());
         assert!(parsed.is_ok(), "{kind}");
     }
 }

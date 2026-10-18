@@ -50,6 +50,7 @@ impl Settings {
         self.usage = std::mem::take(&mut self.usage).normalized();
         self.agent = std::mem::take(&mut self.agent).normalized();
         self.workstreams = std::mem::take(&mut self.workstreams).normalized();
+        self.library = std::mem::take(&mut self.library).normalized();
 
         if !self
             .layout
@@ -147,6 +148,7 @@ mod tests {
                 max_rounds: 0,
                 ..Default::default()
             },
+            library: crate::settings::LibrarySettings::default(),
             layout: Some(json!([1, 2, 3])),
         };
 

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import agentRs from '../../../src-tauri/src/settings/agent.rs?raw';
 import chatRs from '../../../src-tauri/src/settings/chat.rs?raw';
+import libraryRs from '../../../src-tauri/src/settings/library.rs?raw';
 import modelRs from '../../../src-tauri/src/settings/model.rs?raw';
 import providersRs from '../../../src-tauri/src/settings/providers.rs?raw';
 import usageRs from '../../../src-tauri/src/settings/usage.rs?raw';
@@ -17,6 +18,7 @@ const RUST = {
   'usage.rs': usageRs,
   'agent.rs': agentRs,
   'workstreams.rs': workstreamsRs,
+  'library.rs': libraryRs,
 };
 const rust = (file: keyof typeof RUST) => RUST[file];
 
@@ -100,6 +102,12 @@ describe('settings defaults mirror the Rust schema', () => {
       `REPORT_CAP_KB_RANGE: (u32, u32) = (${REPORT_CAP_KB.min}, ${REPORT_CAP_KB.max})`,
     );
     expect(source).toContain(`STAGE_SCALES: [u8; 5] = [${STAGE_SCALES.join(', ')}]`);
+  });
+
+  it('uses the Rust library defaults', () => {
+    const library = defaultImpl('library.rs', 'LibrarySettings');
+    expect(library).toContain(`auto_refresh: ${DEFAULT_SETTINGS.library.autoRefresh}`);
+    expect(DEFAULT_SETTINGS.library.customSources).toEqual([]);
   });
 
   it('knows every sidebar view the backend accepts', () => {

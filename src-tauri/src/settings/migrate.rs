@@ -7,7 +7,7 @@ use crate::error::AppResult;
 
 /// `STEPS[n]` upgrades a document from version `n` to `n + 1`.
 const STEPS: [fn(&mut Map<String, Value>); CURRENT_VERSION as usize] = [
-    v0_to_v1, v1_to_v2, v2_to_v3, v3_to_v4, v4_to_v5, v5_to_v6, v6_to_v7, v7_to_v8,
+    v0_to_v1, v1_to_v2, v2_to_v3, v3_to_v4, v4_to_v5, v5_to_v6, v6_to_v7, v7_to_v8, v8_to_v9,
 ];
 
 /// Migrates and deserializes a raw settings document. Missing fields get defaults,
@@ -88,6 +88,14 @@ fn v6_to_v7(doc: &mut Map<String, Value>) {
 fn v7_to_v8(doc: &mut Map<String, Value>) {
     doc.insert("version".into(), Value::from(8));
     doc.entry("workstreams")
+        .or_insert_with(|| Value::Object(Map::new()));
+}
+
+/// v9 adds the community agent library (custom sources, daily refresh); defaults fill in
+/// on load.
+fn v8_to_v9(doc: &mut Map<String, Value>) {
+    doc.insert("version".into(), Value::from(9));
+    doc.entry("library")
         .or_insert_with(|| Value::Object(Map::new()));
 }
 
@@ -337,6 +345,18 @@ mod tests {
         assert_eq!(ws.stage_scale, 4);
         assert!(ws.stage_animations);
         assert!(settings.layout.is_some());
+        let again = migrate(serde_json::to_value(&settings).expect("json")).expect("migrate");
+        assert_eq!(again, settings);
+    }
+
+    #[test]
+    fn v8_document_gains_library_settings() {
+        let raw = json!({ "version": 8, "workstreams": { "maxRounds": 5 } });
+        let settings = migrate(raw).expect("migrate");
+        assert_eq!(settings.version, CURRENT_VERSION);
+        assert_eq!(settings.workstreams.max_rounds, 5, "workstreams are kept");
+        assert!(settings.library.custom_sources.is_empty());
+        assert!(settings.library.auto_refresh);
         let again = migrate(serde_json::to_value(&settings).expect("json")).expect("migrate");
         assert_eq!(again, settings);
     }
