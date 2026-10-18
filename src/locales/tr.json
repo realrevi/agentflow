@@ -746,5 +746,7 @@
   "settings.workstreams.maxRounds": "Otomatik mod: tur sınırı",
   "settings.workstreams.reportCap": "Yönetici için rapor sınırı (KB)",
   "settings.workstreams.stageScale": "Sahne karakter boyutu",
-  "settings.workstreams.stageAnimations": "Sahne animasyonları (paketler, nabızlar)"
+  "settings.workstreams.stageAnimations": "Sahne animasyonları (paketler, nabızlar)",
+  "workstream.remind": "{name} için biçimi hatırlat",
+  "workstream.openManager": "Yöneticiyi aç"
 }

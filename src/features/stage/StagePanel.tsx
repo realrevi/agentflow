@@ -24,7 +24,7 @@ import { settings } from '../settings/settingsStore';
 import { themeVars } from '../theme/themeStore';
 import { onHandoffSent, workstreamOf, workstreams } from '../workstreams/store';
 import type { StageHooks } from './hooks';
-import { autoLayout, cellAt, cellCenter, withPlaced } from './layout';
+import { autoLayout, cellAt, cellCenter, rowsOf, unitsFor, withPlaced } from './layout';
 import { PULSE_MS, StageMotion } from './motion';
 import { clearCells, placeCell, placedCells } from './positions';
 import { bubbleView, distanceToSegment, needsFrames, type Point } from './scene';
@@ -82,11 +82,14 @@ export default function StagePanel(props: { api: DockviewPanelApi; hooks: StageH
     const cols = Math.max(1, Math.floor((size().w - PAD * 2) / unit()));
     return withPlaced(autoLayout(clusters, loose, cols), placedCells(settings.currentWorkspace));
   });
+  const units = createMemo(() =>
+    unitsFor(unit(), charSize() * 1.3, size().h - TOP - PAD, rowsOf(placement())),
+  );
   const pointOf = (panel: string): Point | undefined => {
     const dragged = drag();
     if (dragged?.panel === panel && dragged.moved) return dragged.at;
     const cell = placement().cells.get(panel);
-    return cell ? cellCenter(cell, unit(), origin) : undefined;
+    return cell ? cellCenter(cell, units(), origin) : undefined;
   };
   const nameOf = (panel: string): string => {
     const info = agents().find((a) => a.id === panel);
@@ -289,7 +292,7 @@ export default function StagePanel(props: { api: DockviewPanelApi; hooks: StageH
       placeCell(
         settings.currentWorkspace,
         dragging.panel,
-        cellAt(dragging.at.x, dragging.at.y, unit(), origin),
+        cellAt(dragging.at.x, dragging.at.y, units(), origin),
       );
       return;
     }
@@ -337,8 +340,8 @@ export default function StagePanel(props: { api: DockviewPanelApi; hooks: StageH
 
   const labels = () =>
     placement().labels.map((label) => {
-      const at = cellCenter(label.cell, unit(), origin);
-      return { ...label, at: { x: at.x, y: at.y + unit() / 2 - 10 } };
+      const at = cellCenter(label.cell, units(), origin);
+      return { ...label, at: { x: at.x, y: at.y + units().y / 2 - 10 } };
     });
 
   return (

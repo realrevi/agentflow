@@ -166,6 +166,12 @@ export function serializeWorkstream(ws: Workstream): Record<string, unknown> {
   };
 }
 
+/** A handoff may only go between members of its own workstream. */
+export function canRoute(ws: Workstream, from: string, to: string): boolean {
+  const own = members(ws);
+  return own.includes(from) && own.includes(to);
+}
+
 /** Workers keep at most one workstream; the manager may not be a worker anywhere. */
 export function linkedElsewhere(all: readonly Workstream[], panel: string, except?: string) {
   return all.find((ws) => ws.id !== except && members(ws).includes(panel)) ?? null;

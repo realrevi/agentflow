@@ -746,5 +746,7 @@
   "settings.workstreams.maxRounds": "Авто: лимит раундов",
   "settings.workstreams.reportCap": "Лимит отчёта для менеджера (КБ)",
   "settings.workstreams.stageScale": "Размер персонажей на сцене",
-  "settings.workstreams.stageAnimations": "Анимации сцены (пакеты, пульсация)"
+  "settings.workstreams.stageAnimations": "Анимации сцены (пакеты, пульсация)",
+  "workstream.remind": "Напомнить {name} формат",
+  "workstream.openManager": "Открыть менеджера"
 }

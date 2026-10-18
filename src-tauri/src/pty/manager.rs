@@ -13,6 +13,8 @@ use portable_pty::{native_pty_system, Child, CommandBuilder, PtySize};
 
 use super::coalesce::{run_pump, PumpMsg};
 use super::env_path::search_path;
+use super::session_env::PARENT_SESSION_VARS;
+
 use super::flow::Flow;
 use super::kill::{escalate_after_grace, force_kill};
 use super::launch::Launch;
@@ -90,6 +92,12 @@ impl PtyManager {
         command.env("COLORTERM", "truecolor");
         if let Some(path) = search_path() {
             command.env("PATH", path); // so agent CLIs also find node etc. on GUI launches
+        }
+        // A terminal here is a session of its own, even when AgentFlow was started from
+        // inside an agent CLI session: its markers must not reach the CLIs run in panels
+        // (Claude Code would treat them as its child session and keep no transcript).
+        for name in PARENT_SESSION_VARS {
+            command.env_remove(name);
         }
 
         let mut child = pair.slave.spawn_command(command).map_err(pty_error)?;

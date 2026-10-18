@@ -6,6 +6,7 @@ import { createSignal, For, Show } from 'solid-js';
 import { t, type I18nKey } from '../i18n';
 import type { Handoff, PauseReason, Workstream } from './model';
 import { memberName } from './model';
+import { remindManager } from './runtime';
 import { dispatch, setPendingText, workstreams } from './store';
 
 const REASONS: Partial<Record<PauseReason, I18nKey>> = {
@@ -116,6 +117,24 @@ function Card(props: { ws: Workstream; onFocus: (panel: string) => void }) {
             </div>
           </>
         )}
+      </Show>
+      <Show when={!pending() && (props.ws.reason === 'noBlock' || props.ws.reason === 'malformed')}>
+        <div class="af-button-row">
+          <button
+            type="button"
+            class="af-button small"
+            onClick={() => void remindManager(props.ws.id)}
+          >
+            {t('workstream.remind', { name: memberName(props.ws, props.ws.manager) })}
+          </button>
+          <button
+            type="button"
+            class="af-button secondary small"
+            onClick={() => props.onFocus(props.ws.manager)}
+          >
+            {t('workstream.openManager')}
+          </button>
+        </div>
       </Show>
       <Show when={!pending() && props.ws.reason === 'ask'}>
         <div class="af-button-row">

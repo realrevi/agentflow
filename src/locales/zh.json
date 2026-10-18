@@ -746,5 +746,7 @@
   "settings.workstreams.maxRounds": "自动模式:轮次上限",
   "settings.workstreams.reportCap": "给经理的报告上限(KB)",
   "settings.workstreams.stageScale": "舞台角色大小",
-  "settings.workstreams.stageAnimations": "舞台动画(数据包、脉冲)"
+  "settings.workstreams.stageAnimations": "舞台动画(数据包、脉冲)",
+  "workstream.remind": "提醒 {name} 使用格式",
+  "workstream.openManager": "打开经理"
 }

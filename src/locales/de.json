@@ -746,5 +746,7 @@
   "settings.workstreams.maxRounds": "Automatik: Rundenlimit",
   "settings.workstreams.reportCap": "Berichtslimit für den Manager (KB)",
   "settings.workstreams.stageScale": "Figurengröße auf der Bühne",
-  "settings.workstreams.stageAnimations": "Bühnenanimationen (Pakete, Pulse)"
+  "settings.workstreams.stageAnimations": "Bühnenanimationen (Pakete, Pulse)",
+  "workstream.remind": "{name} an das Format erinnern",
+  "workstream.openManager": "Manager öffnen"
 }

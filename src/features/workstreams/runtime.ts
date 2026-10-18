@@ -8,6 +8,7 @@ import { ipc } from '../../shared/ipc';
 import type { HandoffEntry } from '../../shared/types';
 import {
   agentState,
+  clearAttention,
   onTurnEnded,
   onUserInput,
   portOf,
@@ -16,8 +17,8 @@ import {
 } from '../agentui';
 import { reportError } from '../i18n';
 import { onBudgetAlert } from '../tokens';
-import { managerInstructions, setupMessage, type MemberInfo } from './messages';
-import { memberName, members, type Handoff, type Workstream } from './model';
+import { FORMAT_REMINDER, managerInstructions, setupMessage, type MemberInfo } from './messages';
+import { canRoute, memberName, members, type Handoff, type Workstream } from './model';
 import {
   dispatch,
   handoffSent,
@@ -83,8 +84,8 @@ async function log(ws: Workstream, handoff: Handoff, hooks: RuntimeHooks): Promi
 }
 
 async function deliver(ws: Workstream, handoff: Handoff, hooks: RuntimeHooks): Promise<void> {
-  // Routing stays inside the workstream: never to a panel that is not a member.
-  if (!members(ws).includes(handoff.to)) return;
+  // Routing stays inside the workstream: never to or from a panel that is not a member.
+  if (!canRoute(ws, handoff.from, handoff.to)) return;
   const port = portOf(handoff.to);
   let sent = false;
   if (port?.ready()) {
@@ -99,6 +100,8 @@ async function deliver(ws: Workstream, handoff: Handoff, hooks: RuntimeHooks): P
     return;
   }
   dispatch(ws.id, { type: 'delivered', handoff });
+  // The sender glowed for this handoff (a click was needed); that is done now.
+  clearAttention(handoff.from);
   handoffSent(workstreamById(ws.id) ?? ws, handoff);
   log(ws, handoff, hooks).catch((err: unknown) => reportError('error.workstreamLog', err));
 }
@@ -174,6 +177,14 @@ export function installWorkstreams(hooks: RuntimeHooks): () => void {
 }
 
 const extraHolders = new Set<string>();
+
+/** The user asks to remind the manager of the block format (after no or a bad block). */
+export async function remindManager(id: string): Promise<void> {
+  const ws = workstreamById(id);
+  const port = ws ? portOf(ws.manager) : undefined;
+  if (!ws || !port?.ready()) return;
+  if (await port.deliver(FORMAT_REMINDER)) dispatch(id, { type: 'resume' });
+}
 
 /** "Stop all workstreams" (status bar). */
 export function stopAll(): void {

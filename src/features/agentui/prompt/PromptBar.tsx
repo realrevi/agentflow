@@ -207,7 +207,11 @@ export function PromptBar(props: PromptBarProps) {
     grow();
     follow();
     if (!root) return;
-    const observer = new ResizeObserver(() => follow());
+    // Also re-measures the height: a panel mounted while hidden measured nothing.
+    const observer = new ResizeObserver(() => {
+      grow();
+      follow();
+    });
     observer.observe(root);
     onCleanup(() => observer.disconnect());
   });

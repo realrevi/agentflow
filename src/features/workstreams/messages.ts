@@ -31,6 +31,7 @@ A short summary of what was done.
 \`\`\`
 
 Rules:
+- The block is plain text at the end of your final message. There is no tool for handoffs: writing the block is what hands the work over, so never stop with "handing it over now" and no block.
 - One block per reply, at the end. Without a valid block AgentFlow pauses and asks the user.
 - Send only to the workers listed above, by name.
 - A worker prompt must be focused and complete: the worker sees only what you send. Say the goal, the files involved, constraints, how to check the result and what to report back.
@@ -47,6 +48,10 @@ ${managerInstructions(workstream, workers)}
 
 Reply now with an agentflow-ask block that asks the user for the task (or an agentflow-send block if the task is already clear).`;
 }
+
+/** Sent when the user asks AgentFlow to remind a manager of the format. */
+export const FORMAT_REMINDER =
+  'AgentFlow: your last reply had no valid AgentFlow block, so nothing was handed over. Reply again and end it with exactly one block: agentflow-send to="<worker name>" (the full prompt), agentflow-ask (a question for the user) or agentflow-done (a summary).';
 
 const encoder = new TextEncoder();
 

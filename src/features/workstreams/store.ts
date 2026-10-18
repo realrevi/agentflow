@@ -108,7 +108,8 @@ export function createWorkstream(spec: NewWorkstream): string {
     mode: spec.mode,
     manager: spec.manager,
     workers: [...new Set(spec.workers)].filter((p) => p !== spec.manager && free(p)),
-    names: spec.names,
+    // Copies: the store mutates what it holds, never the caller's objects.
+    names: { ...spec.names },
     status: 'idle',
     reason: null,
     detail: null,

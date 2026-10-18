@@ -149,11 +149,21 @@ function autoStop(ws: Workstream, reason: PauseReason, detail: string | null = n
   return { ws: isRunningAuto(ws) ? pause(ws, reason, detail) : ws, actions: [] };
 }
 
+/** After a restart the user goes on by talking to the agents; auto mode stays stopped
+ * until they resume it. */
+function awake(ws: Workstream): Workstream {
+  if (ws.reason !== 'restored') return ws;
+  return ws.mode === 'auto'
+    ? { ...ws, reason: 'stopped' }
+    : { ...ws, status: 'idle', reason: null, detail: null };
+}
+
 export function step(ws: Workstream, input: Input, limits: Limits, newId: NewId): Step {
   const isMember = (panel: string) => members(ws).includes(panel);
   switch (input.type) {
     case 'turn': {
       const { end } = input;
+      ws = awake(ws);
       if (end.panel === ws.manager) return managerTurn(ws, end, limits, newId);
       if (ws.workers.includes(end.panel) && ws.awaiting.includes(end.panel)) {
         return workerTurn(ws, end, limits, newId);

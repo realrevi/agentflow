@@ -92,13 +92,31 @@ export function withPlaced(
   return { cells, labels };
 }
 
+/** Pixels per cell, across and down (rows shrink so a short Stage still fits). */
+export interface Units {
+  x: number;
+  y: number;
+}
+
+/** Rows the placement uses (its lowest cell, plus room for the name under it). */
+export function rowsOf(placement: Placement): number {
+  let rows = 1;
+  for (const cell of placement.cells.values()) rows = Math.max(rows, cell.y + 1.6);
+  return rows;
+}
+
+/** Cell sizes for a Stage `height` px high: rows never get shorter than `minY`. */
+export function unitsFor(base: number, minY: number, height: number, rows: number): Units {
+  return { x: base, y: Math.max(minY, Math.min(base, height / Math.max(1, rows))) };
+}
+
 /** A pixel point back to the nearest half cell (dragging snaps softly). */
-export function cellAt(x: number, y: number, unit: number, origin: Cell): Cell {
+export function cellAt(x: number, y: number, units: Units, origin: Cell): Cell {
   const snap = (value: number) => Math.round(value * 2) / 2;
-  return { x: snap((x - origin.x) / unit - 0.5), y: snap((y - origin.y) / unit - 0.5) };
+  return { x: snap((x - origin.x) / units.x - 0.5), y: snap((y - origin.y) / units.y - 0.5) };
 }
 
 /** The pixel center of a cell. */
-export function cellCenter(cell: Cell, unit: number, origin: Cell): Cell {
-  return { x: origin.x + (cell.x + 0.5) * unit, y: origin.y + (cell.y + 0.5) * unit };
+export function cellCenter(cell: Cell, units: Units, origin: Cell): Cell {
+  return { x: origin.x + (cell.x + 0.5) * units.x, y: origin.y + (cell.y + 0.5) * units.y };
 }
