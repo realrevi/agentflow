@@ -2,9 +2,11 @@
 import type { ChatSettings, ProviderEntry } from './chatTypes';
 import type { UsageSettings } from './usageTypes';
 import type { AgentSettings } from './agentTypes';
+import type { WorkstreamSettings } from './workstreamTypes';
 
 export type * from './agentTypes';
 export type * from './chatTypes';
+export type * from './workstreamTypes';
 export type * from './installerTypes';
 export type * from './usageTypes';
 
@@ -84,6 +86,7 @@ export interface Settings {
   usage: UsageSettings;
   /** API agents: loop and tool limits, permissions, the default system prompt. */
   agent: AgentSettings;
+  workstreams: WorkstreamSettings;
   layout: SerializedLayout | null;
 }
 

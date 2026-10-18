@@ -8,7 +8,7 @@ Linux. Priorities: **low RAM, fast, clean code organization, fun look.**
 
 - **Backend:** Tauri 2, Rust stable, tokio, serde/serde_json, thiserror, tracing, portable-pty,
   which, ignore + notify, trash, reqwest (rustls + ring, no default features), keyring (OS
-  keychain); tauri plugins: dialog, clipboard-manager
+  keychain); tauri plugins: dialog, clipboard-manager, opener, notification
 - **Frontend:** SolidJS + TypeScript (strict) + Vite, pnpm, xterm.js (+ fit, webgl, unicode11),
   CodeMirror 6 (languages per file type), marked + DOMPurify (chat only); all three lazy
 - **Layout/styling:** `dockview-core` behind a thin Solid wrapper (stylesheet from `dockview`,
@@ -34,6 +34,8 @@ src-tauri/src/
   agents/             installer: templates, renderers per tool, managed sections, plan/apply,
                       registry, detectors, AgentFlow profiles, Create with AI, starters/
   tokens/             UsageTracker: JSONL ledger, buckets, prices, budgets, CLI log readers
+  turns/              CLI turn ends, reports and tool activity from the session logs (phase 9)
+  workstreams/        the workstream log (handoffs per workspace, JSONL)
   util/               atomic_write, run_blocking, lock/Signal, workspace_key, hex color, test_dir
 src/
   main.tsx, App.tsx   entry: bootstrap (settings -> locale -> theme -> workspace fs), then render
@@ -41,7 +43,7 @@ src/
   features/layout/    dockview host, panels, roles, placement, saved layout, tabs, characters
   features/terminal/  TerminalController, lazy TerminalPanel, agent activity
   features/chat/      lazy ChatPanel: session, agent/ (timeline, cards, undo), reveal, markdown
-  features/agentui/   corner character overlay + prompt bar, shared by terminal and chat panels
+  features/agentui/   corner overlay + prompt bar; activity, turn ends, attention, ports, input
   features/providers/ presets (base URLs), model list and key status stores
   features/characters/  sprites/*.json, renderer, shared rAF animator, Avatar, state heuristic
   features/workspace/ workspace folder, fs session (backend open + watcher events), path helpers
@@ -52,6 +54,8 @@ src/
   features/settings/  settings store (debounced save) + lazy SettingsPanel and sections
   features/tokens/    usage store (one Channel), formats, badge, chart, Usage view + lazy panel
   features/agents/    lazy Agents library panel (wizard/, installed list), profiles store
+  features/workstreams/ protocol, engine, store, runtime, cards, sidebar section, lazy Timeline
+  features/stage/     lazy Agent Stage: layout, positions, scene, motion, canvas renderer
   shared/             ipc (+ ipcCommands), types (+ chat/usage/agentTypes), errors, toast, dialog, ui/
   locales/            en.json (source of truth), tr, de, zh, ru
 themes/               built-in theme JSON (embedded into the Rust binary via include_str!)
@@ -60,7 +64,8 @@ themes/               built-in theme JSON (embedded into the Rust binary via inc
 Layering: `shared/` imports nothing from `features/` or `app/`. Core features (`i18n`,
 `settings`, `theme`, `characters`, `agentui`, `providers`, `tokens`) never import panel features. Panel
 features (`terminal`, `files`, `editor`, `chat`) import core features and `workspace`, never each
-other. `layout` and the settings panel compose panel features; `app/` composes all.
+other. `workstreams` and `stage` import core features only (the Stage gets `StageHooks`);
+`layout` and the settings panel compose panel features; `app/` composes all.
 
 ## Code rules
 
@@ -81,13 +86,11 @@ other. `layout` and the settings panel compose panel features; `app/` composes a
 - Streams use a `Channel` created _before_ the invoke, never global events. PTY: raw bytes
   (coalesced ~10 ms / 64 KB, `OutputDecoder`) then `{ type: 'exit', code, signal }`; flow control
   via `pty_ack` (reader pauses at 512 KB). Kill = SIGHUP / TerminateProcess, SIGKILL after 2 s.
-- Panels persist _config_ only; restored agent CLIs never auto-start.
-- Frontend paths are workspace-relative with `/`; `fs/paths.rs` rejects `..`, absolute paths and
-  escaping symlinks. One `ignore` config (`fs/walk.rs`: .gitignore even outside git, `.git`
-  hidden, dotfiles per `files.showHidden`) for list, quick open and the watcher (notify, 200 ms
-  debounce, `{ paths, structural, rescan }` batches fanned out by `workspace/fsSession.ts`).
-- Saves are atomic with the mtime the file was read at (mismatch = `conflict`); deletes go to the
-  OS trash; reads stop at 5 MB.
+  Panels persist _config_ only; restored agent CLIs never auto-start.
+- Frontend paths are workspace-relative with `/` (`fs/paths.rs` rejects `..`, absolute paths,
+  escaping symlinks). One `ignore` config (`fs/walk.rs`) for list, quick open and the watcher
+  (200 ms batches via `workspace/fsSession.ts`). Saves are atomic with the read mtime
+  (`conflict`), deletes go to the OS trash, reads stop at 5 MB.
 
 ## Providers & API chat
 
@@ -99,8 +102,7 @@ other. `layout` and the settings panel compose panel features; `app/` composes a
   `provider:<id>`; tests use `MemoryStore`), never in settings, logs, error text or IPC (the
   frontend gets `KeyStatus { hasKey, last4 }`). Errors are `redacted()`, redirects not followed,
   base URLs HTTPS (plain HTTP only for loopback, `url.rs`).
-- `chat_send(…, Channel)`: one turn per chat, all cancelled on reload/exit; every model call is
-  saved with its usage. Rust tests use `providers/tests/mock.rs` (never real APIs or keys).
+- `chat_send(…, Channel)`: one turn per chat, cancelled on reload/exit; tests use `mock.rs`.
 
 ## API agents (phase 7)
 
@@ -108,8 +110,7 @@ other. `layout` and the settings panel compose panel features; `app/` composes a
   `parts`) -> per call permission + run (`execute.rs`) -> ONE `tool` message -> next call. Cancel
   ends stream, permission wait and command (process tree); unrun calls get "not run" results.
   Tools rejected by the provider: model remembered (`model-tools.json`), chat goes on without.
-- Conversations v2: `parts`, `prefix` (system + tools digest; Anthropic thinking replayed only
-  under the same prefix, never before a compaction), `agent` (mode, grants, profile, env text).
+- Conversations v2: `parts`, `prefix` (system + tools digest), `agent` (mode, grants, profile).
 - Tools (`agent/tools/`): an entry in `TOOLS` (name, read|write|command, JSON schema) + a fn.
   Paths only via `WorkspaceRoot`; output capped (`agent.toolResultCap`); writes go through
   `save()`, which checkpoints the original once per turn (`checkpoint.rs`). No network tools.
@@ -120,11 +121,8 @@ other. `layout` and the settings panel compose panel features; `app/` composes a
 - **Permission answers** come only from a trusted click/keypress on that request's card
   (`liveTurn.answer`: `isTrusted`, pending id) and carry the conversation id; the gate rejects
   unknown, answered or foreign ids. A turn that ends (cancel, panel close, reload) never allows.
-- Events: `reasoning`, `status { phase }` (`wait` while asking), `toolStart`, `toolEnd { result }`
-  (every call, denials at once; outcome, duration, `meta`), `permission`, `notice`, `message`.
-- UI (`chat/agent/`): `timeline.ts` turns messages into cards (reads grouped), `liveTurn.ts`
-  holds what is in flight, summaries are localized from `meta` (`toolText.ts`). The layout
-  lends chat panels `ChatHooks` (open file, dirty check, tree marks, the editor's lazy DiffView).
+- Events: `reasoning`, `status`, `toolStart`, `toolEnd`, `permission`, `notice`, `message`. UI:
+  `chat/agent/` (`timeline.ts` cards, `liveTurn.ts` in flight); the layout lends `ChatHooks`.
 
 ## Agent installer (phase 8)
 
@@ -137,9 +135,28 @@ other. `layout` and the settings panel compose panel features; `app/` composes a
   CRLF kept, idempotent. Every install is planned and previewed first (`plan.rs`); files we did
   not create or that changed since (hash in `.agentflow/installed.json`) need a confirmation;
   user scope only into documented home folders, after its own confirmation (`roots.rs`).
-- AgentFlow profiles: a chat stores a `ProfileSnapshot`; its tools only narrow the mode's
-  tools, its mode is never looser than the user's default. New tool format = a target fn +
-  snapshot test; new detector = a key in `DETECTORS` (+ schema enum).
+- Profiles narrow tools and never loosen the mode. New tool format = a target fn + snapshot test.
+
+## Workstreams & Agent Stage (phase 9)
+
+- **Turn detection** (docs/turn-signals.md): API chats end on `stop` (report = final message);
+  Claude Code / Codex from their session logs via `turns/` (phase 6 readers, cwd + time window;
+  `turns_subscribe` Channel: attached, activity, draft, turnEnded); Gemini and custom CLIs by the
+  idle heuristic (`terminal/turnFallback.ts`, marked approximate). No hooks; PTYs drop a parent
+  Claude session's markers (`pty/session_env.rs`). Prompts: text, then Enter 80 ms later.
+- **Protocol** (`workstreams/protocol.ts`): a manager ends each reply with one fenced
+  `agentflow-send to="<name>"` / `agentflow-ask` / `agentflow-done` (CommonMark fences; last block
+  wins, warning). No/bad block or unknown worker = pause, never a guess. Reports: "Report from
+  <worker> (turn N):", cut at `workstreams.reportCapKb`, whole in the log. API managers get the
+  instructions as `extraSystem` (never stored); CLI managers a setup message per CLI session.
+- **Engine** (`engine.ts`, pure): manual / semi-auto (preview cards) / auto. Auto stops on ask or
+  done, any permission (never answered), errors or bad replies, max rounds, a budget hit, the user
+  typing into a member, Stop. Deliveries go only to members (`canRoute`) through `agentui` ports
+  (the prompt bar path). Workstreams + Stage positions persist in layout v3.
+- **Glow** (`agentui/attention.ts`): turn ended, permission, question, error; clears on focus +
+  interaction (`interactionClears`); `--af-attention`; optional OS notification when unfocused.
+- **Stage**: one canvas on the shared animator, running only while something moves and never
+  hidden or unfocused; DOM bubbles; reduced motion = no travel or pulse.
 
 ## Usage tracking (phase 6)
 
@@ -154,7 +171,8 @@ other. `layout` and the settings panel compose panel features; `app/` composes a
 
 - Groups have a role (`layout/roles.ts`): `agents` (center), `files` (right, ~22%), `terminal`
   (~30% under the center). New panels open in the last focused group of their role
-  (`placement.ts`). Saved layout `{ version: 2, dock, roles }`; bump `LAYOUT_VERSION` on changes.
+  (`placement.ts`); a Stage moved left gets a `stage` group. Saved layout `{ version: 3, dock,
+roles, workstreams, stage }` (v2 upgrades as is); bump `LAYOUT_VERSION` on changes.
 - Sprites: `characters/sprites/*.json`, 8 states (idle walk think work receive done error sleep)
   of 2-4 frames, `.` = transparent, else a base-36 palette index (`validate.ts`); names are
   never translated. ONE animation loop (`animator.ts`), only while visible; `reducedMotion()`.
@@ -167,7 +185,7 @@ other. `layout` and the settings panel compose panel features; `app/` composes a
   hard-code colors. Overrides (text, accent, agent bold `#F5C542`, `--af-glow`): `overrides.ts`.
 - Flat dotted keys in `src/locales/en.json`; `I18nKey = keyof typeof en`; every visible string
   uses `t('key', { param })`. New keys go into **all five** locales (typecheck + tests check).
-- Rust owns `settings.json` (v7: `agent`): bump `CURRENT_VERSION` + a `migrate.rs` step on shape
+- Rust owns `settings.json` (v8: `workstreams`): bump `CURRENT_VERSION` + a `migrate.rs` step on shape
   changes; `normalized()` repairs values; `defaults.test.ts` checks TS defaults against Rust.
 
 ## Commands
@@ -179,7 +197,7 @@ cd src-tauri && cargo fmt --check && cargo clippy --all-targets -- -D warnings &
 cargo build    # in src-tauri: compile check, no bundling
 ```
 
-## Roadmap (11 phases)
+## Roadmap (12 phases)
 
 1. [x] Skeleton, theme engine, i18n, dockable layout
 2. [x] PTY + multi terminal panels (xterm.js WebGL, portable-pty)
@@ -189,8 +207,9 @@ cargo build    # in src-tauri: compile check, no bundling
 6. [x] Token & cost tracking (ledger, CLI log readers, prices, budgets, dashboard, Compact)
 7. [x] API agent tools + default system prompt (tool cards, diffs, permissions, undo)
 8. [x] Agent installer wizard (per-AI formats/paths, templates, managed sections, detection)
-9. [ ] Community agent library from GitHub
-10. [ ] UI polish
-11. [ ] Cross-platform builds + CI
+9. [x] Manager–worker workstreams + the Agent Stage (turn detection, handoffs, glow, Stage)
+10. [ ] Community agent library from GitHub
+11. [ ] UI polish
+12. [ ] Cross-platform builds + CI
 
 Only build what the current phase lists; leave future modules as empty stubs.

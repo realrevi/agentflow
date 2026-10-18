@@ -49,6 +49,7 @@ impl Settings {
         self.chat = std::mem::take(&mut self.chat).normalized();
         self.usage = std::mem::take(&mut self.usage).normalized();
         self.agent = std::mem::take(&mut self.agent).normalized();
+        self.workstreams = std::mem::take(&mut self.workstreams).normalized();
 
         if !self
             .layout
@@ -142,6 +143,10 @@ mod tests {
             chat: ChatSettings::default(),
             usage: UsageSettings::default(),
             agent: AgentSettings::default(),
+            workstreams: crate::settings::WorkstreamSettings {
+                max_rounds: 0,
+                ..Default::default()
+            },
             layout: Some(json!([1, 2, 3])),
         };
 
@@ -150,13 +155,12 @@ mod tests {
             sidebar_width: SIDEBAR_MIN_WIDTH,
             ..UiState::default()
         };
-        assert_eq!(
-            fixed,
-            Settings {
-                ui: expected_ui,
-                ..Settings::default()
-            }
-        );
+        let mut expected = Settings {
+            ui: expected_ui,
+            ..Settings::default()
+        };
+        expected.workstreams.max_rounds = 1;
+        assert_eq!(fixed, expected);
     }
 
     #[test]

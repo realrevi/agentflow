@@ -18,17 +18,20 @@ function chatPanel(dock: DockviewApi, conversationId: string): IDockviewPanel | 
   });
 }
 
-/** Opens a chat panel in the agent area (or focuses the one showing this conversation). */
-export function openChat(config: ChatConfig, groupId?: string): void {
+/** Opens a chat panel in the agent area (or focuses the one showing this conversation).
+ * Returns the panel id. */
+export function openChat(config: ChatConfig, groupId?: string): string | null {
   const dock = currentDock();
-  if (!dock) return;
+  if (!dock) return null;
   const existing = chatPanel(dock, config.conversationId);
   if (existing) {
     existing.api.setActive();
-    return;
+    return existing.id;
   }
-  addPanel(dock, { kind: 'chat', index: nextIndex(dock, 'chat'), config }, groupId);
+  const index = nextIndex(dock, 'chat');
+  addPanel(dock, { kind: 'chat', index, config }, groupId);
   assignCharacters();
+  return `chat-${index}`;
 }
 
 /** "API agent…": a new conversation with this provider and model, in a new panel. */
@@ -36,17 +39,20 @@ export async function startChat(
   providerId: string,
   model: string,
   groupId?: string,
-): Promise<void> {
+): Promise<string | null> {
   const conversation = await createConversation(providerId, model);
-  if (!conversation) return;
-  openChat(newChatConfig(conversation.id, settings.currentWorkspace), groupId);
+  if (!conversation) return null;
+  return openChat(newChatConfig(conversation.id, settings.currentWorkspace), groupId);
 }
 
 /**
  * "New API agent → <profile>": a chat with an installed AgentFlow agent. The provider is the
  * profile's hint (provider id, preset or kind) when configured, else the first one.
  */
-export async function openProfileChat(profile: AgentProfile, groupId?: string): Promise<void> {
+export async function openProfileChat(
+  profile: AgentProfile,
+  groupId?: string,
+): Promise<string | null> {
   const hint = profile.provider;
   const entry =
     settings.providers.find(
@@ -55,13 +61,13 @@ export async function openProfileChat(profile: AgentProfile, groupId?: string): 
   const model = profile.model ?? entry?.defaultModel ?? '';
   if (!entry || !model.trim()) {
     showToast({ kind: 'error', title: t('installer.profile.noProvider') });
-    return;
+    return null;
   }
   try {
     const workspace = settings.currentWorkspace;
     const conversation = await ipc.agentsProfileChat(workspace, profile.id, entry.id, model);
     const sprite = (await loadCharacters()).find((sheet) => sheet.id === profile.character);
-    openChat(
+    return openChat(
       {
         ...newChatConfig(conversation.id, workspace),
         title: conversation.title,
@@ -71,6 +77,7 @@ export async function openProfileChat(profile: AgentProfile, groupId?: string): 
     );
   } catch (err) {
     reportError('error.installerProfile', err);
+    return null;
   }
 }
 

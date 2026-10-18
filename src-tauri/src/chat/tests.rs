@@ -86,6 +86,14 @@ impl Setup {
     }
 
     fn send(&self, text: Option<&str>) -> (AppResult<ChatStarted>, mpsc::Receiver<ChatEvent>) {
+        self.send_with(text, None)
+    }
+
+    fn send_with(
+        &self,
+        text: Option<&str>,
+        extra_system: Option<&str>,
+    ) -> (AppResult<ChatStarted>, mpsc::Receiver<ChatEvent>) {
         let (tx, rx) = mpsc::channel();
         let deps = self.deps();
         let request = ChatSendRequest {
@@ -95,6 +103,7 @@ impl Setup {
             attachments: Vec::new(),
             panel: Some("chat-1".into()),
             allow_once: None,
+            extra_system: extra_system.map(str::to_owned),
         };
         let started = tauri::async_runtime::block_on(start_chat(deps, request, move |event| {
             let _ = tx.send(event);
@@ -166,6 +175,23 @@ fn a_reply_streams_and_is_stored_with_usage() {
     let content = &body["messages"][0]["content"];
     assert_eq!(content[0]["text"], "Hello there");
     assert_eq!(content[0]["cache_control"]["type"], "ephemeral");
+}
+
+#[test]
+fn extra_system_text_is_sent_but_never_stored() {
+    let server = MockServer::start(vec![Reply::sse(include_str!(
+        "../providers/fixtures/anthropic_thinking_cache.sse"
+    ))]);
+    let setup = setup(&server.base, "anthropic", "anthropic");
+    let manager = "## Workstream Manager
+End every reply with one agentflow block.";
+    let (started, rx) = setup.send_with(Some("Plan the work"), Some(manager));
+    started.expect("started");
+    collect(&rx);
+    let body = server.requests()[0].json();
+    assert!(body["system"].to_string().contains("## Workstream Manager"));
+    let stored = setup.store.get(WS, &setup.conversation).expect("get");
+    assert!(!stored.system_prompt.contains("Workstream Manager"));
 }
 
 #[test]

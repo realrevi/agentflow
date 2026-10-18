@@ -1,0 +1,266 @@
+/* Phase 9: the attention glow, workstream handoff cards, the sidebar section and the
+   "New workstream" dialog. Colors come from --af-* (the glow: --af-attention, set from the
+   settings; a workstream's own color: --af-ws-color). Reduced motion stops the pulse
+   (base.css), leaving a static highlight. */
+
+.af-panel.af-glow-frame {
+  position: relative;
+}
+
+.af-panel.af-glow-frame::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 50;
+  pointer-events: none;
+  box-shadow:
+    inset 0 0 0 2px var(--af-attention),
+    inset 0 0 14px color-mix(in srgb, var(--af-attention) 45%, transparent);
+  animation: af-glow-pulse 1.6s ease-in-out infinite alternate;
+}
+
+.af-tab.af-glow-tab {
+  color: var(--af-attention);
+  text-shadow: 0 0 6px color-mix(in srgb, var(--af-attention) 60%, transparent);
+}
+
+.af-list-item.af-glow-item {
+  box-shadow: inset 2px 0 0 var(--af-attention);
+}
+
+@keyframes af-glow-pulse {
+  from {
+    opacity: 0.55;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.af-ws-chip {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  background: var(--af-ws-color, var(--af-accent));
+}
+
+/* Floating cards above the status bar. */
+.af-handoff-stack {
+  position: fixed;
+  right: 16px;
+  bottom: 34px;
+  z-index: 1500;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: min(380px, calc(100vw - 32px));
+  max-height: 70vh;
+  overflow-y: auto;
+  pointer-events: none;
+}
+
+.af-handoff-card {
+  pointer-events: auto;
+  padding: 10px 12px;
+  border: 1px solid var(--af-widget-border);
+  border-left: 3px solid var(--af-ws-color);
+  border-radius: 6px;
+  background: var(--af-widget-bg);
+  color: var(--af-widget-fg);
+  box-shadow: 0 8px 24px var(--af-shadow);
+}
+
+.af-handoff-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.af-handoff-head strong {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.af-handoff-reason {
+  margin: 0 0 8px;
+  color: var(--af-fg-muted);
+  overflow-wrap: anywhere;
+}
+
+.af-handoff-warning {
+  color: var(--af-warning);
+}
+
+.af-handoff-text {
+  width: 100%;
+  min-height: 90px;
+  max-height: 240px;
+  margin-bottom: 6px;
+  resize: vertical;
+  font-family: var(--af-font-mono);
+  font-size: 12px;
+}
+
+.af-handoff-note {
+  margin: 0 0 6px;
+  font-size: 12px;
+  color: var(--af-fg-muted);
+}
+
+/* Sidebar section. */
+.af-ws-section {
+  margin-top: 12px;
+}
+
+.af-ws-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.af-ws-item {
+  margin-bottom: 8px;
+  border-left: 2px solid var(--af-ws-color);
+}
+
+.af-ws-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-right: 8px;
+}
+
+.af-ws-toggle {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 4px 8px;
+  border: 0;
+  background: none;
+  color: var(--af-fg);
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.af-ws-body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 2px 8px 6px;
+}
+
+.af-ws-reason {
+  margin: 0;
+  font-size: 12px;
+  color: var(--af-fg-muted);
+  overflow-wrap: anywhere;
+}
+
+.af-ws-member {
+  gap: 8px;
+}
+
+.af-ws-member-name {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.af-ws-member-role {
+  font-size: 11px;
+  color: var(--af-fg-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.af-ws-status {
+  flex: none;
+  font-size: 11px;
+  color: var(--af-fg-muted);
+}
+
+.af-ws-status.working {
+  color: var(--af-accent);
+}
+
+.af-ws-status.waiting {
+  color: var(--af-attention);
+}
+
+.af-ws-status.error {
+  color: var(--af-error);
+}
+
+.af-ws-status.done {
+  color: var(--af-success);
+}
+
+/* Dialog. */
+.af-ws-dialog {
+  width: min(520px, calc(100vw - 32px));
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.af-ws-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.af-ws-field > span {
+  font-weight: 600;
+}
+
+.af-ws-hint {
+  margin: 0;
+  font-size: 12px;
+  color: var(--af-fg-muted);
+}
+
+.af-ws-swatches {
+  display: flex;
+  gap: 6px;
+}
+
+.af-ws-swatch {
+  width: 22px;
+  height: 22px;
+  border: 2px solid transparent;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.af-ws-swatch.active {
+  border-color: var(--af-fg);
+}
+
+.af-ws-worker-row {
+  display: flex;
+  gap: 6px;
+}
+
+.af-ws-worker-row .af-select {
+  flex: 1;
+}
+
+.af-ws-problem {
+  margin: 12px 0 0;
+  color: var(--af-error);
+}
+
+.af-status-stop {
+  color: var(--af-error);
+  font-weight: 600;
+}

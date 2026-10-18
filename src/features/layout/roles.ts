@@ -1,12 +1,13 @@
 // Every dock group has a role that decides which new panels open in it: agent CLIs,
 // editors and settings in the center ("agents"), the file tree on the right ("files"),
-// plain shells at the bottom ("terminal"). Roles persist with the layout.
+// plain shells at the bottom ("terminal"); a group the Stage was moved into on the left
+// ("stage") gets nothing else. Roles persist with the layout.
 import { createStore, produce, unwrap } from 'solid-js/store';
 import type { PanelParams } from './panels';
 
-export type GroupRole = 'agents' | 'files' | 'terminal';
+export type GroupRole = 'agents' | 'files' | 'terminal' | 'stage';
 
-const ROLES: readonly GroupRole[] = ['agents', 'files', 'terminal'];
+const ROLES: readonly GroupRole[] = ['agents', 'files', 'terminal', 'stage'];
 
 export function isGroupRole(value: unknown): value is GroupRole {
   return typeof value === 'string' && (ROLES as readonly string[]).includes(value);

@@ -8,7 +8,20 @@ import type {
   ITabRenderer,
   IWatermarkRenderer,
 } from 'dockview-core';
-import { createSignal, lazy, Match, onCleanup, Show, Suspense, Switch, type JSX } from 'solid-js';
+import {
+  createEffect,
+  createSignal,
+  lazy,
+  Match,
+  onCleanup,
+  Show,
+  Suspense,
+  Switch,
+  type JSX,
+} from 'solid-js';
+import { clearAttention, glowing, interactionClears } from '../agentui';
+import type { StageHooks } from '../stage/hooks';
+import { openNewWorkstream } from '../workstreams/dialogState';
 import type { ChatHooks } from '../chat/agent/agentView';
 import { FilesPanel, markAgentChanged } from '../files';
 import { t } from '../i18n';
@@ -17,7 +30,8 @@ import { AddPanelButton } from './AddPanelButton';
 import { currentWorkspace } from '../workspace';
 import { setChatTitle } from './chatPanels';
 import { editorFileDirty, openEditor, renameEditors } from './editorPanels';
-import { consumeFreshPanel, openPanel, openPanels } from './layoutStore';
+import { consumeFreshPanel, currentDock, focusPanel, openPanel, openPanels } from './layoutStore';
+import { moveStage, openTimeline, stageIsLeft } from './stagePanels';
 import { createPanelTab } from './PanelTab';
 import { PANEL_TAB, parsePanelParams, type PanelParams } from './panels';
 import { createSolidPart } from './solidPart';
@@ -32,6 +46,28 @@ const EditorPanel = lazy(() => import('../editor/EditorPanel'));
 const UsagePanel = lazy(() => import('../tokens/UsagePanel'));
 const DiffView = lazy(() => import('../editor/DiffView'));
 const InstallerPanel = lazy(() => import('../agents/InstallerPanel'));
+const StagePanel = lazy(() => import('../stage/StagePanel'));
+const TimelinePanel = lazy(() => import('../workstreams/TimelinePanel'));
+
+/** The Stage reads panels and moves through these (it cannot import the layout). */
+const stageHooks: StageHooks = {
+  panels: openPanels,
+  focus: focusPanel,
+  openTimeline: (workstream, pair) => openTimeline(workstream, pair),
+  newWorkstream: () => openNewWorkstream(),
+  move: moveStage,
+  isLeft: stageIsLeft,
+  history: (panelId) => {
+    const params = parsePanelParams(currentDock()?.getPanel(panelId)?.params);
+    if (params?.kind === 'terminal') {
+      return { workspace: params.config.cwd, key: params.config.historyKey ?? panelId };
+    }
+    if (params?.kind === 'chat') {
+      return { workspace: params.config.workspace, key: params.config.historyKey ?? panelId };
+    }
+    return null;
+  },
+};
 
 /** Chat panels open files, check unsaved edits, mark agent changes and show diffs. */
 const chatHooks: ChatHooks = {
@@ -83,6 +119,17 @@ function PanelView(props: { id: string; params: PanelParams; api: DockviewPanelA
         <Match when={params.kind === 'installer'}>
           <InstallerPanel hooks={{ Diff: DiffView, openFile: openEditor }} />
         </Match>
+        <Match when={params.kind === 'stage'}>
+          <StagePanel api={props.api} hooks={stageHooks} />
+        </Match>
+        <Match when={params.kind === 'timeline' && params}>
+          {(timeline) => (
+            <TimelinePanel
+              api={props.api}
+              params={{ workstream: timeline().workstream, pair: timeline().pair }}
+            />
+          )}
+        </Match>
         <Match when={params.kind === 'files'}>
           <FilesPanel onOpenFile={openEditor} onRenamed={renameEditors} />
         </Match>
@@ -123,8 +170,11 @@ function PanelView(props: { id: string; params: PanelParams; api: DockviewPanelA
   );
 }
 
+const INTERACTIONS = ['pointerdown', 'keydown', 'wheel'] as const;
+
 export function createContentRenderer(options: CreateComponentOptions): IContentRenderer {
   const part = createSolidPart('af-panel');
+  let removeListeners: (() => void) | undefined;
   return {
     element: part.element,
     init(init) {
@@ -133,9 +183,25 @@ export function createContentRenderer(options: CreateComponentOptions): IContent
         console.warn(`[agentflow] unknown panel "${options.id}" (${options.name})`);
         return;
       }
-      part.mount(() => <PanelView id={options.id} params={params} api={init.api} />);
+      part.mount(() => {
+        // The attention glow on the panel's frame, cleared by focus + interaction.
+        createEffect(() => part.element.classList.toggle('af-glow-frame', glowing(options.id)));
+        return <PanelView id={options.id} params={params} api={init.api} />;
+      });
+      const clear = (event: Event) => {
+        if (interactionClears(event.type, init.api.isActive)) clearAttention(options.id);
+      };
+      for (const type of INTERACTIONS) {
+        part.element.addEventListener(type, clear, { capture: true, passive: true });
+      }
+      removeListeners = () => {
+        for (const type of INTERACTIONS) part.element.removeEventListener(type, clear, true);
+      };
     },
-    dispose: part.dispose,
+    dispose: () => {
+      removeListeners?.();
+      part.dispose();
+    },
   };
 }
 

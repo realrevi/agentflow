@@ -35,6 +35,7 @@ import type {
   FileStat,
   FsChanges,
   FsEntry,
+  HandoffEntry,
   KeyStatus,
   ModelInfo,
   PriceList,
@@ -48,6 +49,7 @@ import type {
   ThemeData,
   ThemeSummary,
   Totals,
+  TurnEvent,
   UsageEvent,
   UsageSummary,
 } from './types';
@@ -154,4 +156,7 @@ export interface Commands {
   usage_prices: { args: Record<string, never>; result: PriceList };
   usage_set_prices: { args: { prices: PriceOverride[] }; result: Settings };
   usage_cli_status: { args: Record<string, never>; result: CliSupport[] };
+  turns_subscribe: { args: { onEvent: Channel<TurnEvent> }; result: null };
+  workstream_log_append: { args: Workspace & { entry: HandoffEntry }; result: null };
+  workstream_log_read: { args: Workspace & { workstream: string }; result: HandoffEntry[] };
 }

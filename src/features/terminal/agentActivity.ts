@@ -8,7 +8,22 @@ export class AgentActivity {
   private timer: number | undefined;
   private timerAt = 0;
 
-  constructor(private readonly panelId: string) {}
+  /** `adjust` may show a different state than the heuristic's (e.g. "wait" while the CLI's
+   * log has a tool call pending and the terminal holds still: an approval prompt). */
+  constructor(
+    private readonly panelId: string,
+    private readonly adjust: (state: AgentState) => AgentState = (state) => state,
+  ) {}
+
+  /** The heuristic's own state. */
+  get state(): AgentState {
+    return this.tracker.state;
+  }
+
+  /** Shows the current state again (after what `adjust` reads changed). */
+  reapply(): void {
+    setAgentState(this.panelId, this.adjust(this.tracker.state));
+  }
 
   start(): void {
     this.apply(this.tracker.start());
@@ -40,7 +55,7 @@ export class AgentActivity {
   }
 
   private apply(state: AgentState): void {
-    setAgentState(this.panelId, state);
+    setAgentState(this.panelId, this.adjust(state));
     this.arm();
   }
 

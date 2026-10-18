@@ -9,6 +9,7 @@ mod normalize;
 mod providers;
 mod store;
 mod usage;
+mod workstreams;
 
 pub use agent::{AgentSettings, ModelTools};
 pub use chat::{ChatSettings, ModelWindow, DEFAULT_CONTEXT_WINDOW};
@@ -24,3 +25,4 @@ pub use providers::{
 };
 pub use store::SettingsStore;
 pub use usage::{Budgets, PriceOverride, ProviderBudget, UsageSettings};
+pub use workstreams::{HandoffMode, WorkstreamSettings};

@@ -11,4 +11,6 @@ pub mod providers;
 pub mod pty;
 pub mod settings;
 pub mod themes;
+pub mod turns;
 pub mod usage;
+pub mod workstreams;

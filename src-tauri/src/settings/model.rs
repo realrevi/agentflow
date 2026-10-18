@@ -7,9 +7,10 @@ use super::agent::AgentSettings;
 use super::chat::ChatSettings;
 use super::providers::ProviderEntry;
 use super::usage::UsageSettings;
+use super::workstreams::WorkstreamSettings;
 
 /// Bump when the on-disk shape changes and add a step in `migrate.rs`.
-pub const CURRENT_VERSION: u32 = 7;
+pub const CURRENT_VERSION: u32 = 8;
 pub const SUPPORTED_LANGUAGES: [&str; 5] = ["en", "tr", "de", "zh", "ru"];
 pub const DEFAULT_LANGUAGE: &str = "en";
 pub const DEFAULT_THEME_ID: &str = "agentflow-dark";
@@ -41,6 +42,8 @@ pub struct Settings {
     pub usage: UsageSettings,
     /// API agents: loop and tool limits, permissions, system prompt (phase 7).
     pub agent: AgentSettings,
+    /// Workstreams, attention glow and the Agent Stage (phase 9).
+    pub workstreams: WorkstreamSettings,
     /// Opaque dockview layout owned by the frontend. `None` means "use the default layout".
     pub layout: Option<Value>,
 }
@@ -127,6 +130,7 @@ impl Default for Settings {
             chat: ChatSettings::default(),
             usage: UsageSettings::default(),
             agent: AgentSettings::default(),
+            workstreams: WorkstreamSettings::default(),
             layout: None,
         }
     }

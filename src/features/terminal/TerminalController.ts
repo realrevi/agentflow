@@ -2,7 +2,7 @@
 // Imperative on purpose: TerminalPanel.tsx wires it to Solid state.
 import { FitAddon } from '@xterm/addon-fit';
 import { Unicode11Addon } from '@xterm/addon-unicode11';
-import { Terminal, type IDisposable, type ITheme } from '@xterm/xterm';
+import { Terminal, type IDisposable, type IMarker, type ITheme } from '@xterm/xterm';
 import { toAppError } from '../../shared/errors';
 import { ipc, type PtyHandle } from '../../shared/ipc';
 import type { PtyMessage, TerminalSettings } from '../../shared/types';
@@ -12,7 +12,7 @@ import type { TerminalConfig } from './config';
 import { OutputDecoder } from './decoder';
 import { terminalShortcut } from './keys';
 import type { CursorCell } from '../agentui';
-import { encodePrompt } from './encode';
+import { ENTER, ENTER_DELAY_MS, encodePrompt } from './encode';
 import { AckBatcher, InputQueue, LatestQueue } from './queues';
 import { cursorCell, FONT_FAMILY, fontsReady, isExit, RESET_MODES, watchCursor } from './support';
 import type { ActivityHooks, TerminalStatus } from './types';
@@ -64,6 +64,8 @@ export class TerminalController {
   private disposed = false;
   private status: TerminalStatus = 'stopped';
   private session: Session | undefined;
+  /** Where the last prompt was sent (for the idle heuristic's report). */
+  private promptMarker: IMarker | undefined;
 
   constructor(private readonly options: ControllerOptions) {
     const { settings, theme } = options;
@@ -135,8 +137,32 @@ export class TerminalController {
    */
   sendPrompt(text: string): boolean {
     if (this.status !== 'running' || !this.session) return false;
-    this.session.input.push(encodePrompt(text, this.term.modes.bracketedPasteMode));
+    this.markPrompt();
+    const session = this.session;
+    session.input.push(encodePrompt(text, this.term.modes.bracketedPasteMode));
+    window.setTimeout(() => {
+      if (this.session === session) session.input.push(ENTER);
+    }, ENTER_DELAY_MS);
     return true;
+  }
+
+  /** Remembers the cursor line as the start of a turn's output. */
+  markPrompt(): void {
+    this.promptMarker?.dispose();
+    this.promptMarker = this.opened ? this.term.registerMarker(0) : undefined;
+  }
+
+  /** The terminal text since the last prompt (at most `maxLines` lines), trimmed. */
+  textSincePrompt(maxLines = 400): string {
+    const buffer = this.term.buffer.active;
+    const marker = this.promptMarker;
+    const end = buffer.length;
+    const from = marker && !marker.isDisposed && marker.line >= 0 ? marker.line + 1 : 0;
+    const lines: string[] = [];
+    for (let row = Math.max(from, end - maxLines); row < end; row++) {
+      lines.push(buffer.getLine(row)?.translateToString(true) ?? '');
+    }
+    return lines.join('\n').trim();
   }
 
   /** The cursor in visible-screen cells, once the terminal is open. */
@@ -256,8 +282,10 @@ export class TerminalController {
   private onInput(data: string): void {
     if (this.status === 'running') {
       // Noted before writing, so the echo is recognized even if it comes back at once.
-      if (data.includes('\r')) this.options.activity?.enter();
-      else this.options.activity?.typed();
+      if (data.includes('\r')) {
+        this.markPrompt();
+        this.options.activity?.enter();
+      } else this.options.activity?.typed();
       this.session?.input.push(data);
     } else if (this.status === 'exited' && data === '\r') void this.start();
   }

@@ -44,9 +44,13 @@ export interface ChatSessionOptions {
   focus: () => void;
   /** Files an agent changed or a turn's undo restored. */
   onFilesChanged: (paths: readonly string[]) => void;
+  /** Extra system text for the next turn (a workstream manager's instructions). */
+  extraSystem?: () => string | null;
+  /** A turn ended (after its messages are in place). */
+  onEnded?: (end: Ending) => void;
 }
 
-type Ending = Extract<ChatEvent, { type: 'stop' | 'error' }>;
+export type Ending = Extract<ChatEvent, { type: 'stop' | 'error' }>;
 
 /** Retry drops failed replies at the end, as the backend does. */
 export function withoutFailedTail(list: readonly ChatMessage[]): ChatMessage[] {
@@ -136,6 +140,7 @@ export function createChatSession(options: ChatSessionOptions) {
     if (end.type === 'error') state('error');
     else state(end.reason === 'cancelled' ? 'idle' : 'done');
     options.onChanged();
+    options.onEnded?.(end);
   }
 
   /** Reveals on the shared loop; it stops as soon as everything is shown. */
@@ -224,6 +229,7 @@ export function createChatSession(options: ChatSessionOptions) {
         attachments,
         panel: options.panelId,
         allowOnce,
+        extraSystem: options.extraSystem?.() ?? null,
       };
       const { started, detach: stopListening } = await ipc.chatSend(request, onEvent);
       if (!ending) {

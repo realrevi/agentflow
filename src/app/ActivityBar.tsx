@@ -7,11 +7,12 @@ import {
   libraryIcon,
   logoIcon,
   settingsIcon,
+  stageIcon,
   usageIcon,
 } from '../shared/ui/icons';
 import { PixelIcon, type PixelArt } from '../shared/ui/PixelIcon';
 import { t, type I18nKey } from '../features/i18n';
-import { openPanel } from '../features/layout';
+import { openPanel, openStage } from '../features/layout';
 import { settings, updateSettings } from '../features/settings';
 
 const VIEWS: readonly { id: SidebarView; icon: PixelArt; label: I18nKey }[] = [
@@ -61,6 +62,15 @@ export function ActivityBar() {
         onClick={() => openPanel('installer')}
       >
         <PixelIcon art={libraryIcon} />
+      </button>
+      <button
+        type="button"
+        class="af-activity"
+        title={t('activity.stage')}
+        aria-label={t('activity.stage')}
+        onClick={() => openStage()}
+      >
+        <PixelIcon art={stageIcon} />
       </button>
       <div class="af-activitybar-spacer" />
       <button

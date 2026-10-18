@@ -44,6 +44,7 @@ impl AgentSetup {
             attachments: Vec::new(),
             panel: Some("chat-1".into()),
             allow_once: None,
+            extra_system: None,
         };
         let started =
             tauri::async_runtime::block_on(start_chat(self.base.deps(), request, move |event| {

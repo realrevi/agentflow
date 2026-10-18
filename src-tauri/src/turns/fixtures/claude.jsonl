@@ -1,0 +1,20 @@
+{"type":"user","isSidechain":false,"cwd":"{cwd}","timestamp":"2020-01-01T00:00:00.000Z","message":{"role":"user","content":"an old prompt from before the panel"}}
+{"type":"assistant","isSidechain":false,"cwd":"{cwd}","timestamp":"2020-01-01T00:00:01.000Z","message":{"id":"msg_old","model":"claude-x","content":[{"type":"text","text":"old answer"}],"stop_reason":"end_turn"}}
+{"type":"permission-mode","permissionMode":"default","sessionId":"s1"}
+{"type":"user","isSidechain":false,"isMeta":true,"cwd":"{cwd}","timestamp":"2099-01-01T00:00:00.000Z","message":{"role":"user","content":"<local-command-caveat>caveat</local-command-caveat>"}}
+{"type":"user","isSidechain":false,"cwd":"{cwd}","timestamp":"2099-01-01T00:00:01.000Z","message":{"role":"user","content":"fix the failing test"}}
+{"type":"assistant","isSidechain":false,"cwd":"{cwd}","timestamp":"2099-01-01T00:00:02.000Z","message":{"id":"msg_1","model":"claude-x","content":[{"type":"thinking","thinking":""}],"stop_reason":"tool_use"}}
+{"type":"assistant","isSidechain":false,"cwd":"{cwd}","timestamp":"2099-01-01T00:00:02.100Z","message":{"id":"msg_1","model":"claude-x","content":[{"type":"text","text":"Let me run the tests first."}],"stop_reason":"tool_use"}}
+{"type":"assistant","isSidechain":false,"cwd":"{cwd}","timestamp":"2099-01-01T00:00:02.200Z","message":{"id":"msg_1","model":"claude-x","content":[{"type":"tool_use","id":"toolu_1","name":"Bash","input":{"command":"npm test","description":"Run tests"}}],"stop_reason":"tool_use"}}
+{"type":"user","isSidechain":false,"cwd":"{cwd}","timestamp":"2099-01-01T00:00:05.000Z","message":{"role":"user","content":[{"tool_use_id":"toolu_1","type":"tool_result","content":"1 failing","is_error":false}]}}
+{"type":"assistant","isSidechain":true,"cwd":"{cwd}","timestamp":"2099-01-01T00:00:05.500Z","message":{"id":"msg_side","model":"claude-x","content":[{"type":"text","text":"sidechain text"}],"stop_reason":"end_turn"}}
+{"type":"assistant","isSidechain":false,"cwd":"{cwd}","timestamp":"2099-01-01T00:00:06.000Z","message":{"id":"msg_2","model":"claude-x","content":[{"type":"tool_use","id":"toolu_2","name":"Edit","input":{"file_path":"{cwd}/src/app.ts","old_string":"a","new_string":"b"}}],"stop_reason":"tool_use"}}
+{"type":"user","isSidechain":false,"cwd":"{cwd}","timestamp":"2099-01-01T00:00:07.000Z","message":{"role":"user","content":[{"tool_use_id":"toolu_2","type":"tool_result","content":"ok"}]}}
+{"type":"assistant","isSidechain":false,"cwd":"{cwd}","timestamp":"2099-01-01T00:00:08.000Z","message":{"id":"msg_3","model":"claude-x","content":[{"type":"thinking","thinking":""}],"stop_reason":"end_turn"}}
+{"type":"assistant","isSidechain":false,"cwd":"{cwd}","timestamp":"2099-01-01T00:00:08.100Z","message":{"id":"msg_3","model":"claude-x","content":[{"type":"text","text":"Fixed the off-by-one in src/app.ts; all tests pass."}],"stop_reason":"end_turn"}}
+{"type":"system","subtype":"turn_duration","isSidechain":false,"cwd":"{cwd}","timestamp":"2099-01-01T00:00:08.200Z","durationMs":7200}
+{"type":"user","isSidechain":false,"cwd":"{cwd}","timestamp":"2099-01-01T00:01:00.000Z","message":{"role":"user","content":"now run the linter"}}
+{"type":"assistant","isSidechain":false,"cwd":"{cwd}","timestamp":"2099-01-01T00:01:01.000Z","message":{"id":"msg_4","model":"claude-x","content":[{"type":"tool_use","id":"toolu_3","name":"Bash","input":{"command":"npm run lint"}}],"stop_reason":"tool_use"}}
+{"type":"user","isSidechain":false,"cwd":"{cwd}","timestamp":"2099-01-01T00:01:03.000Z","message":{"role":"user","content":[{"type":"tool_result","tool_use_id":"toolu_3","content":"The user doesn't want to proceed","is_error":true},{"type":"text","text":"[Request interrupted by user for tool use]"}]}}
+{"type":"user","isSidechain":false,"cwd":"{cwd}","timestamp":"2099-01-01T00:02:00.000Z","message":{"role":"user","content":"say hi"}}
+{"type":"assistant","isSidechain":false,"cwd":"{cwd}","timestamp":"2099-01-01T00:02:01.000Z","message":{"id":"msg_5","model":"claude-x","content":[{"type":"text","text":"Hi!"}],"stop_reason":"end_turn"}}

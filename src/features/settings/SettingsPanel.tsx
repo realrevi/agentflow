@@ -9,6 +9,7 @@ import { AgentsSection } from './sections/AgentsSection';
 import { ProvidersSection } from './sections/ProvidersSection';
 import { TerminalSection } from './sections/TerminalSection';
 import { UsageSection } from './sections/UsageSection';
+import { WorkstreamsSection } from './sections/WorkstreamsSection';
 
 export default function SettingsPanel() {
   return (
@@ -18,6 +19,7 @@ export default function SettingsPanel() {
       <CharactersSection />
       <ProvidersSection />
       <AgentsSection />
+      <WorkstreamsSection />
       <UsageSection />
       <FilesSection />
       <LanguageSection />

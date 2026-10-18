@@ -104,7 +104,7 @@ fn collect(dir: &Path, kind: CliKind, since_ms: u64, depth: usize, out: &mut Vec
 
 /// Gemini CLI writes the project folder into `<project>/.project_root` (sessions are in
 /// `<project>/chats/`); its lines carry no cwd.
-fn gemini_project_root(session: &Path) -> Option<String> {
+pub fn gemini_project_root(session: &Path) -> Option<String> {
     let project = session.parent()?.parent()?;
     let text = std::fs::read_to_string(project.join(".project_root")).ok()?;
     let root = text.trim();

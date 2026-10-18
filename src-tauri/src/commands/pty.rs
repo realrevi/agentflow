@@ -9,18 +9,20 @@ use crate::pty::{
     SessionId, SessionInfo, TermSize,
 };
 use crate::tokens::{CliKind, UsageTracker};
+use crate::turns::TurnWatcher;
 use crate::util::run_blocking;
 
 /// Starts a terminal. Output arrives on `on_output` as raw bytes (`ArrayBuffer` in JS),
 /// followed by one JSON message `{ "type": "exit", "code", "signal" }`. Agent CLIs started
 /// with a `panel` id are registered for usage tracking (their logs name the folder, not the
-/// panel: cwd + time window match them).
+/// panel: cwd + time window match them), and for turn detection.
 #[tauri::command]
 #[allow(clippy::too_many_arguments)] // mirrors the frontend call one-to-one
 pub async fn pty_spawn(
     app: AppHandle,
     manager: State<'_, PtyManager>,
     tracker: State<'_, UsageTracker>,
+    turns: State<'_, TurnWatcher>,
     kind: PtyKind,
     command: Option<String>,
     args: Option<Vec<String>>,
@@ -33,6 +35,7 @@ pub async fn pty_spawn(
     let home = app.path().home_dir().ok();
     let manager = manager.inner().clone();
     let tracker = tracker.inner().clone();
+    let turns = turns.inner().clone();
     run_blocking(move || {
         let cwd = resolve_cwd(cwd.as_deref(), home)?;
         let launch = resolve_launch(kind, command.as_deref(), &args.unwrap_or_default())?;
@@ -41,13 +44,15 @@ pub async fn pty_spawn(
         // Registered before the spawn, so even an instant exit finds its session.
         if let Some((panel, cli)) = &tracked {
             tracker.panel_started(panel, *cli, &cwd);
+            turns.panel_started(panel, *cli, &cwd);
         }
         let mut sink = channel_sink(on_output);
         if let Some((panel, _)) = tracked.clone() {
-            let (tracker, mut forward) = (tracker.clone(), sink);
+            let (tracker, turns, mut forward) = (tracker.clone(), turns.clone(), sink);
             sink = Box::new(move |output| {
                 if matches!(output, PtyOutput::Exit(_)) {
                     tracker.panel_ended(&panel);
+                    turns.panel_ended(&panel);
                 }
                 forward(output);
             });
@@ -55,6 +60,7 @@ pub async fn pty_spawn(
         let spawned = manager.spawn(kind, &launch, &cwd, size, sink);
         if let (Err(_), Some((panel, _))) = (&spawned, &tracked) {
             tracker.panel_ended(panel);
+            turns.panel_ended(panel);
         }
         spawned
     })

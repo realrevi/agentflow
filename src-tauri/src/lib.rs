@@ -13,7 +13,9 @@ pub mod pty;
 pub mod settings;
 pub mod themes;
 mod tokens;
+mod turns;
 mod util;
+mod workstreams;
 
 use std::path::Path;
 
@@ -30,6 +32,8 @@ use crate::pty::{CliDetector, PtyManager};
 use crate::settings::{Settings, SettingsStore};
 use crate::themes::ThemeStore;
 use crate::tokens::{CliRoots, UsageTracker};
+use crate::turns::TurnWatcher;
+use crate::workstreams::WorkstreamLog;
 
 const SETTINGS_FILE: &str = "settings.json";
 const THEMES_DIR: &str = "themes";
@@ -38,6 +42,7 @@ const CONVERSATIONS_DIR: &str = "conversations";
 const USAGE_DIR: &str = "usage";
 const CHECKPOINTS_DIR: &str = "checkpoints";
 const MODEL_TOOLS_FILE: &str = "model-tools.json";
+const WORKSTREAMS_DIR: &str = "workstreams";
 
 /// Starts the desktop app. Called from `main.rs`.
 pub fn run() {
@@ -47,6 +52,7 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_notification::init())
         .on_page_load(|webview, payload| {
             // A reload drops every terminal channel, so the old sessions can never be shown
             // again: stop them instead of leaving shells and agent CLIs running unseen.
@@ -129,6 +135,9 @@ pub fn run() {
             commands::usage::usage_prices,
             commands::usage::usage_set_prices,
             commands::usage::usage_cli_status,
+            commands::turns::turns_subscribe,
+            commands::workstreams::workstream_log_append,
+            commands::workstreams::workstream_log_read,
         ])
         .build(tauri::generate_context!());
 
@@ -154,6 +163,9 @@ pub fn run() {
             if let Some(tracker) = handle.try_state::<UsageTracker>() {
                 tracker.shutdown();
             }
+            if let Some(turns) = handle.try_state::<TurnWatcher>() {
+                turns.shutdown();
+            }
         }
     });
 }
@@ -171,6 +183,7 @@ fn manage_stores(app: &tauri::App, config_dir: &Path, data_dir: &Path) {
     app.manage(ConversationStore::new(data_dir.join(CONVERSATIONS_DIR)));
     app.manage(KeyVault::new(std::sync::Arc::new(OsKeychain)));
     app.manage(ChatManager::new());
+    app.manage(WorkstreamLog::new(data_dir.join(WORKSTREAMS_DIR)));
     app.manage(AgentServices {
         gate: PermissionGate::new(),
         checkpoints: CheckpointStore::new(data_dir.join(CHECKPOINTS_DIR)),
@@ -183,6 +196,7 @@ fn manage_stores(app: &tauri::App, config_dir: &Path, data_dir: &Path) {
 /// background, so startup never waits for them.
 fn start_usage(app: &tauri::App, settings: &Settings, data_dir: &Path) {
     let roots = CliRoots::detect(app.path().home_dir().ok().as_deref());
+    app.manage(TurnWatcher::new(roots.clone()));
     let tracker = UsageTracker::new(data_dir.join(USAGE_DIR), roots);
     app.manage(tracker.clone());
     let (settings, conversations) = (settings.clone(), data_dir.join(CONVERSATIONS_DIR));

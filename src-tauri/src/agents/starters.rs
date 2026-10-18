@@ -3,7 +3,7 @@
 
 use super::template::Template;
 
-const SOURCES: [&str; 8] = [
+const SOURCES: [&str; 9] = [
     include_str!("starters/code-reviewer.json"),
     include_str!("starters/ui-visual-tester.json"),
     include_str!("starters/test-writer.json"),
@@ -12,6 +12,7 @@ const SOURCES: [&str; 8] = [
     include_str!("starters/docs-writer.json"),
     include_str!("starters/security-reviewer.json"),
     include_str!("starters/commit-pr-writer.json"),
+    include_str!("starters/workstream-manager.json"),
 ];
 
 pub fn starters() -> Vec<Template> {

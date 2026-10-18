@@ -6,8 +6,25 @@ import { Toasts } from './app/Toasts';
 import { watchProfiles } from './features/agents';
 import { installQuickOpenShortcut, QuickOpen, type PaletteCommand } from './features/files';
 import { t } from './features/i18n';
-import { openEditor, openPanel, openTerminal } from './features/layout';
+import {
+  focusPanel,
+  openEditor,
+  openPanel,
+  openPanels,
+  openStage,
+  openTerminal,
+  openTimeline,
+} from './features/layout';
+import { settings } from './features/settings';
 import { installNewShellShortcut, newTerminalConfig } from './features/terminal';
+import {
+  HandoffCards,
+  installWorkstreams,
+  openNewWorkstream,
+  stopAll,
+  workstreams,
+} from './features/workstreams';
+import { NewWorkstreamDialog } from './app/workstreams/NewWorkstreamDialog';
 
 /** Commands of the palette's `>` mode. */
 const commands = (): PaletteCommand[] => [
@@ -19,7 +36,17 @@ const commands = (): PaletteCommand[] => [
     label: t('command.newShell'),
     run: () => openTerminal(newTerminalConfig('shell')),
   },
+  { id: 'workstream', label: t('command.newWorkstream'), run: () => openNewWorkstream() },
+  { id: 'stage', label: t('command.openStage'), run: () => openStage() },
+  {
+    id: 'timeline',
+    label: t('command.openTimeline'),
+    run: () => openTimeline(workstreams()[0]?.id ?? null),
+  },
+  { id: 'stopAll', label: t('command.stopWorkstreams'), run: stopAll },
 ];
+
+const panelTitle = (id: string) => openPanels().find((panel) => panel.id === id)?.title ?? id;
 
 export default function App() {
   onMount(() => {
@@ -28,6 +55,12 @@ export default function App() {
       installQuickOpenShortcut(),
       installQuitGuard(),
       watchProfiles(),
+      installWorkstreams({
+        panelTitle,
+        isWatched: (id) =>
+          document.hasFocus() && openPanels().some((panel) => panel.id === id && panel.active),
+        workspace: () => settings.currentWorkspace,
+      }),
     ];
     onCleanup(() => uninstall.forEach((fn) => fn()));
   });
@@ -36,6 +69,8 @@ export default function App() {
     <>
       <AppShell />
       <QuickOpen onOpen={openEditor} commands={commands} />
+      <HandoffCards onFocus={focusPanel} />
+      <NewWorkstreamDialog />
       <Dialogs />
       <Toasts />
     </>

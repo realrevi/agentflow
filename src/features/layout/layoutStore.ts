@@ -1,5 +1,6 @@
-// Owns the live dockview instance: restore/persist the layout (with group roles), open
-// panels in the right group, guard closing, reset, and keep tab titles translated.
+// Owns the live dockview instance: restore/persist the layout (with group roles, the
+// workstreams and the Stage positions), open panels in the right group, guard closing,
+// reset, and keep tab titles translated.
 import type { DockviewApi, DockviewGroupPanel } from 'dockview-core';
 import { createEffect, createRoot, createSignal, on } from 'solid-js';
 import { askChoice } from '../../shared/dialog';
@@ -9,7 +10,14 @@ import type { CharacterRef } from '../characters';
 import { confirmEditorClose, dirtyEditorCount } from '../editor';
 import { locale, reportError, t } from '../i18n';
 import { saveLayout, savedLayout, settings } from '../settings/settingsStore';
-import type { TerminalConfig } from '../terminal';
+import { onStageChanged, restoreStage, snapshotStage } from '../stage/positions';
+import {
+  onWorkstreamsChanged,
+  restoreWorkstreams,
+  snapshotWorkstreams,
+  unlinkPanel,
+} from '../workstreams/store';
+import { hasAgentUi, type TerminalConfig } from '../terminal';
 import {
   characterOf,
   ensureCharacters,
@@ -45,6 +53,8 @@ export interface OpenPanel {
   active: boolean;
   /** The pixel character shown for it (agent panels; respects the avatar settings). */
   character: CharacterRef | null;
+  /** An agent panel (agent CLI, custom command or API chat), not a shell or a tool panel. */
+  agent: boolean;
 }
 
 const PERSIST_DELAY_MS = 400;
@@ -64,7 +74,13 @@ export function attachLayout(dock: DockviewApi): () => void {
   assignCharacters();
 
   const persistLayout = debounce(
-    () => saveLayout(serializeLayout(dock.toJSON(), snapshotRoles())),
+    () =>
+      saveLayout(
+        serializeLayout(dock.toJSON(), snapshotRoles(), {
+          workstreams: snapshotWorkstreams(),
+          stage: snapshotStage(),
+        }),
+      ),
     PERSIST_DELAY_MS,
   );
   persist = persistLayout;
@@ -81,6 +97,7 @@ export function attachLayout(dock: DockviewApi): () => void {
     // Moves between groups fire no add/remove: only closed (or cleared) panels end here.
     dock.onDidRemovePanel((panel) => {
       forgetCharacter(panel.id);
+      unlinkPanel(panel.id);
       trackFocusedAgent(dock);
       syncOpenPanels();
     }),
@@ -93,6 +110,8 @@ export function attachLayout(dock: DockviewApi): () => void {
     dock.onDidAddGroup((group) => queueMicrotask(() => ensureRole(group))),
     dock.onDidMovePanel((event) => ensureRole(event.panel.group)),
     dock.onDidRemoveGroup((group) => forgetGroup(group.id)),
+    { dispose: onWorkstreamsChanged(persistLayout) },
+    { dispose: onStageChanged(persistLayout) },
   ];
   const disposeEffects = createRoot((dispose) => {
     createEffect(on(locale, retitlePanels, { defer: true }));
@@ -123,6 +142,8 @@ function restore(dock: DockviewApi): void {
       replaceRoles(saved.roles);
       dock.fromJSON(saved.dock);
       for (const group of dock.groups) ensureRole(group);
+      restoreWorkstreams(saved.workstreams, (id) => Boolean(dock.getPanel(id)));
+      restoreStage(saved.stage);
       retitlePanels();
       return;
     } catch (err) {
@@ -147,7 +168,10 @@ export function syncOpenPanels(): void {
     if (!params) return [];
     const character = characterOf(params);
     const title = panelTitle(params);
-    return [{ id: panel.id, title, kind: params.kind, active: panel.id === activeId, character }];
+    const agent =
+      params.kind === 'chat' || (params.kind === 'terminal' && hasAgentUi(params.config.kind));
+    const active = panel.id === activeId;
+    return [{ id: panel.id, title, kind: params.kind, active, character, agent }];
   });
   if (!samePanels(openPanels(), panels)) setOpenPanels(panels);
 }
@@ -227,13 +251,15 @@ export function openPanel(kind: SingletonKind, groupId?: string): void {
   else addPanel(api, { kind }, groupId);
 }
 
-/** Opens a new terminal panel; it starts right away. */
-export function openTerminal(config: TerminalConfig, groupId?: string): void {
-  if (!api) return;
+/** Opens a new terminal panel; it starts right away. Returns its id. */
+export function openTerminal(config: TerminalConfig, groupId?: string): string | null {
+  if (!api) return null;
   const index = nextIndex(api, 'terminal');
-  freshPanels.add(`terminal-${index}`);
+  const id = `terminal-${index}`;
+  freshPanels.add(id);
   addPanel(api, { kind: 'terminal', index, config }, groupId);
   assignCharacters();
+  return id;
 }
 
 export function focusPanel(id: string): void {

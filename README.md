@@ -6,10 +6,10 @@ side in a VS Code-style dockable layout, watched over by cute pixel-art agent ch
 AgentFlow is a lightweight desktop app (Tauri 2 + Rust + SolidJS) for Windows, macOS and Linux.
 The goals are low RAM, a fast UI, a clean codebase, and a fun look.
 
-> **Status:** early development. Phases 1–8 of 11 are done: app shell, themes, languages,
+> **Status:** early development. Phases 1–9 of 12 are done: app shell, themes, languages,
 > dockable layout, real terminal panels, the workspace file tree, a code editor, pixel
-> characters with a prompt bar, API agents with tools, token and cost tracking, and an agent
-> installer. See the [roadmap](#roadmap).
+> characters with a prompt bar, API agents with tools, token and cost tracking, an agent
+> installer, and manager–worker workstreams with the Agent Stage. See the [roadmap](#roadmap).
 
 ![AgentFlow screenshot](docs/screenshot.png)
 <!-- Phase 5: an API chat panel with its character and prompt bar; open panels and saved chats in the Agents view. -->
@@ -103,6 +103,25 @@ Set up the same agent in every tool you use, from one template. Open the **Agent
 
 ![The 15 characters](docs/characters.png)
 
+### Workstreams & Agent Stage
+
+- A **workstream** is one manager agent and one or more workers, any mix of Claude Code, Codex,
+  Gemini CLI and API agents. The manager plans and hands each worker a focused prompt; the
+  worker's final answer comes back as a report, and the manager decides the next step
+- Handoffs are plain fenced blocks the manager writes (`agentflow-send`, `agentflow-ask`,
+  `agentflow-done`). AgentFlow never guesses: a missing or broken block pauses and asks you
+- Three modes: **manual** and **semi-auto** show each handoff as an editable preview, **auto**
+  sends at once and stops for questions, permission requests (never answered for you), errors,
+  a round limit, budgets, your typing, or the Stop button
+- Turn ends come from the agent CLIs' own session logs (exact for Claude Code and Codex, an
+  approximate terminal heuristic otherwise; see [turn signals](docs/turn-signals.md))
+- Panels that need you glow gold: frame, tab, the Agents list and the Stage
+- The **Agent Stage** shows every agent as its character, grouped by workstream, with live
+  speech bubbles ("Running npm test", "Waiting for your approval") and packets flying along
+  the lines on every handoff. A Timeline lists every handoff with its full text
+
+![The Agent Stage: two workstreams and a packet on its way to a worker](docs/stage.png)
+
 Planned:
 
 - A community agent library
@@ -119,9 +138,10 @@ Planned:
 | 6     | Token and cost tracking (API chats + agent CLI logs, budgets)          | Done   |
 | 7     | API agent tools + default system prompt                                | Done   |
 | 8     | Agent installer wizard (per-AI formats and paths)                      | Done   |
-| 9     | Community agent library from GitHub                                    |        |
-| 10    | UI polish                                                              |        |
-| 11    | Cross-platform builds + CI                                             |        |
+| 9     | Manager–worker workstreams + the Agent Stage                           | Done   |
+| 10    | Community agent library from GitHub                                    |        |
+| 11    | UI polish                                                              |        |
+| 12    | Cross-platform builds + CI                                             |        |
 
 ## Keyboard shortcuts
 

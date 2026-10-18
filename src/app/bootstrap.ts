@@ -1,6 +1,7 @@
 // Startup sequence: load settings, then language and theme, before the first render,
 // so the window never flashes the wrong theme or language.
 import { createEffect, createRoot, on } from 'solid-js';
+import { installAttentionStyle, startTurnFeed } from '../features/agentui';
 import { reportError, setLocale } from '../features/i18n';
 import { flushLayout } from '../features/layout';
 import { flushSettings, loadSettings, settings } from '../features/settings';
@@ -35,6 +36,9 @@ export async function bootstrap(): Promise<void> {
   // One usage subscription for the status bar, badges and budget alerts (not awaited:
   // the first render never waits for usage).
   void startUsage();
+  // Turn ends and live activity of agent CLI panels (one Channel), and the glow color.
+  void startTurnFeed();
+  installAttentionStyle();
 
   window.addEventListener('beforeunload', () => {
     flushLayout();

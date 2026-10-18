@@ -1,0 +1,75 @@
+/* The Timeline panel (lazy). */
+.af-timeline {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.af-timeline-bar {
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--af-border);
+}
+
+.af-timeline-list {
+  flex: 1;
+  margin: 0;
+  padding: 6px 8px;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.af-timeline-entry {
+  border-bottom: 1px solid var(--af-border);
+}
+
+.af-timeline-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 2px;
+  border: 0;
+  background: none;
+  color: var(--af-fg);
+  text-align: left;
+  cursor: pointer;
+}
+
+.af-timeline-head:hover {
+  background: var(--af-list-hover-bg, transparent);
+}
+
+.af-timeline-time {
+  color: var(--af-fg-muted);
+  font-family: var(--af-font-mono);
+  font-size: 12px;
+}
+
+.af-timeline-route {
+  font-weight: 600;
+}
+
+.af-timeline-meta {
+  color: var(--af-fg-muted);
+  font-size: 12px;
+}
+
+.af-timeline-text {
+  max-height: 360px;
+  margin: 0 0 8px;
+  padding: 8px;
+  overflow: auto;
+  border-radius: 4px;
+  background: var(--af-input-bg);
+  color: var(--af-fg);
+  font-family: var(--af-font-mono);
+  font-size: 12px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}

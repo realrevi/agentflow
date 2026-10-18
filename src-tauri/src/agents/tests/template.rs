@@ -23,7 +23,7 @@ fn with(change: impl FnOnce(&mut Value)) -> Vec<String> {
 fn the_sample_and_every_starter_are_valid() {
     assert_eq!(validate(&sample()), Vec::<String>::new());
     let all = starters();
-    assert_eq!(all.len(), 8);
+    assert_eq!(all.len(), 9);
     for template in all {
         assert_eq!(validate(&template), Vec::<String>::new(), "{}", template.id);
     }

@@ -2,7 +2,7 @@ import type { Settings } from '../../shared/types';
 
 /** Used until the backend answers (and if it cannot). Mirrors `Settings::default()` in Rust. */
 export const DEFAULT_SETTINGS: Settings = {
-  version: 7,
+  version: 8,
   language: 'en',
   appearance: {
     themeId: 'agentflow-dark',
@@ -53,6 +53,16 @@ export const DEFAULT_SETTINGS: Settings = {
     showReasoning: true,
     toolModels: [],
   },
+  workstreams: {
+    glow: true,
+    glowColor: null,
+    notify: false,
+    defaultMode: 'semiAuto',
+    maxRounds: 10,
+    reportCapKb: 30,
+    stageScale: 4,
+    stageAnimations: true,
+  },
   layout: null,
 };
 
@@ -60,6 +70,9 @@ export const MAX_RECENT_WORKSPACES = 10;
 export const TERMINAL_FONT_SIZE = { min: 8, max: 32 } as const;
 export const TERMINAL_SCROLLBACK_MAX = 100_000;
 export const AVATAR_SCALES = [2, 3, 4] as const;
+export const STAGE_SCALES = [2, 3, 4, 5, 6] as const;
+export const MAX_ROUNDS = { min: 1, max: 100 } as const;
+export const REPORT_CAP_KB = { min: 1, max: 1024 } as const;
 export const ANIMATION_SPEED = { min: 0.5, max: 2, step: 0.25 } as const;
 
 export const SIDEBAR_MIN_WIDTH = 180;

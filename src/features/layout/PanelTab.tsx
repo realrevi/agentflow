@@ -1,18 +1,20 @@
 // The tab of every panel: dockview's default look, plus a status dot for terminals (and
 // their character, which opens the character picker), a dirty dot for editors (it turns
-// into the close button on hover), an attention dot while an agent waits for approval
-// and a guarded close.
+// into the close button on hover), an attention dot and the gold glow while a panel needs
+// the user, a guarded close, and (agent panels) a context menu to link it to a workstream.
 import { createCloseButton, type DockviewPanelApi, type ITabRenderer } from 'dockview-core';
 import { createSignal, onCleanup, Show } from 'solid-js';
+import { Menu } from '../../shared/ui/Menu';
 import { Popover } from '../../shared/ui/Popover';
 import { Avatar, CharacterPicker, spriteFor } from '../characters';
 import { editorDirty } from '../editor';
 import { t, type I18nKey } from '../i18n';
 import { settings } from '../settings/settingsStore';
-import { agentState } from '../agentui';
+import { agentState, attentionOf, glowing } from '../agentui';
 import { terminalStatus, type TerminalStatus } from '../terminal';
 import { characterOf } from './characters';
 import { closePanel, setPanelCharacter } from './layoutStore';
+import { linkMenuItems, selectLinkItem } from './linkMenu';
 import { parsePanelParams, type PanelParams } from './panels';
 import { createSolidPart } from './solidPart';
 
@@ -40,11 +42,27 @@ function PanelTab(props: { api: DockviewPanelApi; title: string; params: PanelPa
   };
   const character = () => characterOf(params());
   const [picking, setPicking] = createSignal(false);
+  const [menuAt, setMenuAt] = createSignal<{ x: number; y: number } | null>(null);
+  const isAgent = () => {
+    const current = params();
+    return (
+      current?.kind === 'chat' || (current?.kind === 'terminal' && current.config.kind !== 'shell')
+    );
+  };
   let avatarButton: HTMLButtonElement | undefined;
 
   return (
     <>
-      <div class="dv-default-tab-content af-tab" title={tooltip()}>
+      <div
+        class="dv-default-tab-content af-tab"
+        classList={{ 'af-glow-tab': glowing(props.api.id) }}
+        title={tooltip()}
+        onContextMenu={(event) => {
+          if (!isAgent()) return;
+          event.preventDefault();
+          setMenuAt({ x: event.clientX, y: event.clientY });
+        }}
+      >
         <Show when={character()}>
           {(current) => (
             <button
@@ -76,16 +94,29 @@ function PanelTab(props: { api: DockviewPanelApi; title: string; params: PanelPa
             title={t(STATUS_LABEL[status()])}
           />
         </Show>
-        <Show when={agentState(props.api.id) === 'wait'}>
-          <span
-            class="af-attention-dot"
-            role="img"
-            aria-label={t('agent.attention')}
-            title={t('agent.attention')}
-          />
+        <Show when={attentionOf(props.api.id)}>
+          {(reason) => (
+            <span
+              class="af-attention-dot"
+              role="img"
+              aria-label={t(`attention.${reason()}`)}
+              title={t(`attention.${reason()}`)}
+            />
+          )}
         </Show>
         {title()}
       </div>
+      <Show when={menuAt()}>
+        {(at) => (
+          <Menu
+            anchor={at()}
+            items={linkMenuItems(props.api.id)}
+            placement="below-start"
+            onSelect={(id) => void selectLinkItem(props.api.id, id, title())}
+            onClose={() => setMenuAt(null)}
+          />
+        )}
+      </Show>
       <Show when={picking() && avatarButton}>
         {(anchor) => (
           <Popover

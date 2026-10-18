@@ -14,6 +14,7 @@ mod launch;
 mod manager;
 mod model;
 mod session;
+mod session_env;
 mod shell;
 #[cfg(all(test, unix))]
 mod tests;
