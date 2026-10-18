@@ -63,3 +63,22 @@ the importer still reads both formats from custom sources.
 
 Custom sources (any public GitHub repository, optionally a folder in it) are labeled
 "unverified"; the format of each file is guessed from its name and frontmatter.
+
+## Import results
+
+First full refresh on 2026-10-18 (27 GitHub API calls of the unauthenticated 60/hour):
+
+| Source              | Imported | Unsupported                                      |
+| ------------------- | -------- | ------------------------------------------------ |
+| anthropic-skills    | 13       | 1 (`claude-api`: over 100 000 characters)        |
+| openai-skills       | 26       | 1 (`cloudflare-deploy`: 311 files, over the cap) |
+| superpowers         | 15       | 0                                                |
+| wshobson-agents     | 387      | 0                                                |
+| voltagent-claude    | 163      | 0                                                |
+| voltagent-codex     | 175      | 0                                                |
+| awesome-cursorrules | 256      | 1 (an empty rule)                                |
+| cursor-rules-mdc    | 241      | 0                                                |
+| gemini-cli          | 24       | 0                                                |
+
+Identical files that a source keeps in several places (wshobson's plugins share agents)
+appear once.

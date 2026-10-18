@@ -10,7 +10,7 @@ Linux. Priorities: **low RAM, fast, clean code organization, fun look.**
   which, ignore + notify, trash, reqwest (rustls + ring, no default features), keyring (OS
   keychain); tauri plugins: dialog, clipboard-manager, opener, notification
 - **Frontend:** SolidJS + TypeScript (strict) + Vite, pnpm, xterm.js (+ fit, webgl, unicode11),
-  CodeMirror 6 (languages per file type), marked + DOMPurify (chat only); all three lazy
+  CodeMirror 6 (languages per file type), marked + DOMPurify (`shared/markdown`, chat + library); all lazy
 - **Layout/styling:** `dockview-core` behind a thin Solid wrapper (stylesheet from `dockview`,
   both pinned to the same version); plain CSS with `--af-*` variables, no React, Electron,
   Tailwind or UI kits; bundled fonts JetBrains Mono (code), Pixelify Sans (small accents only).
@@ -25,12 +25,12 @@ src-tauri/src/
   commands/           thin #[tauri::command] fns that delegate to modules
   pty/                PtyManager, sessions (reader/waiter/pump threads), shells, CLI detection
   fs/                 workspace: path checks, list/read/write/trash, quick open index, watcher
-  prompts/            prompt history per workspace (app data dir)
   providers/          Provider trait, Anthropic + OpenAI-compatible adapters, SSE, keys, errors
-  conversations/      API chats per workspace (app data dir, one JSON file per conversation)
+  prompts/, conversations/  prompt history; API chats (app data dir, one JSON per conversation)
   chat/               ChatManager (one stream per chat), request building, Compact, estimate
   agent/              API agent loop, tools/, permissions, dangerous commands, checkpoints, prompt
-  agents/             installer: templates, per-tool renderers, sections, plan/apply, registry
+  agents/             installer: templates, per-tool renderers, skills, sections, plan/apply, registry
+  library/            community library: registry, GitHub client, cache, importers, safety scan
   tokens/             UsageTracker: JSONL ledger, buckets, prices, budgets, CLI log readers
   turns/, workstreams/  CLI turn ends + activity from session logs; handoff log (JSONL)
   util/               atomic_write, run_blocking, lock/Signal, workspace_key, hex color, test_dir
@@ -50,7 +50,7 @@ src/
   features/i18n/      typed t(), lazy locale loading, reportError()
   features/settings/  settings store (debounced save) + lazy SettingsPanel and sections
   features/tokens/    usage store (one Channel), formats, badge, chart, Usage view + lazy panel
-  features/agents/    lazy Agents library panel (wizard/, installed list), profiles store
+  features/agents/    lazy Agents library panel (wizard/, library/ Browse tab, installed), profiles
   features/workstreams/ protocol, engine, store, runtime, cards, sidebar section, lazy Timeline
   features/stage/     lazy Agent Stage: layout, positions, scene, motion, canvas renderer
   shared/             ipc (+ ipcCommands), types (+ chat/usage/agentTypes), errors, toast, dialog, ui/
@@ -132,6 +132,21 @@ other. `workstreams` and `stage` import core features only (the Stage gets `Stag
   not create or that changed since (hash in `.agentflow/installed.json`) need a confirmation;
   user scope only into documented home folders, after its own confirmation (`roots.rs`).
   Profiles narrow tools, never loosen the mode. New tool format = a target fn + snapshot test.
+- Kinds: agent, rule, `skill` (folder `<tool skills dir>/<id>/` with SKILL.md + `files`, paths
+  via `relpath.rs`, binary as base64, scripts copied never run), `command` (Gemini only).
+  `\{{` is a literal `{{`. Library templates carry `source` (attribution line in each file).
+
+## Community library (phase 10)
+
+- `registry/sources.json` (docs/library-sources.md): newest from GitHub main (ETag), else the
+  cache, else bundled; user sources from settings are `unverified`. Per source and refresh:
+  repo + branch head (ETags), the recursive tree only on a new commit; files from
+  raw.githubusercontent by commit, cached by blob sha in `<app data>/library`. Rate limit read
+  from every answer; used up = no request until the reset. Auto refresh at most once a day.
+- Importers (`library/import/`) keep the original text, map frontmatter to target options and
+  list what they cannot convert (`Unsupported` + reason id). Per-skill LICENSE files decide
+  per-item licenses. Safety flags (warnings only): every pattern in `library/safety.rs` + tests.
+- The Browse tab hands templates to the wizard; updates = a different `source.sha` upstream.
 
 ## Workstreams & Agent Stage (phase 9)
 
@@ -173,7 +188,7 @@ other. `workstreams` and `stage` import core features only (the Stage gets `Stag
   hard-code colors. Overrides (text, accent, agent bold `#F5C542`, `--af-glow`): `overrides.ts`.
 - Flat dotted keys in `src/locales/en.json`; `I18nKey = keyof typeof en`; every visible string
   uses `t('key', { param })`. New keys go into **all five** locales (typecheck + tests check).
-- Rust owns `settings.json` (v8): bump `CURRENT_VERSION` + a `migrate.rs` step on shape changes;
+- Rust owns `settings.json` (v9): bump `CURRENT_VERSION` + a `migrate.rs` step on shape changes;
   `normalized()` repairs values; `defaults.test.ts` checks TS defaults against Rust.
 
 ## Commands
@@ -187,17 +202,9 @@ cargo build    # in src-tauri: compile check, no bundling
 
 ## Roadmap (12 phases)
 
-1. [x] Skeleton, theme engine, i18n, dockable layout
-2. [x] PTY + multi terminal panels (xterm.js WebGL, portable-pty)
-3. [x] Workspace file tree (notify + ignore) + CodeMirror 6 viewer/editor
-4. [x] Pixel character system (15 characters, 16x16 JSON sprites scaled, typewriter speech bar)
-5. [x] AI provider APIs (Anthropic + OpenAI-compatible, keychain keys) + API chat panels
-6. [x] Token & cost tracking (ledger, CLI log readers, prices, budgets, dashboard, Compact)
-7. [x] API agent tools + default system prompt (tool cards, diffs, permissions, undo)
-8. [x] Agent installer wizard (per-AI formats/paths, templates, managed sections, detection)
-9. [x] Manager–worker workstreams + the Agent Stage (turn detection, handoffs, glow, Stage)
-10. [ ] Community agent library from GitHub
-11. [ ] UI polish
-12. [ ] Cross-platform builds + CI
+Done: 1 skeleton, themes, i18n, layout · 2 PTY terminals · 3 file tree + editor · 4 pixel
+characters · 5 provider APIs + chat · 6 usage tracking · 7 API agent tools · 8 agent installer ·
+9 workstreams + Agent Stage · 10 community agent library. Next: 11 UI polish · 12
+cross-platform builds + CI.
 
 Only build what the current phase lists; leave future modules as empty stubs.
