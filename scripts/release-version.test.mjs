@@ -33,7 +33,8 @@ describe('release:version', () => {
       cargoLock: '1.2.3',
     });
     for (const key of Object.keys(FILES)) {
-      const changed = next[key].split('\n').filter((line, i) => line !== texts[key].split('\n')[i]);
+      const before = texts[key].split('\n');
+      const changed = next[key].split('\n').filter((line, i) => line !== before[i]);
       expect(changed).toHaveLength(1);
     }
     // Dependencies keep their own versions.
