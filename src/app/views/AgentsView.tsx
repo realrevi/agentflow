@@ -2,10 +2,17 @@ import { For, Show } from 'solid-js';
 import { ChatList } from './ChatList';
 import { Avatar, spriteFor } from '../../features/characters';
 import { t } from '../../features/i18n';
-import { focusPanel, openPanel, openPanels, openTerminal } from '../../features/layout';
+import {
+  focusPanel,
+  openPanel,
+  openPanels,
+  openTerminal,
+  openTimeline,
+} from '../../features/layout';
 import { settings } from '../../features/settings';
-import { agentState } from '../../features/agentui';
+import { agentState, attentionOf, glowing } from '../../features/agentui';
 import { newTerminalConfig, terminalStatus } from '../../features/terminal';
+import { openNewWorkstream, WorkstreamsSection } from '../../features/workstreams';
 
 export function AgentsView() {
   return (
@@ -22,7 +29,7 @@ export function AgentsView() {
                 <button
                   type="button"
                   class="af-list-item"
-                  classList={{ active: panel.active }}
+                  classList={{ active: panel.active, 'af-glow-item': glowing(panel.id) }}
                   onClick={() => focusPanel(panel.id)}
                 >
                   <Show
@@ -45,13 +52,15 @@ export function AgentsView() {
                     )}
                   </Show>
                   {panel.title}
-                  <Show when={agentState(panel.id) === 'wait'}>
-                    <span
-                      class="af-attention-dot"
-                      role="img"
-                      aria-label={t('agent.attention')}
-                      title={t('agent.attention')}
-                    />
+                  <Show when={attentionOf(panel.id)}>
+                    {(reason) => (
+                      <span
+                        class="af-attention-dot"
+                        role="img"
+                        aria-label={t(`attention.${reason()}`)}
+                        title={t(`attention.${reason()}`)}
+                      />
+                    )}
                   </Show>
                 </button>
               </li>
@@ -59,6 +68,12 @@ export function AgentsView() {
           </For>
         </ul>
       </Show>
+      <WorkstreamsSection
+        panel={(id) => openPanels().find((panel) => panel.id === id)}
+        onFocus={focusPanel}
+        onTimeline={(id) => openTimeline(id)}
+        onNew={() => openNewWorkstream()}
+      />
       <ChatList />
       <div class="af-button-column">
         <button

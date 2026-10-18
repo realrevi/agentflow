@@ -5,7 +5,8 @@ import { openPanel } from '../features/layout';
 import { activeTheme, selectTheme, themes } from '../features/theme';
 import { costText, formatTokens, totalTokens, usageSummary } from '../features/tokens';
 import type { Locale } from '../shared/types';
-import { globeIcon, paletteIcon, usageIcon } from '../shared/ui/icons';
+import { globeIcon, paletteIcon, stopIcon, usageIcon } from '../shared/ui/icons';
+import { anyAutoRunning, stopAll } from '../features/workstreams';
 import { Menu, type MenuItem } from '../shared/ui/Menu';
 import { PixelIcon } from '../shared/ui/PixelIcon';
 import { WorkspaceStatus } from './WorkspaceStatus';
@@ -59,6 +60,17 @@ export function StatusBar() {
       </span>
       <WorkspaceStatus />
       <div class="af-statusbar-spacer" />
+      <Show when={anyAutoRunning()}>
+        <button
+          type="button"
+          class="af-status-item af-status-stop"
+          title={t('status.stopWorkstreams')}
+          onClick={stopAll}
+        >
+          <PixelIcon art={stopIcon} scale={1.5} />
+          {t('status.stopWorkstreams')}
+        </button>
+      </Show>
       <Show when={usageSummary()?.today}>
         {(today) => (
           <button

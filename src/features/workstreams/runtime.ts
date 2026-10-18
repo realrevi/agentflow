@@ -29,8 +29,6 @@ import {
 
 export interface RuntimeHooks {
   panelTitle(panelId: string): string;
-  /** "Claude Code", "API agent · glm-5.3", ... */
-  panelKind(panelId: string): string;
   /** The focused panel while the window has focus (its turn ends need no glow). */
   isWatched(panelId: string): boolean;
   workspace(): string | null;
@@ -39,8 +37,15 @@ export interface RuntimeHooks {
 const sessionStart = Date.now();
 const lastSent = new Map<string, number>();
 
-function workers(ws: Workstream, hooks: RuntimeHooks): MemberInfo[] {
-  return ws.workers.map((id) => ({ name: memberName(ws, id), kind: hooks.panelKind(id) }));
+/** "Claude Code", "API agent (glm-5.3)" (model-facing, so not translated). */
+function kindOf(panel: string): string {
+  const port = portOf(panel);
+  if (!port) return 'agent';
+  return port.kind === 'api' ? `API agent (${port.label()})` : port.label();
+}
+
+function workers(ws: Workstream): MemberInfo[] {
+  return ws.workers.map((id) => ({ name: memberName(ws, id), kind: kindOf(id) }));
 }
 
 /** The sender's tokens since its last handoff, when the usage tracker knows them. */
@@ -147,12 +152,12 @@ export function installWorkstreams(hooks: RuntimeHooks): () => void {
         managers.add(ws.manager);
         const port = portOf(ws.manager);
         if (port?.kind === 'api') {
-          setExtraSystem(ws.manager, managerInstructions(ws.name, workers(ws, hooks)));
+          setExtraSystem(ws.manager, managerInstructions(ws.name, workers(ws)));
         }
         if (!port || started.has(ws.id)) continue;
         started.add(ws.id);
         if (ws.reason === 'restored') continue;
-        const setup = port.kind === 'cli' ? setupMessage(ws.name, workers(ws, hooks)) : null;
+        const setup = port.kind === 'cli' ? setupMessage(ws.name, workers(ws)) : null;
         const id = ws.id;
         queueMicrotask(() => dispatch(id, { type: 'start', setup }));
       }

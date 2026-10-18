@@ -264,3 +264,36 @@ export const copyIcon: PixelArt = {
     '........',
   ],
 };
+
+/** Agent Stage: two characters on a stage with a curtain. */
+export const stageIcon: PixelArt = {
+  rows: [
+    '############',
+    '#..........#',
+    '#..........#',
+    '#.oo....oo.#',
+    '#.oo....oo.#',
+    '#.##.--.##.#',
+    '#.##....##.#',
+    '#..........#',
+    '############',
+    '.#........#.',
+    '.#........#.',
+    '............',
+  ],
+  palette: { '#': 'currentColor', o: 'var(--af-bold-color)', '-': 'var(--af-accent)' },
+};
+
+/** A square stop sign (8x8). */
+export const stopIcon: PixelArt = {
+  rows: [
+    '........',
+    '.######.',
+    '.######.',
+    '.######.',
+    '.######.',
+    '.######.',
+    '.######.',
+    '........',
+  ],
+};

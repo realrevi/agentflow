@@ -8,8 +8,10 @@ import { NewChatPrompt } from '../chat';
 import { t } from '../i18n';
 import { AGENT_KINDS, cliFor, kindLabel, loadCliStatus, newTerminalConfig } from '../terminal';
 import { agentProfiles } from '../agents';
+import { openNewWorkstream } from '../workstreams/dialogState';
 import { openProfileChat, startChat } from './chatPanels';
 import { openPanel, openTerminal } from './layoutStore';
+import { openStage } from './stagePanels';
 
 type Mode = 'closed' | 'menu' | 'custom' | 'api';
 
@@ -40,6 +42,8 @@ export function AddPanelButton(props: { groupId: string }) {
       title: profile.description,
       heading: index === 0 ? t('panel.add.installed') : undefined,
     })),
+    { id: 'workstream', label: t('workstream.new'), heading: t('workstream.section') },
+    { id: 'stage', label: t('panel.add.stage') },
     { id: 'files', label: t('panel.add.files'), heading: t('panel.add.panels') },
     { id: 'installer', label: t('panel.add.installer') },
     { id: 'usage', label: t('panel.add.usage') },
@@ -49,6 +53,8 @@ export function AddPanelButton(props: { groupId: string }) {
   const select = (id: string) => {
     const profile = agentProfiles().find((p) => `profile:${p.id}` === id);
     if (profile) void openProfileChat(profile, props.groupId);
+    else if (id === 'workstream') openNewWorkstream();
+    else if (id === 'stage') openStage();
     else if (id === 'custom' || id === 'api') setMode(id);
     else if (id === 'files' || id === 'settings' || id === 'usage' || id === 'installer') {
       openPanel(id, props.groupId);

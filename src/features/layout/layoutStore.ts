@@ -17,7 +17,7 @@ import {
   snapshotWorkstreams,
   unlinkPanel,
 } from '../workstreams/store';
-import type { TerminalConfig } from '../terminal';
+import { hasAgentUi, type TerminalConfig } from '../terminal';
 import {
   characterOf,
   ensureCharacters,
@@ -53,6 +53,8 @@ export interface OpenPanel {
   active: boolean;
   /** The pixel character shown for it (agent panels; respects the avatar settings). */
   character: CharacterRef | null;
+  /** An agent panel (agent CLI, custom command or API chat), not a shell or a tool panel. */
+  agent: boolean;
 }
 
 const PERSIST_DELAY_MS = 400;
@@ -166,7 +168,10 @@ export function syncOpenPanels(): void {
     if (!params) return [];
     const character = characterOf(params);
     const title = panelTitle(params);
-    return [{ id: panel.id, title, kind: params.kind, active: panel.id === activeId, character }];
+    const agent =
+      params.kind === 'chat' || (params.kind === 'terminal' && hasAgentUi(params.config.kind));
+    const active = panel.id === activeId;
+    return [{ id: panel.id, title, kind: params.kind, active, character, agent }];
   });
   if (!samePanels(openPanels(), panels)) setOpenPanels(panels);
 }

@@ -1,0 +1,122 @@
+/* The Agent Stage (lazy panel): a toolbar, one canvas and a DOM layer for labels, names,
+   bubbles and the tooltip. */
+.af-stage {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.af-stage-bar {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--af-border);
+}
+
+.af-stage-spacer {
+  flex: 1;
+}
+
+.af-stage-body {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.af-stage-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+}
+
+.af-stage-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.af-stage-label,
+.af-stage-name,
+.af-stage-bubble,
+.af-stage-tooltip,
+.af-stage-history {
+  position: absolute;
+}
+
+.af-stage-label {
+  transform: translate(-50%, -100%);
+  padding: 1px 8px;
+  border: 1px solid var(--af-ws-color);
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--af-ws-color) 18%, var(--af-panel-bg));
+  color: var(--af-fg);
+  font-family: var(--af-font-pixel);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.af-stage-name {
+  transform: translateX(-50%);
+  color: var(--af-fg-muted);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.af-stage-bubble {
+  transform: translate(-50%, -100%);
+  max-width: 220px;
+  transition: opacity 0.6s ease;
+  pointer-events: auto;
+}
+
+.af-stage-bubble.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.af-stage-bubble .af-bubble {
+  position: static;
+  max-width: 220px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.af-stage-tooltip {
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  transform: translateY(-50%);
+  padding: 6px 8px;
+  border: 1px solid var(--af-widget-border);
+  border-radius: 4px;
+  background: var(--af-widget-bg);
+  color: var(--af-widget-fg);
+  font-size: 12px;
+  white-space: nowrap;
+  box-shadow: 0 6px 18px var(--af-shadow);
+}
+
+.af-stage-empty {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  padding: 24px;
+  color: var(--af-fg-muted);
+  text-align: center;
+}
+
+.af-stage-history {
+  z-index: 6;
+  width: 0;
+  height: 0;
+}
