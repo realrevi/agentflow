@@ -1,15 +1,14 @@
 import { For, Show } from 'solid-js';
 import { t } from '../features/i18n';
 import { dismissToast, toasts } from '../shared/toast';
-import { closeIcon } from '../shared/ui/icons';
-import { PixelIcon } from '../shared/ui/PixelIcon';
+import { Button, IconButton } from '../shared/ui/Button';
 
 export function Toasts() {
   return (
     <div class="af-toasts" role="status" aria-live="polite">
       <For each={toasts()}>
         {(toast) => (
-          <div class={`af-toast af-toast-${toast.kind}`}>
+          <div class={`af-toast af-toast-${toast.kind}`} classList={{ leaving: toast.leaving }}>
             <div class="af-toast-text">
               <strong>{toast.title}</strong>
               <Show when={toast.detail}>
@@ -18,27 +17,23 @@ export function Toasts() {
             </div>
             <Show when={toast.action}>
               {(action) => (
-                <button
-                  type="button"
-                  class="af-button secondary small"
+                <Button
+                  variant="secondary"
+                  size="sm"
                   onClick={() => {
                     dismissToast(toast.id);
                     action().run();
                   }}
                 >
                   {action().label}
-                </button>
+                </Button>
               )}
             </Show>
-            <button
-              type="button"
-              class="af-icon-btn"
-              title={t('toast.dismiss')}
-              aria-label={t('toast.dismiss')}
+            <IconButton
+              icon="x"
+              label={t('toast.dismiss')}
               onClick={() => dismissToast(toast.id)}
-            >
-              <PixelIcon art={closeIcon} />
-            </button>
+            />
           </div>
         )}
       </For>

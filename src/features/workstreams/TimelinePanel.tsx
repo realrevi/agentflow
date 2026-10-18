@@ -12,6 +12,8 @@ import { formatTokens } from '../tokens/format';
 import { memberName, members } from './model';
 import { onHandoffSent, workstreams } from './store';
 import { filterEntries } from './timeline';
+import { Button } from '../../shared/ui/Button';
+import { Select } from '../../shared/ui/Field';
 
 interface TimelineParams {
   workstream: string | null;
@@ -90,18 +92,16 @@ export default function TimelinePanel(props: { api: DockviewPanelApi; params: Ti
   return (
     <div class="af-timeline">
       <div class="af-timeline-bar">
-        <select
-          class="af-select"
+        <Select
           aria-label={t('timeline.workstream')}
           value={selected() ?? ''}
           onChange={(e) => setParams({ workstream: e.currentTarget.value, pair: null })}
         >
           <For each={workstreams()}>{(item) => <option value={item.id}>{item.name}</option>}</For>
-        </select>
+        </Select>
         <Show when={ws()}>
           {(current) => (
-            <select
-              class="af-select"
+            <Select
               aria-label={t('timeline.filter')}
               value={panel() ?? ''}
               onChange={(e) => {
@@ -113,17 +113,17 @@ export default function TimelinePanel(props: { api: DockviewPanelApi; params: Ti
               <For each={members(current())}>
                 {(id) => <option value={id}>{memberName(current(), id)}</option>}
               </For>
-            </select>
+            </Select>
           )}
         </Show>
         <Show when={params().pair && ws()}>
-          <button
-            type="button"
-            class="af-link-btn"
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={() => setParams((p) => ({ ...p, pair: null }))}
           >
             {t('timeline.clearPair')}
-          </button>
+          </Button>
         </Show>
       </div>
       <Show when={shown().length > 0} fallback={<p class="af-view-empty">{t('timeline.empty')}</p>}>

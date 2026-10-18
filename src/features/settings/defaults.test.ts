@@ -88,6 +88,7 @@ describe('settings defaults mirror the Rust schema', () => {
     expect(ws).toContain(`glow: ${expected.glow}`);
     expect(ws).toContain(`notify: ${expected.notify}`);
     expect(ws).toContain(`stage_animations: ${expected.stageAnimations}`);
+    expect(ws).toContain(`auto_remind: ${expected.autoRemind}`);
     expect(ws).toContain('default_mode: HandoffMode::SemiAuto');
     expect(expected.defaultMode).toBe('semiAuto');
     expect(expected.glowColor).toBeNull();
@@ -102,6 +103,10 @@ describe('settings defaults mirror the Rust schema', () => {
       `REPORT_CAP_KB_RANGE: (u32, u32) = (${REPORT_CAP_KB.min}, ${REPORT_CAP_KB.max})`,
     );
     expect(source).toContain(`STAGE_SCALES: [u8; 5] = [${STAGE_SCALES.join(', ')}]`);
+  });
+
+  it('starts with the first-run flow not done', () => {
+    expect(DEFAULT_SETTINGS.onboarding).toEqual({ done: false, tipsDismissed: false });
   });
 
   it('uses the Rust library defaults', () => {

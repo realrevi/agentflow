@@ -3,11 +3,11 @@
 import { createMemo, createSignal, For, onCleanup, onMount, Show } from 'solid-js';
 import { FILE_PATH_MIME } from '../../shared/dnd';
 import type { EntryKind } from '../../shared/types';
-import { PixelIcon } from '../../shared/ui/PixelIcon';
+import { FileIcon } from '../../shared/ui/FileIcon';
+import { Icon } from '../../shared/ui/Icon';
 import { t } from '../i18n';
 import { currentWorkspace } from '../workspace';
 import { agentChanged } from './agentMarks';
-import { chevronIcon, iconFor } from './fileIcons';
 import { NameInput } from './NameInput';
 import type { TreeRow } from './treeModel';
 
@@ -94,7 +94,7 @@ export function TreeView(props: TreeViewProps) {
               return (
                 <div class="af-tree-row" style={{ top: top(), 'padding-left': indent(item.depth) }}>
                   <span class="af-tree-twisty" />
-                  <PixelIcon art={iconFor('', item.kind === 'dir')} class="af-tree-icon" />
+                  <FileIcon name="" isDir={item.kind === 'dir'} class="af-tree-icon" />
                   <NameInput
                     initial=""
                     label={t(item.kind === 'dir' ? 'files.newFolder' : 'files.newFile')}
@@ -129,10 +129,15 @@ export function TreeView(props: TreeViewProps) {
               >
                 <span class="af-tree-twisty" classList={{ open: expanded }}>
                   <Show when={entry.isDir}>
-                    <PixelIcon art={chevronIcon} />
+                    <Icon name="chevron-right" size={14} />
                   </Show>
                 </span>
-                <PixelIcon art={iconFor(entry.name, entry.isDir, expanded)} class="af-tree-icon" />
+                <FileIcon
+                  name={entry.name}
+                  isDir={entry.isDir}
+                  expanded={expanded}
+                  class="af-tree-icon"
+                />
                 <Show
                   when={props.renaming === entry.path}
                   fallback={

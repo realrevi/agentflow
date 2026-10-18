@@ -5,6 +5,7 @@ import { frameAt, playbackOf } from '../characters/playback';
 import { deviceScale, strip } from '../characters/renderer';
 import type { SpriteSheet, SpriteState } from '../characters/types';
 import type { Point } from './scene';
+import { snapToPixel } from '../characters/motion';
 
 export interface CharDraw {
   panel: string;
@@ -154,14 +155,15 @@ export class StageRenderer {
       frameAt(playback, entry.frames, frame.now - char.since, frameMs) ??
       (playback.kind === 'once' && playback.hold === 'last' ? entry.frames - 1 : 0);
     const size = char.sheet.size * frame.scale;
+    // Whole sprite pixels only, so a gliding character stays crisp.
     ctx.drawImage(
       entry.source,
       index * entry.cell,
       0,
       entry.cell,
       entry.cell,
-      Math.round(char.at.x - size / 2),
-      Math.round(char.at.y - size / 2),
+      snapToPixel(char.at.x - size / 2, frame.scale),
+      snapToPixel(char.at.y - size / 2, frame.scale),
       size,
       size,
     );

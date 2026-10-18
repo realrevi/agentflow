@@ -27,22 +27,7 @@
 }
 
 .af-lib-card {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 10px;
-  border: 1px solid var(--af-widget-border);
-  border-radius: 6px;
-  background: var(--af-widget-bg);
-  color: var(--af-fg);
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-}
-
-.af-lib-card:hover,
-.af-lib-card:focus-visible {
-  border-color: var(--af-accent);
+  gap: var(--af-space-2);
 }
 
 .af-lib-card-head,
@@ -51,13 +36,13 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 6px;
-  font-size: 11px;
+  font-size: var(--af-text-xs);
   color: var(--af-fg-muted);
 }
 
 .af-lib-card-name {
   flex: 1;
-  font-size: 13px;
+  font-size: var(--af-text-md);
   color: var(--af-fg);
 }
 
@@ -66,7 +51,7 @@
   overflow: hidden;
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
-  font-size: 12px;
+  font-size: var(--af-text-sm);
 }
 
 .af-lib-tokens {
@@ -76,9 +61,9 @@
 .af-lib-target {
   padding: 0 4px;
   border: 1px solid var(--af-widget-border);
-  border-radius: 3px;
+  border-radius: var(--af-radius-sm);
   font-family: var(--af-font-mono);
-  font-size: 10px;
+  font-size: var(--af-text-xs);
 }
 
 .af-lib-target.native {
@@ -96,10 +81,10 @@
 
 .af-lib-flag {
   padding: 0 4px;
-  border-radius: 3px;
+  border-radius: var(--af-radius-sm);
   background: var(--af-list-hover-bg);
   color: var(--af-warning);
-  font-size: 11px;
+  font-size: var(--af-text-xs);
 }
 
 .af-lib-meta {
@@ -107,7 +92,7 @@
   grid-template-columns: max-content 1fr;
   gap: 2px 12px;
   margin: 0;
-  font-size: 12px;
+  font-size: var(--af-text-sm);
 }
 
 .af-lib-meta dt {
@@ -125,7 +110,7 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
-  font-size: 12px;
+  font-size: var(--af-text-sm);
 }
 
 .af-lib-flags ul,
@@ -148,7 +133,7 @@
 .af-lib-excerpt,
 .af-lib-flag-file {
   font-family: var(--af-font-mono);
-  font-size: 11px;
+  font-size: var(--af-text-xs);
   overflow-wrap: anywhere;
 }
 
@@ -156,17 +141,17 @@
   margin: 4px 0 0;
   padding: 6px 8px;
   overflow-x: auto;
-  border-radius: 4px;
+  border-radius: var(--af-radius-sm);
   background: var(--af-input-bg);
   font-family: var(--af-font-mono);
-  font-size: 11px;
+  font-size: var(--af-text-xs);
 }
 
 .af-lib-markdown {
   padding: 8px 10px;
   border: 1px solid var(--af-widget-border);
-  border-radius: 6px;
-  font-size: 13px;
+  border-radius: var(--af-radius-md);
+  font-size: var(--af-text-md);
 }
 
 .af-lib-sources {
@@ -177,5 +162,5 @@
   display: flex;
   gap: 8px;
   margin: 0;
-  font-size: 12px;
+  font-size: var(--af-text-sm);
 }

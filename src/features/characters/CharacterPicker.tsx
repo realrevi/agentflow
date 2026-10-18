@@ -26,6 +26,7 @@ export function CharacterPicker(props: CharacterPickerProps) {
               role="option"
               aria-selected={props.current?.id === sheet.id}
               title={sheet.name}
+              aria-label={sheet.name}
               onClick={() => props.onPick({ id: sheet.id, palette: 0 })}
             >
               <Avatar

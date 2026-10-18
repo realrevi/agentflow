@@ -6,6 +6,8 @@ import type { InstallPlan, PlannedFile, PlanStatus } from '../../../shared/types
 import { t, type I18nKey } from '../../i18n';
 import { openConflicts, TARGETS } from './answers';
 import type { Wizard } from './wizardStore';
+import { Button } from '../../../shared/ui/Button';
+import { Checkbox } from '../../../shared/ui/Field';
 
 export interface DiffProps {
   path: string;
@@ -44,8 +46,7 @@ export function PlanFile(props: {
       <Show when={props.file.conflict}>
         {(kind) => (
           <label class="af-plan-conflict">
-            <input
-              type="checkbox"
+            <Checkbox
               checked={props.confirmed}
               onChange={(e) => props.onConfirm(e.currentTarget.checked)}
             />
@@ -109,8 +110,7 @@ export function StepPreview(props: { wizard: Wizard; Diff: Component<DiffProps> 
             />
             <Show when={plan().userScope}>
               <label class="af-plan-conflict">
-                <input
-                  type="checkbox"
+                <Checkbox
                   checked={w.userScopeOk()}
                   onChange={(e) => w.setUserScopeOk(e.currentTarget.checked)}
                 />
@@ -121,17 +121,12 @@ export function StepPreview(props: { wizard: Wizard; Diff: Component<DiffProps> 
         )}
       </Show>
       <div class="af-wizard-actions">
-        <button type="button" class="af-button secondary" onClick={() => w.setStep('questions')}>
+        <Button variant="secondary" onClick={() => w.setStep('questions')}>
           {t('installer.back')}
-        </button>
-        <button
-          type="button"
-          class="af-button"
-          disabled={blocked() || w.busy()}
-          onClick={() => void w.install()}
-        >
+        </Button>
+        <Button disabled={blocked() || w.busy()} onClick={() => void w.install()}>
           {t('installer.install')}
-        </button>
+        </Button>
       </div>
     </section>
   );

@@ -11,6 +11,9 @@ import { ensureCatalog } from './library/libraryStore';
 import { newer, TARGETS } from './wizard/answers';
 import { PlanList, type DiffProps } from './wizard/StepPreview';
 import type { Wizard } from './wizard/wizardStore';
+import { Button } from '../../shared/ui/Button';
+import { Checkbox } from '../../shared/ui/Field';
+import { EmptyState } from '../../shared/ui/Surface';
 
 export function InstalledList(props: {
   workspace: string | null;
@@ -20,6 +23,7 @@ export function InstalledList(props: {
   version: () => number;
   onEdit: () => void;
   onChanged: () => void;
+  onBrowse: () => void;
 }) {
   const [installed, { refetch }] = createResource(
     () => [props.workspace, props.version()] as const,
@@ -86,7 +90,17 @@ export function InstalledList(props: {
     <section class="af-wizard-step">
       <Show
         when={(installed() ?? []).length > 0}
-        fallback={<p class="af-installer-hint">{t('installer.none')}</p>}
+        fallback={
+          <EmptyState
+            icon="library-big"
+            text={t('installer.none')}
+            action={
+              <Button variant="secondary" icon="search" onClick={() => props.onBrowse()}>
+                {t('installer.browseLibrary')}
+              </Button>
+            }
+          />
+        }
       >
         <For each={installed() ?? []}>
           {(agent) => (
@@ -112,36 +126,24 @@ export function InstalledList(props: {
               <div class="af-wizard-actions start">
                 <Show when={update(agent)}>
                   {(next) => (
-                    <button
-                      type="button"
-                      class="af-button"
-                      onClick={() => void edit(agent, next())}
-                    >
+                    <Button onClick={() => void edit(agent, next())}>
                       {t('installer.update', { version: next().version })}
-                    </button>
+                    </Button>
                   )}
                 </Show>
                 <Show when={libraryUpdate(agent)}>
                   {(item) => (
-                    <button
-                      type="button"
-                      class="af-button"
-                      onClick={() => void updateFromLibrary(agent, item().id)}
-                    >
+                    <Button onClick={() => void updateFromLibrary(agent, item().id)}>
                       {t('library.updateAvailable')}
-                    </button>
+                    </Button>
                   )}
                 </Show>
-                <button type="button" class="af-button secondary" onClick={() => void edit(agent)}>
+                <Button variant="secondary" onClick={() => void edit(agent)}>
                   {t('installer.changeAnswers')}
-                </button>
-                <button
-                  type="button"
-                  class="af-button danger"
-                  onClick={() => void askRemove(agent.id)}
-                >
+                </Button>
+                <Button variant="danger" onClick={() => void askRemove(agent.id)}>
                   {t('installer.uninstall')}
-                </button>
+                </Button>
               </div>
               <Show when={removing()?.id === agent.id && removing()}>
                 {(current) => (
@@ -162,8 +164,7 @@ export function InstalledList(props: {
                     />
                     <Show when={current().plan.userScope}>
                       <label class="af-plan-conflict">
-                        <input
-                          type="checkbox"
+                        <Checkbox
                           checked={userOk()}
                           onChange={(e) => setUserOk(e.currentTarget.checked)}
                         />
@@ -171,21 +172,16 @@ export function InstalledList(props: {
                       </label>
                     </Show>
                     <div class="af-wizard-actions">
-                      <button
-                        type="button"
-                        class="af-button secondary"
-                        onClick={() => setRemoving(null)}
-                      >
+                      <Button variant="secondary" onClick={() => setRemoving(null)}>
                         {t('dialog.cancel')}
-                      </button>
-                      <button
-                        type="button"
-                        class="af-button danger"
+                      </Button>
+                      <Button
+                        variant="danger"
                         disabled={current().plan.userScope && !userOk()}
                         onClick={() => void remove()}
                       >
                         {t('installer.uninstall')}
-                      </button>
+                      </Button>
                     </div>
                   </div>
                 )}

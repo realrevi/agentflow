@@ -76,6 +76,7 @@ export function limits() {
   return {
     maxRounds: settings.workstreams.maxRounds,
     reportCap: settings.workstreams.reportCapKb * 1024,
+    autoRemind: settings.workstreams.autoRemind,
   };
 }
 

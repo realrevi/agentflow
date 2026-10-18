@@ -14,12 +14,13 @@ import { Portal } from 'solid-js/web';
 import { debounce } from '../../shared/debounce';
 import { ipc } from '../../shared/ipc';
 import type { QuickOpenMatch } from '../../shared/types';
-import { PixelIcon } from '../../shared/ui/PixelIcon';
+import { FileIcon } from '../../shared/ui/FileIcon';
 import { reportError, t } from '../i18n';
 import { baseName, fsRoot, openFolder } from '../workspace';
-import { iconFor } from './fileIcons';
 import { highlight, type Segment } from './highlight';
 import { closeQuickOpen, quickOpenVisible } from './quickOpenStore';
+import { Button } from '../../shared/ui/Button';
+import { Input } from '../../shared/ui/Field';
 
 const SEARCH_DELAY_MS = 40;
 
@@ -115,22 +116,21 @@ function Palette(props: {
           fallback={
             <div class="af-quickopen-empty">
               <p>{t('files.noWorkspace')}</p>
-              <button
-                type="button"
-                class="af-button small"
+              <Button
+                size="sm"
                 onClick={() => {
                   closeQuickOpen();
                   void openFolder();
                 }}
               >
                 {t('workspace.open')}
-              </button>
+              </Button>
             </div>
           }
         >
-          <input
+          <Input
+            class="af-quickopen-input"
             ref={input}
-            class="af-input af-quickopen-input"
             type="text"
             spellcheck={false}
             autocomplete="off"
@@ -178,7 +178,7 @@ function Palette(props: {
                     onPointerMove={() => setActive(index())}
                     onClick={() => choose(match)}
                   >
-                    <PixelIcon art={iconFor(baseName(match.path), false)} />
+                    <FileIcon name={baseName(match.path)} />
                     <span class="af-quickopen-name">
                       <Marked segments={parts.name} />
                     </span>

@@ -15,6 +15,7 @@ import { askChoice } from '../../shared/dialog';
 import type { ConversationSummary } from '../../shared/types';
 import { InlinePrompt } from '../../shared/ui/InlinePrompt';
 import { Menu } from '../../shared/ui/Menu';
+import { Button } from '../../shared/ui/Button';
 
 type Action = { kind: 'menu' | 'rename'; id: string; anchor: HTMLElement };
 
@@ -83,16 +84,17 @@ export function ChatList() {
           </For>
         </ul>
       </Show>
-      <button
+      <Button
+        class="af-chat-new"
+        variant="secondary"
+        size="sm"
         ref={newButton}
-        type="button"
-        class="af-button secondary small af-chat-new"
         aria-haspopup="dialog"
         aria-expanded={asking()}
         onClick={() => setAsking((open) => !open)}
       >
         {t('sidebar.agents.newChat')}
-      </button>
+      </Button>
       <Show when={asking() && newButton}>
         {(anchor) => (
           <NewChatPrompt

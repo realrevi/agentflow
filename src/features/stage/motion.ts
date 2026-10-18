@@ -3,6 +3,7 @@
 // aura of a handoff, and a pending handoff's packet bouncing at its sender. Plain data
 // (read while drawing), plus the one loop on the shared animator, run only while needed.
 import { startAnimation } from '../characters/animator';
+import { easeInOutCubic } from '../characters/motion';
 import { packetPoint, type Point } from './scene';
 
 export const FLIGHT_MS = 900;
@@ -66,7 +67,7 @@ export class StageMotion {
       const to = pointOf(flight.to);
       if (!from || !to) return [];
       const t = Math.min(1, (now - flight.start) / FLIGHT_MS);
-      return [{ at: packetPoint(from, to, t), color: flight.color }];
+      return [{ at: packetPoint(from, to, easeInOutCubic(t)), color: flight.color }];
     });
   }
 

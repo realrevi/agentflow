@@ -7,7 +7,7 @@ import { createResource, createSignal, Match, Show, Switch, type Component } fro
 import { ipc } from '../../shared/ipc';
 import type { AgentTemplate, LibraryItem } from '../../shared/types';
 import { t, type I18nKey } from '../i18n';
-import { currentWorkspace } from '../workspace';
+import { currentWorkspace, openFolder } from '../workspace';
 import { InstalledList } from './InstalledList';
 import { BrowseTab } from './library/BrowseTab';
 import { refreshProfiles } from './profilesStore';
@@ -17,6 +17,9 @@ import { StepQuestions } from './wizard/StepQuestions';
 import { StepTargets } from './wizard/StepTargets';
 import { StepTemplate } from './wizard/StepTemplate';
 import { createWizard, type Step } from './wizard/wizardStore';
+import { Tabs } from '../../shared/ui/Segmented';
+import { EmptyState } from '../../shared/ui/Surface';
+import { Button } from '../../shared/ui/Button';
 
 export interface InstallerHooks {
   Diff: Component<DiffProps>;
@@ -50,39 +53,30 @@ export default function InstallerPanel(props: { hooks: InstallerHooks }) {
     <div class="af-installer">
       <header class="af-installer-head">
         <h2 class="af-installer-title">{t('installer.title')}</h2>
-        <div class="af-mode-pill" role="tablist">
-          <button
-            type="button"
-            role="tab"
-            aria-selected={tab() === 'install'}
-            classList={{ active: tab() === 'install' }}
-            onClick={() => setTab('install')}
-          >
-            {t('installer.tab.install')}
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={tab() === 'browse'}
-            classList={{ active: tab() === 'browse' }}
-            onClick={() => setTab('browse')}
-          >
-            {t('installer.tab.browse')}
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={tab() === 'installed'}
-            classList={{ active: tab() === 'installed' }}
-            onClick={() => setTab('installed')}
-          >
-            {t('installer.tab.installed')}
-          </button>
-        </div>
+        <Tabs
+          label={t('installer.title')}
+          value={tab()}
+          onChange={setTab}
+          options={[
+            { value: 'install', label: t('installer.tab.install') },
+            { value: 'browse', label: t('installer.tab.browse') },
+            { value: 'installed', label: t('installer.tab.installed') },
+          ]}
+        />
       </header>
       <Show
         when={currentWorkspace()}
-        fallback={<p class="af-installer-hint">{t('installer.noWorkspace')}</p>}
+        fallback={
+          <EmptyState
+            icon="folder-open"
+            text={t('installer.noWorkspace')}
+            action={
+              <Button icon="folder-open" onClick={() => void openFolder()}>
+                {t('workspace.open')}
+              </Button>
+            }
+          />
+        }
       >
         <Show when={tab() === 'install'}>
           <ol class="af-wizard-steps">
@@ -125,6 +119,7 @@ export default function InstallerPanel(props: { hooks: InstallerHooks }) {
             version={version}
             onEdit={() => setTab('install')}
             onChanged={changed}
+            onBrowse={() => setTab('browse')}
           />
         </Show>
       </Show>

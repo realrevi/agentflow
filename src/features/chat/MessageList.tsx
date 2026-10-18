@@ -28,6 +28,7 @@ import { buildTimeline, reconcile, type TimelineItem } from './agent/timeline';
 import { CompactDivider, ReplyMessage, StreamingReply, UserMessage } from './MessageItem';
 import { errorText } from './messageText';
 import type { Streaming } from './session';
+import { Button } from '../../shared/ui/Button';
 
 interface MessageListProps {
   messages: readonly ChatMessage[];
@@ -191,13 +192,9 @@ export function MessageList(props: MessageListProps) {
       />
       <Show when={props.error}>{(error) => <p class="af-chat-error">{errorText(error())}</p>}</Show>
       <Show when={props.canRetry}>
-        <button
-          type="button"
-          class="af-button secondary small af-chat-retry"
-          onClick={() => props.onRetry()}
-        >
+        <Button class="af-chat-retry" variant="secondary" size="sm" onClick={() => props.onRetry()}>
           {t('chat.retry')}
-        </button>
+        </Button>
       </Show>
     </div>
   );

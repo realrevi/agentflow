@@ -8,14 +8,12 @@ import { BudgetsEditor } from './BudgetsEditor';
 import { PricesEditor } from './PricesEditor';
 import { Row, Section } from './Section';
 import { KEEP_TURNS, percentFromShare, shareFromPercent, THRESHOLD_PERCENT } from './usageForm';
+import { Input, Select, Toggle } from '../../../shared/ui/Field';
 
-function Toggle(props: { id: string; checked: boolean; onChange: (on: boolean) => void }) {
+function SettingToggle(props: { id: string; checked: boolean; onChange: (on: boolean) => void }) {
   return (
-    <input
+    <Toggle
       id={props.id}
-      type="checkbox"
-      class="af-switch"
-      role="switch"
       checked={props.checked}
       onChange={(event) => props.onChange(event.currentTarget.checked)}
     />
@@ -31,14 +29,14 @@ export function UsageSection() {
   return (
     <Section title={t('settings.usage')} hint={t('settings.usage.hint')}>
       <Row label={t('settings.usage.trackCli')} for="af-usage-cli">
-        <Toggle
+        <SettingToggle
           id="af-usage-cli"
           checked={settings.usage.trackCli}
           onChange={(on) => updateSettings((s) => (s.usage.trackCli = on))}
         />
       </Row>
       <Row label={t('settings.usage.subscription')} for="af-usage-sub">
-        <Toggle
+        <SettingToggle
           id="af-usage-sub"
           checked={settings.usage.cliSubscription}
           onChange={(on) => updateSettings((s) => (s.usage.cliSubscription = on))}
@@ -46,7 +44,7 @@ export function UsageSection() {
       </Row>
       <p class="af-settings-hint">{t('settings.usage.subscriptionHint')}</p>
       <Row label={t('settings.usage.caching')} for="af-usage-cache">
-        <Toggle
+        <SettingToggle
           id="af-usage-cache"
           checked={settings.chat.promptCaching}
           onChange={(on) => updateSettings((s) => (s.chat.promptCaching = on))}
@@ -55,16 +53,15 @@ export function UsageSection() {
 
       <h3 class="af-settings-subtitle">{t('settings.usage.compact')}</h3>
       <Row label={t('settings.usage.autoCompact')} for="af-usage-auto">
-        <Toggle
+        <SettingToggle
           id="af-usage-auto"
           checked={settings.chat.autoCompact}
           onChange={(on) => updateSettings((s) => (s.chat.autoCompact = on))}
         />
       </Row>
       <Row label={t('settings.usage.threshold')} for="af-usage-threshold">
-        <input
+        <Input
           id="af-usage-threshold"
-          class="af-input"
           type="number"
           min={THRESHOLD_PERCENT.min}
           max={THRESHOLD_PERCENT.max}
@@ -80,9 +77,8 @@ export function UsageSection() {
         />
       </Row>
       <Row label={t('settings.usage.keepTurns')} for="af-usage-keep">
-        <input
+        <Input
           id="af-usage-keep"
-          class="af-input"
           type="number"
           min={KEEP_TURNS.min}
           max={KEEP_TURNS.max}
@@ -96,9 +92,8 @@ export function UsageSection() {
         />
       </Row>
       <Row label={t('settings.usage.compactProvider')} for="af-usage-cprov">
-        <select
+        <Select
           id="af-usage-cprov"
-          class="af-input"
           value={compactProvider() ?? ''}
           onChange={(event) => {
             const id = event.currentTarget.value || null;
@@ -109,12 +104,11 @@ export function UsageSection() {
           <For each={settings.providers}>
             {(entry) => <option value={entry.id}>{providerName(entry)}</option>}
           </For>
-        </select>
+        </Select>
       </Row>
       <Row label={t('settings.usage.compactModel')} for="af-usage-cmodel">
-        <input
+        <Input
           id="af-usage-cmodel"
-          class="af-input"
           list="af-usage-cmodels"
           placeholder={t('settings.usage.compactModel.same')}
           value={settings.chat.compactModel}

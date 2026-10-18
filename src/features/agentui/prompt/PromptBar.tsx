@@ -9,6 +9,7 @@ import { settings } from '../../settings/settingsStore';
 import { caretCell, caretPixel } from './caret';
 import type { PromptHistory } from './history';
 import { FRESH, newer, older, type Recall } from './recall';
+import { approach, snapToPixel } from '../../characters/motion';
 
 const MAX_LINES = 6;
 const WALKER_SCALE = 2;
@@ -96,13 +97,17 @@ export function PromptBar(props: PromptBarProps) {
       setWalker((w) => ({ ...w, x: target.x, y: target.y }));
       return;
     }
+    let last = performance.now();
     stopMove ??= startAnimation({
-      step: () => {
+      step: (now) => {
+        const dt = Math.min(64, now - last);
+        last = now;
         const current = walker();
         const dx = target.x - current.x;
-        const done = Math.abs(dx) < 0.5;
+        const x = approach(current.x, target.x, dt, 55);
+        const done = x === target.x;
         setWalker({
-          x: done ? target.x : current.x + dx * 0.25,
+          x,
           y: target.y,
           flip: Math.abs(dx) >= 0.5 ? dx < 0 : current.flip,
         });
@@ -227,7 +232,9 @@ export function PromptBar(props: PromptBarProps) {
           <div
             class="af-prompt-walker"
             classList={{ flip: walker().flip }}
-            style={{ transform: `translate(${walker().x}px, ${walker().y}px)` }}
+            style={{
+              transform: `translate(${snapToPixel(walker().x, WALKER_SCALE)}px, ${walker().y}px)`,
+            }}
             aria-hidden="true"
           >
             <Avatar

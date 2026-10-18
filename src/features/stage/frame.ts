@@ -3,6 +3,7 @@
 // it still moves (the loop stops when nothing does).
 import { agentState, glowing } from '../agentui';
 import { characterById, spriteFor } from '../characters';
+import { Glide } from '../characters/motion';
 import { frameAt, playbackOf } from '../characters/playback';
 import type { CharacterRef, SpriteState } from '../characters/types';
 import { workstreams } from '../workstreams/store';
@@ -26,6 +27,10 @@ export interface FrameDeps {
 export function createFrames(deps: FrameDeps) {
   const { motion } = deps;
   const since = new Map<string, { state: SpriteState; at: number }>();
+  // Characters glide to their spots (drag, auto-arrange, new layout) instead of jumping.
+  const glide = new Glide();
+  const shown = new Map<string, Point>();
+  const shownPoint = (panel: string) => shown.get(panel) ?? deps.pointOf(panel);
 
   const spriteState = (panel: string, at: number): SpriteState => {
     const received = motion.receiving.get(panel);
@@ -43,10 +48,16 @@ export function createFrames(deps: FrameDeps) {
 
   function frame(at: number): FrameInput {
     const chars: CharDraw[] = [];
+    shown.clear();
     for (const info of deps.agents()) {
       const sheet = info.character ? characterById(info.character.id) : undefined;
-      const point = deps.pointOf(info.id);
-      if (!info.character || !sheet || !point) continue;
+      const target = deps.pointOf(info.id);
+      if (!info.character || !sheet || !target) {
+        glide.forget(info.id);
+        continue;
+      }
+      const point = glide.at(info.id, target, at, deps.animate());
+      shown.set(info.id, point);
       const state = spriteState(info.id, at);
       const known = since.get(info.id);
       const started = known?.state === state ? known.at : at;
@@ -64,11 +75,11 @@ export function createFrames(deps: FrameDeps) {
     }
     const half = deps.charSize() / 2;
     const lines: LineDraw[] = [];
-    const packets = motion.packets(deps.pointOf, at);
+    const packets = motion.packets(shownPoint, at);
     for (const ws of workstreams()) {
-      const top = deps.pointOf(ws.manager);
+      const top = shownPoint(ws.manager);
       for (const worker of ws.workers) {
-        const bottom = deps.pointOf(worker);
+        const bottom = shownPoint(worker);
         if (!top || !bottom) continue;
         lines.push({
           from: { x: top.x, y: top.y + half },
@@ -77,7 +88,7 @@ export function createFrames(deps: FrameDeps) {
           heat: motion.heat(ws.manager, worker, at),
         });
       }
-      const sender = ws.pending ? deps.pointOf(ws.pending.from) : undefined;
+      const sender = ws.pending ? shownPoint(ws.pending.from) : undefined;
       if (sender) {
         const lift = deps.charSize() * 0.8;
         packets.push({ at: StageMotion.bounce(sender, lift, at, deps.animate()), color: ws.color });
@@ -100,7 +111,7 @@ export function createFrames(deps: FrameDeps) {
     const pending = workstreams().filter((ws) => ws.pending).length;
     return needsFrames({
       animate: deps.animate(),
-      animatedCharacters: current.chars.filter((c) => animating(c, at)).length,
+      animatedCharacters: current.chars.filter((c) => animating(c, at)).length + glide.gliding,
       packets: current.packets.length - pending,
       pulses: motion.busy,
       pending,

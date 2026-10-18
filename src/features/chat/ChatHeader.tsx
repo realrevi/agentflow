@@ -4,14 +4,14 @@
 import { createSignal, For, Show } from 'solid-js';
 import { ipc } from '../../shared/ipc';
 import type { Conversation, ConversationPatch, PermissionMode } from '../../shared/types';
-import { refreshIcon } from '../../shared/ui/icons';
-import { PixelIcon } from '../../shared/ui/PixelIcon';
+import { IconButton } from '../../shared/ui/Button';
 import { reportError, t } from '../i18n';
 import { loadModels, modelsOf, providerName } from '../providers';
 import { settings } from '../settings/settingsStore';
 import { CheckpointMenu } from './agent/CheckpointMenu';
 import type { Checkpoints } from './agent/checkpoints';
 import { ModePill } from './agent/ModePill';
+import { Input, Select, Textarea } from '../../shared/ui/Field';
 
 interface ChatHeaderProps {
   panelId: string;
@@ -68,9 +68,9 @@ export function ChatHeader(props: ChatHeaderProps) {
         <label class="af-visually-hidden" for={id('provider')}>
           {t('chat.provider')}
         </label>
-        <select
+        <Select
+          class="af-chat-provider"
           id={id('provider')}
-          class="af-select af-chat-provider"
           value={providerId() ?? ''}
           onChange={(event) => changeProvider(event.currentTarget.value)}
         >
@@ -78,13 +78,13 @@ export function ChatHeader(props: ChatHeaderProps) {
           <For each={settings.providers}>
             {(entry) => <option value={entry.id}>{providerName(entry)}</option>}
           </For>
-        </select>
+        </Select>
         <label class="af-visually-hidden" for={id('model')}>
           {t('chat.model')}
         </label>
-        <input
+        <Input
+          class="af-chat-model"
           id={id('model')}
-          class="af-input af-chat-model"
           list={id('models')}
           spellcheck={false}
           placeholder={t('chat.model.placeholder')}
@@ -100,19 +100,15 @@ export function ChatHeader(props: ChatHeaderProps) {
             {(model) => <option value={model.id}>{model.name ?? ''}</option>}
           </For>
         </datalist>
-        <button
-          type="button"
-          class="af-icon-btn"
-          title={t('chat.models.refresh')}
-          aria-label={t('chat.models.refresh')}
+        <IconButton
+          icon="refresh-cw"
+          label={t('chat.models.refresh')}
           disabled={!providerId() || modelsOf(providerId() ?? '').loading}
           onClick={() => {
             const current = providerId();
             if (current) void loadModels(current, true);
           }}
-        >
-          <PixelIcon art={refreshIcon} />
-        </button>
+        />
         <button
           type="button"
           class="af-chat-system-toggle"
@@ -135,9 +131,9 @@ export function ChatHeader(props: ChatHeaderProps) {
         {(error) => <p class="af-chat-header-error">{error()}</p>}
       </Show>
       <Show when={systemOpen()}>
-        <textarea
+        <Textarea
+          class="af-chat-system"
           id={id('system')}
-          class="af-input af-chat-system"
           rows={3}
           placeholder={t('chat.system.placeholder')}
           value={props.conversation.systemPrompt}

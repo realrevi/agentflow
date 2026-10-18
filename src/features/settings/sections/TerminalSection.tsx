@@ -5,6 +5,8 @@ import { cliStatus, kindLabel, loadCliStatus } from '../../terminal';
 import { TERMINAL_FONT_SIZE, TERMINAL_SCROLLBACK_MAX } from '../defaults';
 import { settings, updateSettings } from '../settingsStore';
 import { Row, Section } from './Section';
+import { Button } from '../../../shared/ui/Button';
+import { Input, Select, Toggle } from '../../../shared/ui/Field';
 
 const CURSORS: readonly { id: CursorStyle; label: I18nKey }[] = [
   { id: 'block', label: 'settings.terminal.cursor.block' },
@@ -24,9 +26,8 @@ export function TerminalSection() {
   return (
     <Section title={t('settings.terminal')}>
       <Row label={t('settings.terminal.fontSize')} for="af-term-font">
-        <input
+        <Input
           id="af-term-font"
-          class="af-input"
           type="number"
           min={TERMINAL_FONT_SIZE.min}
           max={TERMINAL_FONT_SIZE.max}
@@ -42,9 +43,8 @@ export function TerminalSection() {
         />
       </Row>
       <Row label={t('settings.terminal.scrollback')} for="af-term-scrollback">
-        <input
+        <Input
           id="af-term-scrollback"
-          class="af-input"
           type="number"
           min={0}
           max={TERMINAL_SCROLLBACK_MAX}
@@ -57,9 +57,8 @@ export function TerminalSection() {
         />
       </Row>
       <Row label={t('settings.terminal.cursorStyle')} for="af-term-cursor">
-        <select
+        <Select
           id="af-term-cursor"
-          class="af-select"
           value={settings.terminal.cursorStyle}
           onChange={(event) => {
             const style = CURSORS.find((cursor) => cursor.id === event.currentTarget.value);
@@ -69,14 +68,11 @@ export function TerminalSection() {
           <For each={CURSORS}>
             {(cursor) => <option value={cursor.id}>{t(cursor.label)}</option>}
           </For>
-        </select>
+        </Select>
       </Row>
       <Row label={t('settings.terminal.autoStart')} for="af-term-autostart">
-        <input
+        <Toggle
           id="af-term-autostart"
-          type="checkbox"
-          class="af-switch"
-          role="switch"
           checked={settings.terminal.autoStartShells}
           onChange={(event) => {
             const on = event.currentTarget.checked;
@@ -104,13 +100,9 @@ export function TerminalSection() {
           )}
         </For>
       </ul>
-      <button
-        type="button"
-        class="af-button secondary small"
-        onClick={() => void loadCliStatus(true)}
-      >
+      <Button variant="secondary" size="sm" onClick={() => void loadCliStatus(true)}>
         {t('settings.terminal.rescan')}
-      </button>
+      </Button>
     </Section>
   );
 }

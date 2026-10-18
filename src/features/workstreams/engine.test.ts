@@ -226,3 +226,39 @@ describe('CLI manager setup', () => {
     expect(again.actions.some((a) => a.type === 'deliver')).toBe(false);
   });
 });
+
+describe('auto format reminder', () => {
+  const remind = { ...limits, autoRemind: true };
+  const block = `Plan.
+${fence}agentflow-send to="Fox"
+Fix it.
+${fence}`;
+
+  it('sends one reminder, then pauses on a second invalid reply', () => {
+    const start = ws('auto', { status: 'running' });
+    const first = step(start, turn('chat-1', 'no block'), remind, newId);
+    expect(first.actions).toEqual([{ type: 'remind' }]);
+    expect(first.ws.status).toBe('running');
+    expect(first.ws.reminded).toBe(true);
+    const second = step(first.ws, turn('chat-1', 'still none'), remind, newId);
+    expect(second.ws.reason).toBe('noBlock');
+    expect(second.actions.some((a) => a.type === 'remind')).toBe(false);
+  });
+
+  it('a valid reply after the reminder goes on and resets it', () => {
+    const first = step(ws('auto', { status: 'running' }), turn('chat-1', 'oops'), remind, newId);
+    const next = step(first.ws, turn('chat-1', block), remind, newId);
+    expect(next.ws.reminded).toBe(false);
+    expect(next.actions.some((a) => a.type === 'deliver')).toBe(true);
+  });
+
+  it('reminds on malformed blocks too, and never when turned off', () => {
+    const bad = `${fence}agentflow-send
+no target
+${fence}`;
+    const on = step(ws('semiAuto', { status: 'running' }), turn('chat-1', bad), remind, newId);
+    expect(on.actions).toEqual([{ type: 'remind' }]);
+    const off = step(ws('auto', { status: 'running' }), turn('chat-1', 'x'), limits, newId);
+    expect(off.ws.reason).toBe('noBlock');
+  });
+});

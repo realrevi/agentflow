@@ -8,6 +8,7 @@ use crate::error::AppResult;
 /// `STEPS[n]` upgrades a document from version `n` to `n + 1`.
 const STEPS: [fn(&mut Map<String, Value>); CURRENT_VERSION as usize] = [
     v0_to_v1, v1_to_v2, v2_to_v3, v3_to_v4, v4_to_v5, v5_to_v6, v6_to_v7, v7_to_v8, v8_to_v9,
+    v9_to_v10,
 ];
 
 /// Migrates and deserializes a raw settings document. Missing fields get defaults,
@@ -18,6 +19,8 @@ pub fn migrate(raw: Value) -> AppResult<Settings> {
         _ => Map::new(),
     };
     let from = doc.get("version").and_then(Value::as_u64).unwrap_or(0);
+    // Nothing saved yet (or unreadable): a fresh start, which shows the first-run flow.
+    let fresh = doc.is_empty();
 
     if from > u64::from(CURRENT_VERSION) {
         tracing::warn!(
@@ -30,6 +33,9 @@ pub fn migrate(raw: Value) -> AppResult<Settings> {
         }
     }
 
+    if fresh {
+        doc.remove("onboarding");
+    }
     let settings: Settings = serde_json::from_value(Value::Object(doc))?;
     Ok(settings.normalized())
 }
@@ -97,6 +103,18 @@ fn v8_to_v9(doc: &mut Map<String, Value>) {
     doc.insert("version".into(), Value::from(9));
     doc.entry("library")
         .or_insert_with(|| Value::Object(Map::new()));
+}
+
+/// v10 adds the first-run flow and `workstreams.autoRemind` (default on). Existing users
+/// have set the app up already: their first-run flow counts as done.
+fn v9_to_v10(doc: &mut Map<String, Value>) {
+    doc.insert("version".into(), Value::from(10));
+    let onboarding = doc
+        .entry("onboarding")
+        .or_insert_with(|| Value::Object(Map::new()));
+    if let Value::Object(map) = onboarding {
+        map.entry("done").or_insert(Value::Bool(true));
+    }
 }
 
 #[cfg(test)]
@@ -357,6 +375,26 @@ mod tests {
         assert_eq!(settings.workstreams.max_rounds, 5, "workstreams are kept");
         assert!(settings.library.custom_sources.is_empty());
         assert!(settings.library.auto_refresh);
+        let again = migrate(serde_json::to_value(&settings).expect("json")).expect("migrate");
+        assert_eq!(again, settings);
+    }
+
+    #[test]
+    fn v9_document_gains_onboarding_done_and_auto_remind() {
+        let raw = json!({ "version": 9, "library": { "autoRefresh": false } });
+        let settings = migrate(raw).expect("migrate");
+        assert_eq!(settings.version, CURRENT_VERSION);
+        assert!(
+            settings.onboarding.done,
+            "existing users skip the first-run flow"
+        );
+        assert!(!settings.onboarding.tips_dismissed);
+        assert!(settings.workstreams.auto_remind);
+        assert!(!settings.library.auto_refresh, "library settings are kept");
+        assert!(
+            !crate::settings::Settings::default().onboarding.done,
+            "fresh installs see it"
+        );
         let again = migrate(serde_json::to_value(&settings).expect("json")).expect("migrate");
         assert_eq!(again, settings);
     }

@@ -1,0 +1,64 @@
+/* Modal dialogs (shared/ui/Dialog.tsx). */
+.af-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 16vh;
+  background: color-mix(in srgb, var(--af-shadow) 85%, transparent);
+  animation: af-fade-in var(--af-duration) var(--af-ease);
+}
+
+.af-dialog {
+  display: flex;
+  flex-direction: column;
+  gap: var(--af-space-2);
+  width: min(460px, calc(100vw - 32px));
+  max-height: 76vh;
+  overflow: auto;
+  padding: var(--af-space-5) var(--af-space-5) var(--af-space-4);
+  background: var(--af-widget-bg);
+  color: var(--af-widget-fg);
+  border: var(--af-border-width) solid var(--af-widget-border);
+  border-radius: var(--af-radius-lg);
+  box-shadow: var(--af-elevation-3);
+  animation: af-pop-in var(--af-duration) var(--af-ease);
+}
+
+.af-dialog:focus {
+  outline: none;
+}
+
+.af-dialog-backdrop[data-state='closed'] {
+  opacity: 0;
+  transition: opacity var(--af-duration) var(--af-ease);
+}
+
+.af-dialog-backdrop[data-state='closed'] .af-dialog {
+  transform: scale(0.98);
+  transition: transform var(--af-duration) var(--af-ease);
+}
+
+.af-dialog-title {
+  margin: 0;
+  font-size: var(--af-text-lg);
+  font-weight: var(--af-weight-semibold);
+  overflow-wrap: anywhere;
+}
+
+.af-dialog-message {
+  margin: 0;
+  color: var(--af-fg-muted);
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+.af-dialog-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--af-space-2);
+  margin-top: var(--af-space-3);
+}

@@ -1,16 +1,14 @@
 import { t } from '../../i18n';
 import { settings, updateSettings } from '../settingsStore';
 import { Row, Section } from './Section';
+import { Toggle } from '../../../shared/ui/Field';
 
 export function FilesSection() {
   return (
     <Section title={t('settings.files')}>
       <Row label={t('settings.files.showHidden')} for="af-files-hidden">
-        <input
+        <Toggle
           id="af-files-hidden"
-          type="checkbox"
-          class="af-switch"
-          role="switch"
           checked={settings.files.showHidden}
           onChange={(event) => {
             const on = event.currentTarget.checked;

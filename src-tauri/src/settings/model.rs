@@ -6,12 +6,13 @@ use serde_json::Value;
 use super::agent::AgentSettings;
 use super::chat::ChatSettings;
 use super::library::LibrarySettings;
+use super::onboarding::OnboardingSettings;
 use super::providers::ProviderEntry;
 use super::usage::UsageSettings;
 use super::workstreams::WorkstreamSettings;
 
 /// Bump when the on-disk shape changes and add a step in `migrate.rs`.
-pub const CURRENT_VERSION: u32 = 9;
+pub const CURRENT_VERSION: u32 = 10;
 pub const SUPPORTED_LANGUAGES: [&str; 5] = ["en", "tr", "de", "zh", "ru"];
 pub const DEFAULT_LANGUAGE: &str = "en";
 pub const DEFAULT_THEME_ID: &str = "agentflow-dark";
@@ -47,6 +48,8 @@ pub struct Settings {
     pub workstreams: WorkstreamSettings,
     /// The community agent library: custom sources, daily refresh (phase 10).
     pub library: LibrarySettings,
+    /// The first-run flow and its tips card (phase 11).
+    pub onboarding: OnboardingSettings,
     /// Opaque dockview layout owned by the frontend. `None` means "use the default layout".
     pub layout: Option<Value>,
 }
@@ -135,6 +138,7 @@ impl Default for Settings {
             agent: AgentSettings::default(),
             workstreams: WorkstreamSettings::default(),
             library: LibrarySettings::default(),
+            onboarding: OnboardingSettings::default(),
             layout: None,
         }
     }

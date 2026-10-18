@@ -3,7 +3,8 @@
 import { createSignal, For, onMount, Show } from 'solid-js';
 import { shortcutLabel } from '../../shared/platform';
 import type { PtyKind } from '../../shared/types';
-import { agentsIcon, logoIcon } from '../../shared/ui/icons';
+import { logoIcon } from '../../shared/ui/icons';
+import { Icon } from '../../shared/ui/Icon';
 import { PixelIcon } from '../../shared/ui/PixelIcon';
 import { NewChatPrompt } from '../chat';
 import { t } from '../i18n';
@@ -12,6 +13,7 @@ import { agentProfiles } from '../agents';
 import { openProfileChat, startChat } from './chatPanels';
 import { openPanel, openTerminal } from './layoutStore';
 import { groupRole } from './roles';
+import { Button } from '../../shared/ui/Button';
 
 function AgentArea(props: { groupId: string }) {
   onMount(() => void loadCliStatus());
@@ -20,7 +22,7 @@ function AgentArea(props: { groupId: string }) {
   let apiButton: HTMLButtonElement | undefined;
   return (
     <div class="af-watermark">
-      <PixelIcon art={agentsIcon} scale={5} />
+      <Icon name="square-terminal" size={44} strokeWidth={1.5} class="af-empty-icon" />
       <h2 class="af-pixel-title">{t('agents.area.title')}</h2>
       <p>{t('agents.area.hint')}</p>
       <div class="af-button-row">
@@ -28,42 +30,38 @@ function AgentArea(props: { groupId: string }) {
           {(kind) => {
             const missing = () => cliFor(kind)?.found === false;
             return (
-              <button
-                type="button"
-                class="af-button"
+              <Button
                 disabled={missing()}
                 title={missing() ? t('terminal.notFound') : undefined}
                 onClick={() => start(kind)}
               >
                 {kindLabel(kind)}
-              </button>
+              </Button>
             );
           }}
         </For>
-        <button
+        <Button
+          variant="secondary"
           ref={apiButton}
-          type="button"
-          class="af-button secondary"
           aria-haspopup="dialog"
           aria-expanded={asking()}
           onClick={() => setAsking((open) => !open)}
         >
           {t('panel.add.api')}
-        </button>
+        </Button>
       </div>
       <Show when={agentProfiles().length > 0}>
         <p class="af-watermark-hint">{t('agents.area.installed')}</p>
         <div class="af-button-row">
           <For each={agentProfiles()}>
             {(profile) => (
-              <button
-                type="button"
-                class="af-button secondary"
+              <Button
+                variant="secondary"
                 title={profile.description}
                 onClick={() => void openProfileChat(profile, props.groupId)}
               >
                 {profile.name}
-              </button>
+              </Button>
             )}
           </For>
         </div>
@@ -93,16 +91,12 @@ function EmptyDock() {
       <h2 class="af-pixel-title">{t('panel.empty.title')}</h2>
       <p>{t('panel.empty.hint')}</p>
       <div class="af-button-row">
-        <button
-          type="button"
-          class="af-button"
-          onClick={() => openTerminal(newTerminalConfig('shell'))}
-        >
+        <Button onClick={() => openTerminal(newTerminalConfig('shell'))}>
           {t('sidebar.agents.newShell')}
-        </button>
-        <button type="button" class="af-button secondary" onClick={() => openPanel('files')}>
+        </Button>
+        <Button variant="secondary" onClick={() => openPanel('files')}>
           {t('sidebar.agents.showFiles')}
-        </button>
+        </Button>
       </div>
     </div>
   );

@@ -5,11 +5,13 @@
 // on its own: only a click or a keypress inside this card answers (see liveTurn.answer).
 import { createSignal, Show, Suspense, type Component } from 'solid-js';
 import type { PermissionAnswer, PermissionRequest } from '../../../shared/types';
-import { PixelIcon } from '../../../shared/ui/PixelIcon';
+import { Icon } from '../../../shared/ui/Icon';
 import { t, type I18nKey } from '../../i18n';
 import { dangerText } from './danger';
 import { toolIcon } from './toolIcons';
 import { activeText, durationText, toolTarget } from './toolText';
+import { Button } from '../../../shared/ui/Button';
+import { Input } from '../../../shared/ui/Field';
 
 export interface DiffViewProps {
   path: string;
@@ -56,7 +58,7 @@ export function PermissionCard(props: PermissionCardProps) {
       aria-label={t('agent.attention')}
     >
       <header class="af-permission-head">
-        <PixelIcon art={toolIcon(props.request.tool)} class="af-tool-icon" />
+        <Icon name={toolIcon(props.request.tool)} size={14} class="af-tool-icon" />
         <span class="af-permission-action">{activeText(call())}</span>
         <span class="af-badge">{t(CATEGORY[props.request.category])}</span>
         <Show when={props.request.dangerous}>
@@ -104,26 +106,26 @@ export function PermissionCard(props: PermissionCardProps) {
         when={denying()}
         fallback={
           <div class="af-permission-actions">
-            <button
-              type="button"
-              class="af-button primary small"
+            <Button
+              class="primary"
+              size="sm"
               onClick={(event) => answer({ decision: 'allowOnce' }, event)}
             >
               {t('agent.permission.allow')}
-            </button>
+            </Button>
             <Show when={props.request.dangerous === null}>
-              <button
-                type="button"
-                class="af-button secondary small"
+              <Button
+                variant="secondary"
+                size="sm"
                 title={t('agent.permission.allowConversationHint')}
                 onClick={(event) => answer({ decision: 'allowConversation' }, event)}
               >
                 {t('agent.permission.allowConversation')}
-              </button>
+              </Button>
             </Show>
-            <button type="button" class="af-button danger small" onClick={() => setDenying(true)}>
+            <Button variant="danger" size="sm" onClick={() => setDenying(true)}>
               {t('agent.permission.deny')}
-            </button>
+            </Button>
           </div>
         }
       >
@@ -135,16 +137,15 @@ export function PermissionCard(props: PermissionCardProps) {
             answer({ decision: 'deny', reason: text || null }, event);
           }}
         >
-          <input
-            class="af-input"
+          <Input
             aria-label={t('agent.permission.reason')}
             placeholder={t('agent.permission.reason')}
             value={reason()}
             onInput={(event) => setReason(event.currentTarget.value)}
           />
-          <button type="submit" class="af-button danger small">
+          <Button variant="danger" size="sm" type="submit">
             {t('agent.permission.deny')}
-          </button>
+          </Button>
         </form>
       </Show>
     </section>

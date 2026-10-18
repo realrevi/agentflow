@@ -7,6 +7,8 @@ import { Popover } from '../../shared/ui/Popover';
 import { t } from '../i18n';
 import { loadModels, modelsOf, providerName } from '../providers';
 import { settings } from '../settings/settingsStore';
+import { Button } from '../../shared/ui/Button';
+import { Input, Select } from '../../shared/ui/Field';
 
 interface NewChatPromptProps {
   anchor: HTMLElement;
@@ -56,16 +58,15 @@ export function NewChatPrompt(props: NewChatPromptProps) {
         fallback={
           <div class="af-new-chat">
             <p>{t('chat.new.noProviders')}</p>
-            <button
-              type="button"
-              class="af-button small"
+            <Button
+              size="sm"
               onClick={() => {
                 props.onOpenSettings();
                 props.onClose();
               }}
             >
               {t('chat.new.openSettings')}
-            </button>
+            </Button>
           </div>
         }
       >
@@ -73,20 +74,15 @@ export function NewChatPrompt(props: NewChatPromptProps) {
           <div class="af-new-chat-title">{t('chat.new.title')}</div>
           <label>
             {t('chat.provider')}
-            <select
-              class="af-select"
-              value={providerId()}
-              onChange={(event) => pick(event.currentTarget.value)}
-            >
+            <Select value={providerId()} onChange={(event) => pick(event.currentTarget.value)}>
               <For each={settings.providers}>
                 {(entry) => <option value={entry.id}>{providerName(entry)}</option>}
               </For>
-            </select>
+            </Select>
           </label>
           <label>
             {t('chat.model')}
-            <input
-              class="af-input"
+            <Input
               list="af-new-chat-models"
               spellcheck={false}
               placeholder={t('chat.model.placeholder')}
@@ -102,9 +98,9 @@ export function NewChatPrompt(props: NewChatPromptProps) {
           <Show when={modelsOf(providerId()).error}>
             {(error) => <p class="af-new-chat-error">{error()}</p>}
           </Show>
-          <button type="submit" class="af-button small" disabled={!providerId() || !model().trim()}>
+          <Button size="sm" type="submit" disabled={!providerId() || !model().trim()}>
             {t('chat.new.start')}
-          </button>
+          </Button>
         </form>
       </Show>
     </Popover>

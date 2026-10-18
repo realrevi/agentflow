@@ -16,6 +16,10 @@ import {
   type NewWorkstreamPreset,
 } from '../../features/workstreams';
 import { createMember, memberOptions, uniqueNames, type MemberOption } from './memberOptions';
+import { Button, IconButton } from '../../shared/ui/Button';
+import { trapTab } from '../../shared/ui/Dialog';
+import { Input, Select } from '../../shared/ui/Field';
+import { SegmentedControl } from '../../shared/ui/Segmented';
 
 const MODES: { mode: HandoffMode; key: I18nKey }[] = [
   { mode: 'manual', key: 'workstream.mode.manual' },
@@ -31,8 +35,7 @@ function MemberSelect(props: {
 }) {
   const group = (which: MemberOption['group']) => props.options.filter((o) => o.group === which);
   return (
-    <select
-      class="af-select"
+    <Select
       aria-label={props.label}
       value={props.value}
       onChange={(event) => props.onChange(event.currentTarget.value)}
@@ -45,7 +48,7 @@ function MemberSelect(props: {
       <optgroup label={t('workstream.dialog.newGroup')}>
         <For each={group('new')}>{(o) => <option value={o.value}>{o.label}</option>}</For>
       </optgroup>
-    </select>
+    </Select>
   );
 }
 
@@ -114,13 +117,22 @@ function Form(props: { preset: NewWorkstreamPreset }) {
     }
   };
 
+  let form: HTMLFormElement | undefined;
+  const previous = document.activeElement instanceof HTMLElement ? document.activeElement : null;
   const onKeyDown = (event: KeyboardEvent) => {
+    if (form && trapTab(form, event)) return;
     if (event.key !== 'Escape') return;
     event.stopPropagation();
     closeNewWorkstream();
   };
-  onMount(() => document.addEventListener('keydown', onKeyDown, true));
-  onCleanup(() => document.removeEventListener('keydown', onKeyDown, true));
+  onMount(() => {
+    document.addEventListener('keydown', onKeyDown, true);
+    form?.querySelector<HTMLInputElement>('input')?.focus();
+  });
+  onCleanup(() => {
+    document.removeEventListener('keydown', onKeyDown, true);
+    if (previous?.isConnected) previous.focus();
+  });
 
   return (
     <div
@@ -128,6 +140,7 @@ function Form(props: { preset: NewWorkstreamPreset }) {
       onPointerDown={(event) => event.target === event.currentTarget && closeNewWorkstream()}
     >
       <form
+        ref={form}
         class="af-dialog af-ws-dialog"
         role="dialog"
         aria-modal="true"
@@ -142,7 +155,7 @@ function Form(props: { preset: NewWorkstreamPreset }) {
         </h2>
         <label class="af-ws-field">
           <span>{t('workstream.dialog.name')}</span>
-          <input class="af-input" value={name()} onInput={(e) => setName(e.currentTarget.value)} />
+          <Input value={name()} onInput={(e) => setName(e.currentTarget.value)} />
         </label>
         <div class="af-ws-field">
           <span>{t('workstream.dialog.color')}</span>
@@ -165,21 +178,12 @@ function Form(props: { preset: NewWorkstreamPreset }) {
         </div>
         <div class="af-ws-field">
           <span>{t('workstream.mode')}</span>
-          <div class="af-mode-pill" role="radiogroup" aria-label={t('workstream.mode')}>
-            <For each={MODES}>
-              {(entry) => (
-                <button
-                  type="button"
-                  role="radio"
-                  aria-checked={mode() === entry.mode}
-                  classList={{ active: mode() === entry.mode }}
-                  onClick={() => setMode(entry.mode)}
-                >
-                  {t(entry.key)}
-                </button>
-              )}
-            </For>
-          </div>
+          <SegmentedControl
+            label={t('workstream.mode')}
+            value={mode()}
+            onChange={setMode}
+            options={MODES.map((entry) => ({ value: entry.mode, label: t(entry.key) }))}
+          />
           <p class="af-ws-hint">{t(`workstream.dialog.mode.${mode()}`)}</p>
         </div>
         <div class="af-ws-field">
@@ -204,34 +208,30 @@ function Form(props: { preset: NewWorkstreamPreset }) {
                     setWorkers((list) => list.map((item, i) => (i === index ? next : item)))
                   }
                 />
-                <button
-                  type="button"
-                  class="af-icon-btn"
-                  aria-label={t('workstream.dialog.removeWorker')}
-                  title={t('workstream.dialog.removeWorker')}
+                <IconButton
+                  icon="x"
+                  label={t('workstream.dialog.removeWorker')}
                   onClick={() => setWorkers((list) => list.filter((_, i) => i !== index))}
-                >
-                  ×
-                </button>
+                />
               </div>
             )}
           </Index>
-          <button
-            type="button"
-            class="af-link-btn"
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={() => setWorkers((list) => [...list, 'cli:claude'])}
           >
             {t('workstream.dialog.addWorker')}
-          </button>
+          </Button>
         </div>
         <Show when={problem()}>{(text) => <p class="af-ws-problem">{text()}</p>}</Show>
         <div class="af-dialog-actions">
-          <button type="button" class="af-button secondary" onClick={closeNewWorkstream}>
+          <Button variant="secondary" onClick={closeNewWorkstream}>
             {t('dialog.cancel')}
-          </button>
-          <button type="submit" class="af-button" disabled={busy()}>
+          </Button>
+          <Button type="submit" disabled={busy()}>
             {t('workstream.dialog.submit')}
-          </button>
+          </Button>
         </div>
       </form>
     </div>

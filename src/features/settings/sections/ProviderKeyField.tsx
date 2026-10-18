@@ -5,6 +5,8 @@ import { showToast } from '../../../shared/toast';
 import { reportError, t } from '../../i18n';
 import { keyStatusOf, presetInfo, refreshKeyStatus, removeKey, saveKey } from '../../providers';
 import type { ProviderEntry } from '../../../shared/types';
+import { Button } from '../../../shared/ui/Button';
+import { Input } from '../../../shared/ui/Field';
 
 export function ProviderKeyField(props: { entry: ProviderEntry }) {
   let input: HTMLInputElement | undefined;
@@ -57,10 +59,9 @@ export function ProviderKeyField(props: { entry: ProviderEntry }) {
 
   return (
     <div class="af-key-field">
-      <input
+      <Input
         ref={input}
         id={`af-key-${props.entry.id}`}
-        class="af-input"
         type="password"
         autocomplete="off"
         spellcheck={false}
@@ -68,26 +69,16 @@ export function ProviderKeyField(props: { entry: ProviderEntry }) {
         onInput={(event) => setDraft(event.currentTarget.value)}
         onKeyDown={(event) => event.key === 'Enter' && void save()}
       />
-      <button
-        type="button"
-        class="af-button small"
-        disabled={!draft().trim() || busy()}
-        onClick={() => void save()}
-      >
+      <Button size="sm" disabled={!draft().trim() || busy()} onClick={() => void save()}>
         {t('settings.providers.key.save')}
-      </button>
+      </Button>
       <span class="af-key-status" classList={{ ok: status()?.hasKey === true }}>
         {describe()}
       </span>
       <Show when={status()?.hasKey}>
-        <button
-          type="button"
-          class="af-button secondary small"
-          disabled={busy()}
-          onClick={() => void remove()}
-        >
+        <Button variant="secondary" size="sm" disabled={busy()} onClick={() => void remove()}>
           {t('settings.providers.key.remove')}
-        </button>
+        </Button>
       </Show>
     </div>
   );

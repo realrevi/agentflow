@@ -4,6 +4,7 @@ import { t, type I18nKey } from '../../i18n';
 import { ANIMATION_SPEED, AVATAR_SCALES } from '../defaults';
 import { settings, updateSettings } from '../settingsStore';
 import { Row, Section } from './Section';
+import { Select, Toggle } from '../../../shared/ui/Field';
 
 type Toggle = { [K in keyof CharacterSettings]: CharacterSettings[K] extends boolean ? K : never };
 type ToggleKey = Toggle[keyof CharacterSettings];
@@ -23,11 +24,8 @@ export function CharactersSection() {
       <For each={TOGGLES}>
         {(toggle) => (
           <Row label={t(toggle.label)} for={`af-chars-${toggle.key}`}>
-            <input
+            <Toggle
               id={`af-chars-${toggle.key}`}
-              type="checkbox"
-              class="af-switch"
-              role="switch"
               checked={settings.characters[toggle.key]}
               onChange={(event) => {
                 const on = event.currentTarget.checked;
@@ -54,9 +52,8 @@ export function CharactersSection() {
         <span class="af-range-value">{`${settings.characters.speed}×`}</span>
       </Row>
       <Row label={t('settings.characters.scale')} for="af-chars-scale">
-        <select
+        <Select
           id="af-chars-scale"
-          class="af-select"
           value={settings.characters.scale}
           onChange={(event) => {
             const value = Number(event.currentTarget.value);
@@ -65,7 +62,7 @@ export function CharactersSection() {
           }}
         >
           <For each={AVATAR_SCALES}>{(scale) => <option value={scale}>{`${scale}×`}</option>}</For>
-        </select>
+        </Select>
       </Row>
     </Section>
   );

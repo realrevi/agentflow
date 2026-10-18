@@ -1,8 +1,8 @@
-// Small popover menu anchored to a trigger element. Closes on outside click, Escape or select.
+// Small popover menu anchored to a trigger element. Arrow keys, Home and End move between
+// items; it closes on outside click, Escape, Tab or select.
 import { For, onCleanup, onMount, Show, type JSX } from 'solid-js';
 import { Portal } from 'solid-js/web';
-import { checkIcon } from './icons';
-import { PixelIcon } from './PixelIcon';
+import { Icon } from './Icon';
 
 export interface MenuItem {
   id: string;
@@ -63,7 +63,28 @@ export function Menu(props: MenuProps): JSX.Element {
     if (!menu?.contains(target) && !isInside(props.anchor, target)) props.onClose();
   };
   const onKeyDown = (event: KeyboardEvent) => {
-    if (event.key === 'Escape') props.onClose();
+    if (event.key === 'Escape' || event.key === 'Tab') {
+      props.onClose();
+      return;
+    }
+    const items = [
+      ...(menu?.querySelectorAll<HTMLButtonElement>('button:not([aria-disabled])') ?? []),
+    ];
+    if (items.length === 0) return;
+    const index = items.indexOf(document.activeElement as HTMLButtonElement);
+    const next =
+      event.key === 'ArrowDown'
+        ? (index + 1) % items.length
+        : event.key === 'ArrowUp'
+          ? (index - 1 + items.length) % items.length
+          : event.key === 'Home'
+            ? 0
+            : event.key === 'End'
+              ? items.length - 1
+              : -1;
+    if (next < 0) return;
+    event.preventDefault();
+    items[next]?.focus();
   };
 
   onMount(() => {
@@ -107,7 +128,7 @@ export function Menu(props: MenuProps): JSX.Element {
               >
                 <span class="af-menu-check">
                   <Show when={item.checked}>
-                    <PixelIcon art={checkIcon} />
+                    <Icon name="check" size={14} />
                   </Show>
                 </span>
                 {item.label}

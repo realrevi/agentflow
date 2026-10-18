@@ -54,6 +54,17 @@ if (typeof document !== 'undefined') {
   });
 }
 
+// CSS idle motion (the avatars' breathing) pauses while the window is hidden or unfocused,
+// like the loop above: a paused CSS animation asks for no frames.
+if (typeof window !== 'undefined' && typeof document !== 'undefined') {
+  const rest = () =>
+    document.documentElement.classList.toggle('af-at-rest', !pageVisible() || !document.hasFocus());
+  window.addEventListener('focus', rest);
+  window.addEventListener('blur', rest);
+  document.addEventListener('visibilitychange', rest);
+  rest();
+}
+
 const query =
   typeof window !== 'undefined' && typeof window.matchMedia === 'function'
     ? window.matchMedia('(prefers-reduced-motion: reduce)')

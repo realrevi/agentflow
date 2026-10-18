@@ -19,6 +19,8 @@ import {
 import { flushSettings, updateSettings } from '../settingsStore';
 import { ProviderKeyField } from './ProviderKeyField';
 import { Row } from './Section';
+import { Button } from '../../../shared/ui/Button';
+import { Input, Select } from '../../../shared/ui/Field';
 
 const URL_PROBLEM: Record<'empty' | 'invalid' | 'insecure', I18nKey> = {
   empty: 'settings.providers.baseUrl.empty',
@@ -78,9 +80,8 @@ export function ProviderEditor(props: { entry: ProviderEntry }) {
   return (
     <div class="af-provider-editor">
       <Row label={t('settings.providers.preset')} for={field('preset')}>
-        <select
+        <Select
           id={field('preset')}
-          class="af-select"
           value={props.entry.preset}
           onChange={(event) => changePreset(event.currentTarget.value as ProviderPreset)}
         >
@@ -92,12 +93,11 @@ export function ProviderEditor(props: { entry: ProviderEntry }) {
               {(preset) => <option value={preset.id}>{presetLabel(preset.id)}</option>}
             </For>
           </optgroup>
-        </select>
+        </Select>
       </Row>
       <Row label={t('settings.providers.name')} for={field('name')}>
-        <input
+        <Input
           id={field('name')}
-          class="af-input"
           value={props.entry.name}
           placeholder={presetLabel(props.entry.preset)}
           maxLength={64}
@@ -108,9 +108,9 @@ export function ProviderEditor(props: { entry: ProviderEntry }) {
         />
       </Row>
       <Row label={t('settings.providers.baseUrl')} for={field('url')}>
-        <input
+        <Input
+          class="af-input-wide"
           id={field('url')}
-          class="af-input af-input-wide"
           value={props.entry.baseUrl}
           spellcheck={false}
           aria-invalid={urlProblem() !== null}
@@ -128,9 +128,8 @@ export function ProviderEditor(props: { entry: ProviderEntry }) {
         <ProviderKeyField entry={props.entry} />
       </Row>
       <Row label={t('settings.providers.defaultModel')} for={field('model')}>
-        <input
+        <Input
           id={field('model')}
-          class="af-input"
           value={props.entry.defaultModel}
           list={field('models')}
           spellcheck={false}
@@ -145,22 +144,22 @@ export function ProviderEditor(props: { entry: ProviderEntry }) {
             {(model) => <option value={model.id}>{model.name ?? ''}</option>}
           </For>
         </datalist>
-        <button
-          type="button"
-          class="af-button secondary small"
+        <Button
+          variant="secondary"
+          size="sm"
           disabled={models().loading}
           onClick={() => void fetchModels()}
         >
           {t('settings.providers.loadModels')}
-        </button>
+        </Button>
         <Show when={models().error}>
           {(error) => <span class="af-field-error">{error()}</span>}
         </Show>
       </Row>
       <Row label={t('settings.providers.maxTokens')} for={field('max')}>
-        <input
+        <Input
+          class="af-input-number"
           id={field('max')}
-          class="af-input af-input-number"
           type="number"
           min={1}
           max={MAX_OUTPUT_TOKENS}
@@ -174,9 +173,9 @@ export function ProviderEditor(props: { entry: ProviderEntry }) {
         />
       </Row>
       <Row label={t('settings.providers.temperature')} for={field('temp')}>
-        <input
+        <Input
+          class="af-input-number"
           id={field('temp')}
-          class="af-input af-input-number"
           type="number"
           min={TEMPERATURE.min}
           max={TEMPERATURE.max}
@@ -199,14 +198,14 @@ export function ProviderEditor(props: { entry: ProviderEntry }) {
         <span class="af-settings-hint inline">{t('settings.providers.temperature.hint')}</span>
       </Row>
       <div class="af-provider-test">
-        <button
-          type="button"
-          class="af-button secondary small"
+        <Button
+          variant="secondary"
+          size="sm"
           disabled={test().state === 'testing'}
           onClick={() => void runTest()}
         >
           {t('settings.providers.test')}
-        </button>
+        </Button>
         <Show when={test().state !== 'idle'}>
           <span class={`af-test-result ${test().state}`} role="status">
             {test().text}

@@ -2,9 +2,9 @@
 // or "Undone" once it was restored.
 import { For, Show } from 'solid-js';
 import type { CheckpointSummary } from '../../../shared/types';
-import { PixelIcon } from '../../../shared/ui/PixelIcon';
+import { Icon } from '../../../shared/ui/Icon';
 import { t } from '../../i18n';
-import { undoIcon } from './toolIcons';
+import { Button } from '../../../shared/ui/Button';
 
 export function TurnFooter(props: {
   checkpoint: CheckpointSummary;
@@ -21,24 +21,24 @@ export function TurnFooter(props: {
           <For each={props.checkpoint.files}>
             {(path) => (
               <li>
-                <button type="button" class="af-link-btn" onClick={() => props.onOpen(path)}>
+                <Button variant="ghost" size="sm" onClick={() => props.onOpen(path)}>
                   {path}
-                </button>
+                </Button>
               </li>
             )}
           </For>
         </ul>
       </details>
       <Show when={!undone()} fallback={<span class="af-badge">{t('agent.turn.undone')}</span>}>
-        <button
-          type="button"
-          class="af-button secondary small"
+        <Button
+          variant="secondary"
+          size="sm"
           disabled={props.undoing}
           onClick={() => props.onUndo()}
         >
-          <PixelIcon art={undoIcon} />
+          <Icon name="undo-2" size={14} />
           {t('agent.turn.undo')}
-        </button>
+        </Button>
       </Show>
     </div>
   );

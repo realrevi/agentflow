@@ -27,7 +27,7 @@ export function FlagChips(props: { item: LibraryItem }) {
 export function ItemCard(props: { item: LibraryItem; onOpen: () => void }) {
   const item = () => props.item;
   return (
-    <button type="button" class="af-lib-card" onClick={() => props.onOpen()}>
+    <button type="button" class="af-card af-lib-card" onClick={() => props.onOpen()}>
       <span class="af-lib-card-head">
         <strong class="af-lib-card-name">{item().name}</strong>
         <span class="af-badge">{t(KIND_LABELS[item().kind])}</span>

@@ -37,6 +37,7 @@ import { listedTitle, refreshConversations } from './conversationsStore';
 import { MessageList } from './MessageList';
 import { createChatUsage } from './chatUsage';
 import { createChatSession } from './session';
+import { Button } from '../../shared/ui/Button';
 
 export interface ChatPanelProps {
   panelId: string;
@@ -287,13 +288,9 @@ export default function ChatPanel(props: ChatPanelProps) {
             />
           </div>
           <Show when={session.streaming()}>
-            <button
-              type="button"
-              class="af-button danger small af-chat-stop"
-              onClick={() => session.stop()}
-            >
+            <Button class="af-chat-stop" variant="danger" size="sm" onClick={() => session.stop()}>
               {t('chat.stop')}
-            </button>
+            </Button>
           </Show>
         </div>
         <EstimateLine estimate={estimate()} />

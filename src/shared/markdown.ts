@@ -5,6 +5,7 @@
 import './markdown.css';
 import DOMPurify from 'dompurify';
 import { Marked } from 'marked';
+import { ensureLinkIconStyles, siteForUrl } from './linkSites';
 
 const ESCAPES: Record<string, string> = {
   '&': '&amp;',
@@ -96,7 +97,12 @@ const ALLOWED_ATTR = [
 ];
 
 DOMPurify.addHook('afterSanitizeAttributes', (node) => {
-  if (node.tagName === 'A') node.setAttribute('rel', 'noopener noreferrer');
+  if (node.tagName === 'A') {
+    node.setAttribute('rel', 'noopener noreferrer');
+    // The site's brand icon (or a generic link icon) is drawn by CSS from this attribute.
+    const href = node.getAttribute('href') ?? '';
+    if (/^https?:/i.test(href)) node.setAttribute('data-site', siteForUrl(href)?.id ?? 'link');
+  }
   // Task-list checkboxes are display only; buttons are only our copy buttons.
   if (node.tagName === 'INPUT') {
     if (node.getAttribute('type') !== 'checkbox') node.remove();
@@ -121,6 +127,7 @@ export function sanitizeHtml(html: string): string {
 
 /** Safe HTML for `text`; code blocks get a copy button labelled `options.copyLabel`. */
 export function renderMarkdown(text: string, options: { copyLabel?: string } = {}): string {
+  ensureLinkIconStyles();
   copyLabel = options.copyLabel ?? null;
   try {
     return sanitizeHtml(marked.parse(text, { async: false }));

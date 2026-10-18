@@ -1,10 +1,14 @@
 import { For, onCleanup, onMount, Show } from 'solid-js';
 import { Portal } from 'solid-js/web';
 import { answerDialog, dialog, type DialogRequest } from '../shared/dialog';
+import { Button } from '../shared/ui/Button';
+import { trapTab } from '../shared/ui/Dialog';
 
 function DialogBox(props: { request: DialogRequest }) {
   let box: HTMLDivElement | undefined;
+  const previous = document.activeElement instanceof HTMLElement ? document.activeElement : null;
   const onKeyDown = (event: KeyboardEvent) => {
+    if (box && trapTab(box, event)) return;
     if (event.key !== 'Escape') return;
     event.stopPropagation();
     answerDialog(props.request.cancelId);
@@ -16,7 +20,10 @@ function DialogBox(props: { request: DialogRequest }) {
     const first = (selector: string) => box?.querySelector<HTMLButtonElement>(selector);
     (first('.af-button:not(.secondary):not(.danger)') ?? first('.af-button.secondary'))?.focus();
   });
-  onCleanup(() => document.removeEventListener('keydown', onKeyDown, true));
+  onCleanup(() => {
+    document.removeEventListener('keydown', onKeyDown, true);
+    if (previous?.isConnected) previous.focus();
+  });
 
   return (
     <div
@@ -41,9 +48,7 @@ function DialogBox(props: { request: DialogRequest }) {
         <div class="af-dialog-actions">
           <For each={props.request.choices}>
             {(choice) => (
-              <button
-                type="button"
-                class="af-button"
+              <Button
                 classList={{
                   secondary: choice.kind !== 'primary' && choice.kind !== 'danger',
                   danger: choice.kind === 'danger',
@@ -51,7 +56,7 @@ function DialogBox(props: { request: DialogRequest }) {
                 onClick={() => answerDialog(choice.id)}
               >
                 {choice.label}
-              </button>
+              </Button>
             )}
           </For>
         </div>

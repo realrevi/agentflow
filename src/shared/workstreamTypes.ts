@@ -15,6 +15,8 @@ export interface WorkstreamSettings {
   reportCapKb: number;
   stageScale: number;
   stageAnimations: boolean;
+  /** One automatic format reminder before pausing on a reply without a valid block. */
+  autoRemind: boolean;
 }
 
 export type ActivityKind = 'think' | 'tool' | 'wait' | 'idle';

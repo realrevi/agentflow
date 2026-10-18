@@ -91,6 +91,8 @@ export interface Settings {
   workstreams: WorkstreamSettings;
   /** The community agent library: custom sources, daily refresh. */
   library: LibrarySettings;
+  /** The first-run flow (finished or skipped) and its tips card. */
+  onboarding: { done: boolean; tipsDismissed: boolean };
   layout: SerializedLayout | null;
 }
 

@@ -3,6 +3,7 @@
 import { createSignal, Show } from 'solid-js';
 import type { ToolCall, ToolResult } from '../../../shared/types';
 import { locale, t } from '../../i18n';
+import { Button } from '../../../shared/ui/Button';
 
 /** Characters shown before "show all". */
 export const OUTPUT_PREVIEW = 3000;
@@ -41,11 +42,11 @@ export function CappedText(props: { text: string }) {
         {all() || !long() ? props.text : `${props.text.slice(0, OUTPUT_PREVIEW)}…`}
       </pre>
       <Show when={long()}>
-        <button type="button" class="af-link-btn" onClick={() => setAll((value) => !value)}>
+        <Button variant="ghost" size="sm" onClick={() => setAll((value) => !value)}>
           {all()
             ? t('agent.tool.showLess')
             : t('agent.tool.showMore', { size: sizeText(props.text.length) })}
-        </button>
+        </Button>
       </Show>
     </>
   );

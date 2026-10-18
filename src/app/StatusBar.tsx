@@ -1,14 +1,14 @@
 import { createSignal, Show } from 'solid-js';
 import { LOCALES, locale, t } from '../features/i18n';
 import { settings, updateSettings } from '../features/settings';
-import { openPanel } from '../features/layout';
+import { openPanel, roleVisible, togglePanelArea } from '../features/layout';
 import { activeTheme, selectTheme, themes } from '../features/theme';
 import { costText, formatTokens, totalTokens, usageSummary } from '../features/tokens';
 import type { Locale } from '../shared/types';
-import { globeIcon, paletteIcon, stopIcon, usageIcon } from '../shared/ui/icons';
+import { shortcutLabel } from '../shared/platform';
+import { Icon } from '../shared/ui/Icon';
 import { anyAutoRunning, stopAll } from '../features/workstreams';
 import { Menu, type MenuItem } from '../shared/ui/Menu';
-import { PixelIcon } from '../shared/ui/PixelIcon';
 import { WorkspaceStatus } from './WorkspaceStatus';
 
 type OpenMenu = 'theme' | 'language' | null;
@@ -67,7 +67,7 @@ export function StatusBar() {
           title={t('status.stopWorkstreams')}
           onClick={stopAll}
         >
-          <PixelIcon art={stopIcon} scale={1.5} />
+          <Icon name="square" size={12} />
           {t('status.stopWorkstreams')}
         </button>
       </Show>
@@ -79,11 +79,33 @@ export function StatusBar() {
             title={t('status.usage', { tokens: formatTokens(totalTokens(today())) })}
             onClick={() => openPanel('usage')}
           >
-            <PixelIcon art={usageIcon} scale={1} />
+            <Icon name="chart-column" size={13} />
             {t('status.usageToday', { cost: costText(today()) })}
           </button>
         )}
       </Show>
+      <button
+        type="button"
+        class="af-status-item af-status-toggle"
+        classList={{ off: !roleVisible('terminal') }}
+        title={`${t('status.toggleTerminal')} (${shortcutLabel('J')})`}
+        aria-label={t('status.toggleTerminal')}
+        aria-pressed={roleVisible('terminal')}
+        onClick={() => togglePanelArea('terminal')}
+      >
+        <Icon name="panel-bottom" size={14} />
+      </button>
+      <button
+        type="button"
+        class="af-status-item af-status-toggle"
+        classList={{ off: !roleVisible('files') }}
+        title={`${t('status.toggleFiles')} (${shortcutLabel('Shift+E')})`}
+        aria-label={t('status.toggleFiles')}
+        aria-pressed={roleVisible('files')}
+        onClick={() => togglePanelArea('files')}
+      >
+        <Icon name="panel-right" size={14} />
+      </button>
       <button
         ref={themeButton}
         type="button"
@@ -93,7 +115,7 @@ export function StatusBar() {
         aria-expanded={open() === 'theme'}
         onClick={() => toggle('theme')}
       >
-        <PixelIcon art={paletteIcon} scale={1.5} />
+        <Icon name="palette" size={13} />
         {activeTheme()?.name ?? settings.appearance.themeId}
       </button>
       <button
@@ -105,7 +127,7 @@ export function StatusBar() {
         aria-expanded={open() === 'language'}
         onClick={() => toggle('language')}
       >
-        <PixelIcon art={globeIcon} scale={1.5} />
+        <Icon name="globe" size={13} />
         {localeName()}
       </button>
 

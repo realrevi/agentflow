@@ -30,12 +30,16 @@ export type Input =
 
 export type Action =
   | { type: 'deliver'; handoff: Handoff }
+  /** Send the manager the block-format reminder (once, before pausing). */
+  | { type: 'remind' }
   | { type: 'attention'; panel: string; reason: 'turn' | 'question' | 'error' };
 
 export interface Limits {
   maxRounds: number;
   /** Report cap in bytes. */
   reportCap: number;
+  /** Remind the manager of the format once before pausing on a reply without a valid block. */
+  autoRemind?: boolean;
 }
 
 export interface Step {
@@ -95,10 +99,17 @@ function managerTurn(ws: Workstream, end: TurnEnd, limits: Limits, newId: NewId)
   if (ws.reason === 'ask' || ws.status === 'done') ws = { ...ws, round: 0 };
   const parsed = parseReply(end.report);
   if (!parsed.ok) {
+    if (limits.autoRemind && !ws.reminded) {
+      return {
+        ws: { ...ws, status: 'running', reason: null, detail: null, reminded: true },
+        actions: [{ type: 'remind' }],
+      };
+    }
     return parsed.error === 'none'
       ? ask('noBlock', null, 'question')
       : ask('malformed', parsed.detail, 'error');
   }
+  ws = { ...ws, reminded: false };
   const warning = parsed.multiple ? 'multiple' : null;
   const directive = parsed.directive;
   if (directive.kind === 'ask') {

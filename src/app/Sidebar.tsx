@@ -3,8 +3,8 @@ import { t, type I18nKey } from '../features/i18n';
 import { openPanel, openPanels } from '../features/layout';
 import { settings, updateSettings } from '../features/settings';
 import { UsageView } from '../features/tokens/UsageView';
-import { chevronLeftIcon } from '../shared/ui/icons';
-import { PixelIcon } from '../shared/ui/PixelIcon';
+import { shortcutLabel } from '../shared/platform';
+import { IconButton } from '../shared/ui/Button';
 import { SidebarSash } from './SidebarSash';
 import { AgentsView } from './views/AgentsView';
 import { CharactersView } from './views/CharactersView';
@@ -22,15 +22,11 @@ export function Sidebar() {
     <aside class="af-sidebar" style={{ width: `${settings.ui.sidebarWidth}px` }}>
       <header class="af-sidebar-header">
         <h1 class="af-sidebar-title">{t(TITLES[settings.ui.activeView] ?? 'activity.agents')}</h1>
-        <button
-          type="button"
-          class="af-icon-btn"
-          title={t('sidebar.hide')}
-          aria-label={t('sidebar.hide')}
+        <IconButton
+          icon="panel-left"
+          label={`${t('sidebar.hide')} (${shortcutLabel('B')})`}
           onClick={() => updateSettings((s) => (s.ui.sidebarVisible = false))}
-        >
-          <PixelIcon art={chevronLeftIcon} />
-        </button>
+        />
       </header>
       <div class="af-sidebar-body">
         <Switch fallback={<AgentsView />}>

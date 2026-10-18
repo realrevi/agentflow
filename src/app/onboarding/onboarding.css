@@ -1,0 +1,148 @@
+/* The first-run flow (Onboarding.tsx). */
+.af-dialog.af-onboarding {
+  width: min(620px, calc(100vw - 32px));
+  max-height: 82vh;
+  gap: var(--af-space-3);
+}
+
+.af-onboarding .af-dialog-title {
+  font-size: var(--af-text-xl);
+}
+
+.af-onboarding .af-dialog-actions {
+  align-items: center;
+}
+
+.af-onboarding-spacer {
+  flex: 1;
+}
+
+.af-onboarding-dots {
+  display: flex;
+  gap: var(--af-space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.af-onboarding-dots li {
+  width: 18px;
+  height: 4px;
+  border-radius: var(--af-radius-full);
+  background: var(--af-widget-border);
+  transition:
+    background-color var(--af-duration) var(--af-ease),
+    width var(--af-duration-slow) var(--af-ease);
+}
+
+.af-onboarding-dots li.done {
+  background: color-mix(in srgb, var(--af-accent) 55%, var(--af-widget-border));
+}
+
+.af-onboarding-dots li.active {
+  width: 32px;
+  background: var(--af-accent);
+  box-shadow: var(--af-accent-glow);
+}
+
+.af-onboarding-body {
+  min-height: 220px;
+  animation: af-fade-in var(--af-duration-slow) var(--af-ease);
+}
+
+.af-onboarding-welcome {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--af-space-4);
+  padding: var(--af-space-4) 0;
+  color: var(--af-fg-muted);
+  font-size: var(--af-text-lg);
+  text-align: center;
+}
+
+.af-onboarding-cast {
+  display: flex;
+  gap: var(--af-space-5);
+}
+
+.af-onboarding-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: var(--af-space-2);
+}
+
+.af-onboarding-option {
+  flex-direction: row;
+  align-items: center;
+  gap: var(--af-space-2);
+  padding: var(--af-space-3);
+}
+
+.af-onboarding-option.selected {
+  border-color: var(--af-accent);
+  box-shadow: var(--af-accent-glow);
+}
+
+.af-onboarding-note {
+  grid-column: 1 / -1;
+  margin: var(--af-space-1) 0 0;
+  color: var(--af-fg-muted);
+  font-size: var(--af-text-sm);
+}
+
+.af-onboarding-subtitle {
+  margin: var(--af-space-2) 0 var(--af-space-1);
+  font-size: var(--af-text-md);
+  font-weight: var(--af-weight-semibold);
+}
+
+.af-onboarding-clis {
+  display: flex;
+  flex-direction: column;
+  gap: var(--af-space-1);
+  margin: 0 0 var(--af-space-2);
+  padding: 0;
+  list-style: none;
+}
+
+.af-onboarding-clis li {
+  display: flex;
+  align-items: center;
+  gap: var(--af-space-2);
+  color: var(--af-fg-muted);
+}
+
+.af-onboarding-clis li.found {
+  color: var(--af-fg);
+}
+
+.af-onboarding-clis li.found .af-icon {
+  color: var(--af-success);
+}
+
+.af-onboarding-row {
+  display: flex;
+  gap: var(--af-space-2);
+}
+
+.af-onboarding-workspace {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--af-space-3);
+}
+
+.af-onboarding-path {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--af-space-2);
+  margin: 0;
+}
+
+.af-onboarding-path span {
+  color: var(--af-fg-muted);
+  font-size: var(--af-text-sm);
+  overflow-wrap: anywhere;
+}

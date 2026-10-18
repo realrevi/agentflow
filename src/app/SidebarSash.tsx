@@ -37,3 +37,50 @@ export function SidebarSash() {
     />
   );
 }
+
+/**
+ * Shown while the sidebar is hidden: a slim strip on the activity bar's edge. Click it to
+ * bring the sidebar back, or drag it out to the width you want.
+ */
+export function SidebarHandle() {
+  const onPointerDown = (event: PointerEvent & { currentTarget: HTMLButtonElement }) => {
+    const handle = event.currentTarget;
+    const startX = event.clientX;
+    const left = handle.getBoundingClientRect().left;
+    let dragged = false;
+    handle.setPointerCapture(event.pointerId);
+    const onMove = (move: PointerEvent) => {
+      if (!dragged && Math.abs(move.clientX - startX) < 4) return;
+      dragged = true;
+      const width = Math.min(SIDEBAR_MAX_WIDTH, Math.max(SIDEBAR_MIN_WIDTH, move.clientX - left));
+      updateSettings((s) => {
+        s.ui.sidebarVisible = true;
+        s.ui.sidebarWidth = Math.round(width);
+      });
+    };
+    const onUp = () => {
+      handle.removeEventListener('pointermove', onMove);
+      handle.removeEventListener('pointerup', onUp);
+      handle.removeEventListener('pointercancel', onUp);
+      if (!dragged) updateSettings((s) => (s.ui.sidebarVisible = true));
+    };
+    handle.addEventListener('pointermove', onMove);
+    handle.addEventListener('pointerup', onUp);
+    handle.addEventListener('pointercancel', onUp);
+  };
+  return (
+    <button
+      type="button"
+      class="af-sidebar-handle"
+      aria-label={t('sidebar.show')}
+      title={t('sidebar.show')}
+      onPointerDown={onPointerDown}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          updateSettings((s) => (s.ui.sidebarVisible = true));
+        }
+      }}
+    />
+  );
+}

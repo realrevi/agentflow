@@ -15,7 +15,8 @@ import {
 } from '../../characters';
 import { t, type I18nKey } from '../../i18n';
 import { settings } from '../../settings/settingsStore';
-import { avatarAboveCursor, lerp, type Box, type CursorCell } from './follow';
+import { approach, snapToPixel } from '../../characters/motion';
+import { avatarAboveCursor, type Box, type CursorCell } from './follow';
 import { HistoryPopover } from './HistoryPopover';
 import { SpeechBubble } from './SpeechBubble';
 
@@ -141,11 +142,14 @@ export function AgentOverlay(props: AgentOverlayProps) {
       if (current.hidden !== next.hidden) setOffset(next);
       return;
     }
+    let last = performance.now();
     stopMove ??= startAnimation({
-      step: () => {
+      step: (now) => {
+        const dt = Math.min(64, now - last);
+        last = now;
         const current = offset();
-        const x = lerp(current.x, goal.x);
-        const y = lerp(current.y, goal.y);
+        const x = approach(current.x, goal.x, dt, 60);
+        const y = approach(current.y, goal.y, dt, 60);
         setOffset({ x, y, hidden: goal.hidden });
         const arrived = x === goal.x && y === goal.y;
         if (arrived) stopMove = undefined;
@@ -190,7 +194,10 @@ export function AgentOverlay(props: AgentOverlayProps) {
         type="button"
         class="af-agent-avatar"
         classList={{ riding: offset().x !== 0 || offset().y !== 0, hidden: offset().hidden }}
-        style={{ transform: `translate(${offset().x}px, ${offset().y}px)` }}
+        style={{
+          // Whole sprite pixels only: the art stays crisp while it moves.
+          transform: `translate(${snapToPixel(offset().x, settings.characters.scale)}px, ${snapToPixel(offset().y, settings.characters.scale)}px)`,
+        }}
         title={t('prompt.history')}
         aria-label={t('prompt.history')}
         aria-expanded={historyOpen()}

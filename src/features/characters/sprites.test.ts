@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { pickCharacter } from './catalog';
 import { SPRITES } from './spriteData';
 import { SPRITE_STATES } from './types';
-import { validateSprite } from './validate';
+import { FRAMES_PER_STATE, validateSprite } from './validate';
 
 describe('sprite sheets', () => {
   it('has exactly 15 characters with unique ids and names', () => {
@@ -17,7 +17,7 @@ describe('sprite sheets', () => {
       for (const state of SPRITE_STATES) {
         const frames = sheet.states[state];
         expect(frames.length, `${sheet.id}.${state}`).toBeGreaterThanOrEqual(2);
-        expect(frames.length, `${sheet.id}.${state}`).toBeLessThanOrEqual(4);
+        expect(frames.length, `${sheet.id}.${state}`).toBeLessThanOrEqual(FRAMES_PER_STATE.max);
         for (const frame of frames) {
           expect(frame).toHaveLength(sheet.size);
           for (const row of frame) {
@@ -31,6 +31,26 @@ describe('sprite sheets', () => {
         }
       }
     }
+  });
+
+  it('animated loops have at least 4 frames (smooth), at most 6', () => {
+    expect(FRAMES_PER_STATE.max).toBe(6);
+    for (const sheet of SPRITES) {
+      for (const state of ['walk', 'think', 'work', 'done'] as const) {
+        expect(sheet.states[state].length, `${sheet.id}.${state}`).toBeGreaterThanOrEqual(4);
+      }
+    }
+  });
+
+  it('the validator rejects more than 6 frames', () => {
+    const base = SPRITES[0];
+    const frame = base?.states.idle[0];
+    if (!base || !frame) throw new Error('no sprite');
+    const sheet = {
+      ...base,
+      states: { ...base.states, idle: Array.from({ length: 7 }, () => frame) },
+    };
+    expect(() => validateSprite(sheet)).toThrow(/2-6 frames/);
   });
 
   it('every sheet has all 8 states and 2-3 palettes of equal length', () => {

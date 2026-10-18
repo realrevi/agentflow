@@ -6,13 +6,14 @@ side in a VS Code-style dockable layout, watched over by cute pixel-art agent ch
 AgentFlow is a lightweight desktop app (Tauri 2 + Rust + SolidJS) for Windows, macOS and Linux.
 The goals are low RAM, a fast UI, a clean codebase, and a fun look.
 
-> **Status:** early development. Phases 1–9 of 12 are done: app shell, themes, languages,
+> **Status:** early development. Phases 1–11 of 12 are done: app shell, themes, languages,
 > dockable layout, real terminal panels, the workspace file tree, a code editor, pixel
 > characters with a prompt bar, API agents with tools, token and cost tracking, an agent
-> installer, and manager–worker workstreams with the Agent Stage. See the [roadmap](#roadmap).
+> installer, manager–worker workstreams with the Agent Stage, the community agent library,
+> and a polished UI with a first-run guide. See the [roadmap](#roadmap).
 
 ![AgentFlow screenshot](docs/screenshot.png)
-<!-- Phase 5: an API chat panel with its character and prompt bar; open panels and saved chats in the Agents view. -->
+<!-- Phase 11: an API chat with link icons and gold agent bold; Material file icons in the Files panel. -->
 
 ## Features
 
@@ -24,7 +25,11 @@ Available now (phases 1–6):
 - Built-in themes: **AgentFlow Dark** (default), **AgentFlow Light**, **Retro CRT** (amber)
 - User overrides on top of any theme: text color, accent color, and the glowing "agent bold" style
 - Five languages, switchable live: English, Türkçe, Deutsch, 中文, Русский
-- Offline-first: fonts are bundled (JetBrains Mono, Pixelify Sans), no network needed
+- Offline-first: fonts (Inter, JetBrains Mono, Pixelify Sans) and icons are bundled, no network needed
+- A first-run guide (language, theme with live preview, character, AI tools or an API
+  provider, workspace) that can be re-opened from Settings
+- One design system: shared buttons, fields, toggles, tabs, menus and dialogs with smooth,
+  reduced-motion-aware animations; Lucide UI icons, Material file icons and brand icons for links
 - Terminal panels (xterm.js, WebGL when visible): your shell, Claude Code, Codex, Gemini CLI
   or any custom command, each in its own dockable panel; agent CLIs missing from PATH are
   shown as unavailable
@@ -146,6 +151,14 @@ collections, Gemini CLI) in the **Browse** tab of the Agents library:
 
 ![The Browse tab of the Agents library](docs/library.png)
 
+### Settings
+
+Every setting applies live and is saved automatically: themes and colors, terminal, characters,
+AI providers, agents, workstreams (for example the one-time format reminder for managers),
+usage and budgets, files, language and layout.
+
+![Settings with toggles, selects and the workstream options](docs/settings.png)
+
 ## Roadmap
 
 | Phase | Scope                                                                  | Status |
@@ -160,7 +173,7 @@ collections, Gemini CLI) in the **Browse** tab of the Agents library:
 | 8     | Agent installer wizard (per-AI formats and paths)                      | Done   |
 | 9     | Manager–worker workstreams + the Agent Stage                           | Done   |
 | 10    | Community agent library from GitHub                                    | Done   |
-| 11    | UI polish                                                              |        |
+| 11    | UI polish + first-run guide                                            | Done   |
 | 12    | Cross-platform builds + CI                                             |        |
 
 ## Keyboard shortcuts
@@ -170,6 +183,9 @@ collections, Gemini CLI) in the **Browse** tab of the Agents library:
 | Ctrl+P                      | Quick open a workspace file  |
 | Ctrl+P, then `>`            | Commands (Agents library...) |
 | Ctrl+S                      | Save the current editor      |
+| Ctrl+B                      | Show / hide the sidebar      |
+| Ctrl+J                      | Show / hide the terminals    |
+| Ctrl+Shift+E                | Show / hide the Files panel  |
 | Ctrl+Shift+`                | New shell                    |
 | Ctrl+Shift+C / Ctrl+Shift+V | Copy / paste in a terminal   |
 | Enter / Shift+Enter         | Send / new line (prompt bar) |
@@ -254,4 +270,7 @@ See [CLAUDE.md](CLAUDE.md) for the folder map, code rules and conventions.
 ## License
 
 [MIT](LICENSE) © AgentFlow contributors. Bundled fonts are under the SIL Open Font License 1.1
-(see `src/assets/fonts/*-OFL.txt`).
+(see `src/assets/fonts/*-OFL.txt`). Icons: [Lucide](https://lucide.dev) (ISC),
+[Material Icon Theme](https://github.com/material-extensions/vscode-material-icon-theme) (MIT) and
+[Simple Icons](https://simpleicons.org) (CC0); licenses in `src/assets/icons/` and
+`src/shared/ui/file-icons/`.

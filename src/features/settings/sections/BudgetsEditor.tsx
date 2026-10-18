@@ -8,6 +8,8 @@ import { scopeLabel } from '../../tokens';
 import { settings, updateSettings } from '../settingsStore';
 import { Row } from './Section';
 import { moneyText, parseMoney, setProviderBudget } from './usageForm';
+import { Button } from '../../../shared/ui/Button';
+import { Input, Select, Toggle } from '../../../shared/ui/Field';
 
 const CLI_KEYS = ['claude-code', 'codex', 'gemini-cli'];
 
@@ -32,9 +34,9 @@ function MoneyInput(props: {
   label: string;
 }) {
   return (
-    <input
+    <Input
+      class="af-input-money"
       id={props.id}
-      class="af-input af-input-money"
       inputmode="decimal"
       placeholder={t('settings.usage.budget.none')}
       aria-label={props.label}
@@ -111,9 +113,9 @@ export function BudgetsEditor() {
                     />
                   </td>
                   <td>
-                    <button
-                      type="button"
-                      class="af-button secondary small"
+                    <Button
+                      variant="secondary"
+                      size="sm"
                       onClick={() =>
                         setBudgets((b) =>
                           setProviderBudget(b, entry.provider, { daily: null, monthly: null }),
@@ -121,7 +123,7 @@ export function BudgetsEditor() {
                       }
                     >
                       {t('settings.usage.remove')}
-                    </button>
+                    </Button>
                   </td>
                 </tr>
               )}
@@ -131,9 +133,8 @@ export function BudgetsEditor() {
       </Show>
       <Show when={candidates().length > 0}>
         <Row label={t('settings.usage.budget.add')} for="af-budget-add">
-          <select
+          <Select
             id="af-budget-add"
-            class="af-input"
             value={adding()}
             onChange={(event) => {
               const provider = event.currentTarget.value;
@@ -147,15 +148,12 @@ export function BudgetsEditor() {
             <For each={candidates()}>
               {(entry) => <option value={entry.id}>{entry.label}</option>}
             </For>
-          </select>
+          </Select>
         </Row>
       </Show>
       <Row label={t('settings.usage.budget.hardStop')} for="af-budget-stop">
-        <input
+        <Toggle
           id="af-budget-stop"
-          type="checkbox"
-          class="af-switch"
-          role="switch"
           checked={budgets().hardStop}
           onChange={(event) => {
             const on = event.currentTarget.checked;

@@ -1,0 +1,673 @@
+/*
+ * Shared controls (shared/ui/*.tsx). Every button, field, toggle, tab and badge in the app
+ * uses these classes; feature CSS only lays them out. Hover lifts or brightens, press scales
+ * down, keyboard focus shows a ring; all within --af-duration-* and --af-ease.
+ */
+
+/* Buttons: .af-button (primary) | .secondary | .ghost | .danger, .small, .icon-only */
+.af-button {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--af-space-2);
+  min-height: var(--af-control-height);
+  padding: 0 var(--af-space-4);
+  border: var(--af-border-width) solid transparent;
+  border-radius: var(--af-radius-md);
+  background: var(--af-button-bg);
+  color: var(--af-button-fg);
+  font: inherit;
+  font-size: var(--af-text-md);
+  font-weight: var(--af-weight-medium);
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background-color var(--af-duration) var(--af-ease),
+    border-color var(--af-duration) var(--af-ease),
+    box-shadow var(--af-duration) var(--af-ease),
+    transform var(--af-duration-fast) var(--af-ease),
+    filter var(--af-duration) var(--af-ease);
+}
+
+.af-button:not(:disabled):hover {
+  background: var(--af-button-hover-bg);
+  box-shadow: var(--af-accent-glow);
+  transform: translateY(-1px);
+}
+
+.af-button:not(:disabled):active {
+  transform: scale(0.97);
+}
+
+.af-button:focus-visible,
+.af-icon-btn:focus-visible,
+.af-input:focus-visible,
+.af-select:focus-visible,
+.af-switch:focus-visible,
+.af-checkbox:focus-visible,
+.af-segmented button:focus-visible {
+  outline: none;
+  box-shadow: var(--af-focus-ring);
+}
+
+.af-button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.af-button.secondary {
+  background: var(--af-button-secondary-bg);
+  color: var(--af-button-secondary-fg);
+  border-color: var(--af-input-border);
+}
+
+.af-button.secondary:not(:disabled):hover {
+  border-color: var(--af-accent);
+  background: var(--af-button-secondary-bg);
+  box-shadow: none;
+  filter: brightness(1.12);
+}
+
+.af-button.ghost {
+  background: transparent;
+  color: var(--af-link);
+}
+
+.af-button.ghost:not(:disabled):hover {
+  background: var(--af-list-hover-bg);
+  box-shadow: none;
+  transform: none;
+}
+
+.af-button.danger {
+  background: var(--af-error);
+  color: var(--af-accent-fg);
+}
+
+.af-button.danger:not(:disabled):hover {
+  background: var(--af-error);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--af-error) 40%, transparent);
+  filter: brightness(1.08);
+}
+
+.af-button.small {
+  min-height: var(--af-control-height-sm);
+  padding: 0 var(--af-space-3);
+  font-size: var(--af-text-sm);
+}
+
+.af-button.ghost.small {
+  padding: 0 var(--af-space-1);
+}
+
+.af-button.icon-only {
+  width: var(--af-control-height);
+  padding: 0;
+}
+
+.af-button.icon-only.small {
+  width: var(--af-control-height-sm);
+}
+
+.af-button-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--af-space-2);
+}
+
+.af-button-column {
+  display: flex;
+  flex-direction: column;
+  gap: var(--af-space-2);
+  margin-top: var(--af-space-4);
+}
+
+/* Small icon buttons in headers and rows. */
+.af-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: var(--af-control-height-sm);
+  height: var(--af-control-height-sm);
+  padding: 0;
+  border: none;
+  border-radius: var(--af-radius-sm);
+  background: none;
+  color: inherit;
+  opacity: 0.75;
+  cursor: pointer;
+  transition:
+    background-color var(--af-duration) var(--af-ease),
+    opacity var(--af-duration) var(--af-ease),
+    transform var(--af-duration-fast) var(--af-ease);
+}
+
+.af-icon-btn:hover,
+.af-icon-btn.active {
+  background: var(--af-list-hover-bg);
+  opacity: 1;
+}
+
+.af-icon-btn:active {
+  transform: scale(0.9);
+}
+
+.af-icon-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+/* Fields */
+.af-input,
+.af-select {
+  min-width: 0;
+  min-height: var(--af-control-height);
+  padding: 0 var(--af-space-2);
+  border: var(--af-border-width) solid var(--af-input-border);
+  border-radius: var(--af-radius-md);
+  background: var(--af-input-bg);
+  color: var(--af-input-fg);
+  font: inherit;
+  font-size: var(--af-text-md);
+  transition:
+    border-color var(--af-duration) var(--af-ease),
+    box-shadow var(--af-duration) var(--af-ease);
+}
+
+textarea.af-input {
+  padding: var(--af-space-2);
+  line-height: var(--af-leading);
+  resize: vertical;
+}
+
+.af-input:hover,
+.af-select:hover {
+  border-color: color-mix(in srgb, var(--af-accent) 45%, var(--af-input-border));
+}
+
+.af-input:focus,
+.af-select:focus {
+  border-color: var(--af-focus);
+  outline: none;
+}
+
+.af-input::placeholder {
+  color: var(--af-fg-muted);
+}
+
+.af-input[type='number'] {
+  width: 96px;
+}
+
+.af-select {
+  min-width: 160px;
+  padding-right: var(--af-space-6);
+  appearance: none;
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--af-fg-muted) 50%),
+    linear-gradient(135deg, var(--af-fg-muted) 50%, transparent 50%);
+  background-position:
+    calc(100% - 13px) 50%,
+    calc(100% - 9px) 50%;
+  background-size: 4px 4px;
+  background-repeat: no-repeat;
+  cursor: pointer;
+}
+
+.af-select option,
+.af-select optgroup {
+  background: var(--af-widget-bg);
+  color: var(--af-widget-fg);
+}
+
+/* Checkbox */
+.af-checkbox {
+  appearance: none;
+  display: inline-grid;
+  place-content: center;
+  flex: none;
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  border: var(--af-border-width) solid var(--af-input-border);
+  border-radius: var(--af-radius-sm);
+  background: var(--af-input-bg);
+  cursor: pointer;
+  transition:
+    background-color var(--af-duration) var(--af-ease),
+    border-color var(--af-duration) var(--af-ease);
+}
+
+.af-checkbox::after {
+  content: '';
+  width: 8px;
+  height: 4px;
+  margin-top: -2px;
+  border-bottom: 2px solid var(--af-accent-fg);
+  border-left: 2px solid var(--af-accent-fg);
+  transform: rotate(-45deg) scale(0);
+  transition: transform var(--af-duration) var(--af-ease);
+}
+
+.af-checkbox:checked {
+  background: var(--af-accent);
+  border-color: var(--af-accent);
+}
+
+.af-checkbox:checked::after {
+  transform: rotate(-45deg) scale(1);
+}
+
+.af-checkbox:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* Toggle: a checkbox styled as a switch. */
+.af-switch {
+  appearance: none;
+  position: relative;
+  flex: none;
+  width: 34px;
+  height: 20px;
+  margin: 0;
+  border: var(--af-border-width) solid var(--af-input-border);
+  border-radius: var(--af-radius-full);
+  background: var(--af-input-bg);
+  cursor: pointer;
+  transition:
+    background-color var(--af-duration) var(--af-ease),
+    border-color var(--af-duration) var(--af-ease),
+    box-shadow var(--af-duration) var(--af-ease);
+}
+
+.af-switch::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--af-fg-muted);
+  transition:
+    transform var(--af-duration) var(--af-ease),
+    background-color var(--af-duration) var(--af-ease);
+}
+
+.af-switch:checked {
+  background: var(--af-accent);
+  border-color: var(--af-accent);
+  box-shadow: var(--af-accent-glow);
+}
+
+.af-switch:checked::after {
+  background: var(--af-accent-fg);
+  transform: translateX(14px);
+}
+
+.af-switch:active::after {
+  width: 17px;
+}
+
+/* A label with a checkbox, radio or toggle. */
+.af-check {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--af-space-2);
+  cursor: pointer;
+}
+
+/* Segmented control and tabs: a sliding indicator behind the active item. */
+.af-segmented,
+.af-tabs {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+  isolation: isolate;
+}
+
+.af-segmented {
+  padding: 2px;
+  border: var(--af-border-width) solid var(--af-input-border);
+  border-radius: var(--af-radius-md);
+  background: var(--af-input-bg);
+}
+
+.af-segmented button,
+.af-tabs button {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--af-space-1);
+  border: none;
+  background: none;
+  color: var(--af-fg-muted);
+  font: inherit;
+  font-size: var(--af-text-sm);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color var(--af-duration) var(--af-ease);
+}
+
+.af-segmented button {
+  padding: 2px var(--af-space-2);
+  border-radius: var(--af-radius-sm);
+}
+
+.af-segmented button:hover,
+.af-tabs button:hover {
+  color: var(--af-fg);
+}
+
+.af-segmented button.active {
+  color: var(--af-accent-fg);
+}
+
+.af-segmented-indicator,
+.af-tabs-indicator {
+  position: absolute;
+  z-index: -1;
+  pointer-events: none;
+  transition:
+    transform var(--af-duration-slow) var(--af-ease),
+    width var(--af-duration-slow) var(--af-ease);
+}
+
+.af-segmented-indicator {
+  top: 2px;
+  bottom: 2px;
+  left: 0;
+  border-radius: var(--af-radius-sm);
+  background: var(--af-accent);
+  box-shadow: var(--af-accent-glow);
+}
+
+.af-tabs {
+  gap: var(--af-space-1);
+  border-bottom: var(--af-border-width) solid var(--af-border);
+}
+
+.af-tabs button {
+  padding: var(--af-space-1) var(--af-space-2) var(--af-space-2);
+}
+
+.af-tabs button.active {
+  color: var(--af-fg);
+}
+
+.af-tabs-indicator {
+  bottom: -1px;
+  left: 0;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--af-accent);
+  box-shadow: var(--af-accent-glow);
+}
+
+.af-segmented button:focus-visible,
+.af-tabs button:focus-visible {
+  outline: none;
+  box-shadow: var(--af-focus-ring);
+}
+
+/* Badges */
+.af-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--af-space-1);
+  flex: none;
+  padding: 0 var(--af-space-2);
+  border: var(--af-border-width) solid var(--af-widget-border);
+  border-radius: var(--af-radius-full);
+  color: var(--af-fg-muted);
+  font-size: var(--af-text-xs);
+  line-height: 18px;
+  white-space: nowrap;
+}
+
+.af-badge.accent {
+  border-color: color-mix(in srgb, var(--af-accent) 60%, transparent);
+  color: var(--af-accent);
+}
+
+.af-badge.success,
+.af-badge.added {
+  border-color: var(--af-success);
+  color: var(--af-success);
+}
+
+.af-badge.warning {
+  border-color: var(--af-warning);
+  color: var(--af-warning);
+}
+
+.af-badge.danger {
+  border-color: var(--af-error);
+  background: var(--af-error);
+  color: var(--af-accent-fg);
+  white-space: normal;
+}
+
+/* Card */
+.af-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--af-space-2);
+  padding: var(--af-space-3) var(--af-space-4);
+  border: var(--af-border-width) solid var(--af-widget-border);
+  border-radius: var(--af-radius-lg);
+  background: var(--af-widget-bg);
+  color: var(--af-widget-fg);
+}
+
+button.af-card,
+a.af-card {
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color var(--af-duration) var(--af-ease),
+    box-shadow var(--af-duration) var(--af-ease),
+    transform var(--af-duration-fast) var(--af-ease);
+}
+
+button.af-card:hover,
+a.af-card:hover {
+  border-color: color-mix(in srgb, var(--af-accent) 70%, var(--af-widget-border));
+  box-shadow: var(--af-elevation-2);
+  transform: translateY(-1px);
+}
+
+button.af-card:active {
+  transform: scale(0.99);
+}
+
+button.af-card:focus-visible {
+  outline: none;
+  box-shadow: var(--af-focus-ring);
+}
+
+/* Empty state: icon, a short explanation and one action. */
+.af-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--af-space-2);
+  padding: var(--af-space-6) var(--af-space-4);
+  color: var(--af-fg-muted);
+  text-align: center;
+}
+
+.af-empty-icon {
+  color: var(--af-accent);
+  opacity: 0.85;
+}
+
+.af-empty-title {
+  margin: 0;
+  color: var(--af-fg);
+  font-size: var(--af-text-lg);
+  font-weight: var(--af-weight-semibold);
+}
+
+.af-empty-text {
+  max-width: 340px;
+  margin: 0;
+}
+
+/* Skeleton: a calm placeholder while something loads. */
+.af-skeleton {
+  display: block;
+  height: 12px;
+  border-radius: var(--af-radius-sm);
+  background: linear-gradient(
+    90deg,
+    var(--af-list-hover-bg) 0%,
+    color-mix(in srgb, var(--af-list-hover-bg) 40%, var(--af-widget-bg)) 50%,
+    var(--af-list-hover-bg) 100%
+  );
+  background-size: 200% 100%;
+  animation: af-skeleton 1.4s linear infinite;
+}
+
+@keyframes af-skeleton {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: -100% 0;
+  }
+}
+
+/* Tooltip */
+.af-tooltip {
+  position: fixed;
+  z-index: 3000;
+  max-width: 280px;
+  padding: var(--af-space-1) var(--af-space-2);
+  border: var(--af-border-width) solid var(--af-widget-border);
+  border-radius: var(--af-radius-sm);
+  background: var(--af-widget-bg);
+  color: var(--af-widget-fg);
+  font-size: var(--af-text-xs);
+  box-shadow: var(--af-elevation-2);
+  pointer-events: none;
+  animation: af-pop-in var(--af-duration-fast) var(--af-ease);
+}
+
+/* Shared enter animation for popovers, menus, tooltips and dialogs. */
+@keyframes af-pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(-2px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes af-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* An agent waits for the user's approval (tabs, Agents list). */
+.af-attention-dot {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  margin-left: 4px;
+  border-radius: 50%;
+  background: var(--af-attention, var(--af-warning));
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--af-attention, var(--af-warning)) 30%, transparent);
+}
+
+/* Lucide icons */
+.af-icon {
+  flex: none;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.af-tooltip-anchor {
+  display: inline-flex;
+}
+
+.af-file-icon {
+  flex: none;
+  object-fit: contain;
+}
+
+/* Row-like buttons (list items, disclosures, gallery and picker cells): their layout is
+   their own, their interaction states are shared. */
+.af-list-item,
+.af-gallery-cell,
+.af-picker-cell,
+.af-tool-head,
+.af-reasoning-head,
+.af-provider-toggle,
+.af-ws-toggle,
+.af-chat-system-toggle,
+.af-starter,
+.af-swatch,
+.af-ws-swatch,
+.af-history-text,
+.af-tab-avatar,
+.af-tree-row,
+.af-quickopen-item,
+.af-menu-item {
+  transition:
+    background-color var(--af-duration) var(--af-ease),
+    border-color var(--af-duration) var(--af-ease),
+    color var(--af-duration) var(--af-ease),
+    transform var(--af-duration-fast) var(--af-ease);
+}
+
+.af-gallery-cell:active,
+.af-picker-cell:active,
+.af-starter:active,
+.af-swatch:active,
+.af-ws-swatch:active,
+.af-chat-system-toggle:active {
+  transform: scale(0.96);
+}
+
+.af-list-item:focus-visible,
+.af-gallery-cell:focus-visible,
+.af-picker-cell:focus-visible,
+.af-tool-head:focus-visible,
+.af-reasoning-head:focus-visible,
+.af-provider-toggle:focus-visible,
+.af-ws-toggle:focus-visible,
+.af-chat-system-toggle:focus-visible,
+.af-starter:focus-visible,
+.af-swatch:focus-visible,
+.af-ws-swatch:focus-visible,
+.af-history-text:focus-visible,
+.af-menu-item:focus-visible {
+  outline: none;
+  box-shadow: var(--af-focus-ring);
+}
+
+/* Native radios follow the accent. */
+input[type='radio'] {
+  accent-color: var(--af-accent);
+}
+
+/* Visually hidden, still read by screen readers. */
+.af-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}

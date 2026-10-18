@@ -1,11 +1,16 @@
 // A character on a canvas. Static states draw once; animated states join the shared
 // loop only while the canvas is on screen.
-import { createEffect, onCleanup, onMount } from 'solid-js';
+import { createEffect, createSignal, on, onCleanup, onMount } from 'solid-js';
 import { startAnimation, reducedMotion } from './animator';
 import { characterById, characters, loadCharacters } from './catalog';
 import { frameAt, playbackOf } from './playback';
 import { deviceScale, drawFrame, strip } from './renderer';
 import type { CharacterRef, SpriteState } from './types';
+
+/** Tiny avatars (tabs, lists) do not breathe: one pixel of bob is noise there, not life. */
+const BREATHE_MIN_SCALE = 2;
+/** Length of the state-change squash and hop (characters.css). */
+const HOP_MS = 260;
 
 export interface AvatarProps {
   character: CharacterRef;
@@ -88,16 +93,42 @@ export function Avatar(props: AvatarProps) {
 
   createEffect(play);
 
+  // A short squash-and-hop when the state changes, and a gentle breathing bob at rest: CSS
+  // transforms in whole sprite pixels, so the shared loop stays stopped while idle.
+  const moving = () => (props.animate ?? true) && !reducedMotion();
+  const [hop, setHop] = createSignal(false);
+  let hopTimer: ReturnType<typeof setTimeout> | undefined;
+  createEffect(
+    on(
+      () => props.state,
+      () => {
+        if (!moving()) return;
+        setHop(false);
+        clearTimeout(hopTimer);
+        queueMicrotask(() => setHop(true));
+        hopTimer = setTimeout(() => setHop(false), HOP_MS);
+      },
+      { defer: true },
+    ),
+  );
+  onCleanup(() => clearTimeout(hopTimer));
+
   return (
     <canvas
       ref={canvas}
       class={`af-avatar ${props.class ?? ''}`}
+      classList={{
+        'af-avatar-breathe':
+          props.state === 'idle' && props.scale >= BREATHE_MIN_SCALE && moving() && !hop(),
+        'af-avatar-hop': hop(),
+      }}
       role="img"
       aria-label={props.title ?? sheet()?.name ?? ''}
       title={props.title}
       style={{
         width: `${(sheet()?.size ?? 16) * props.scale}px`,
         height: `${(sheet()?.size ?? 16) * props.scale}px`,
+        '--af-px': `${props.scale}px`,
       }}
     />
   );
