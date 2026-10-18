@@ -32,6 +32,8 @@ pub struct Turn {
     pub panel: Option<String>,
     /// The id of the user message that started the turn (the checkpoint key).
     pub turn_id: String,
+    /// Appended to the user's system prompt (workstream manager instructions).
+    pub extra_system: Option<String>,
     pub settings: Settings,
     pub store: ConversationStore,
     pub tracker: UsageTracker,
@@ -105,12 +107,16 @@ async fn run(
         }
     });
     let mut allowed = conversation.agent.allowed_tools.clone();
+    let user_prompt = match &turn.extra_system {
+        Some(extra) => format!("{}\n\n{extra}", conversation.system_prompt.trim()),
+        None => conversation.system_prompt.clone(),
+    };
     for _ in 0..agent.max_iterations {
         let system = prompt::system_prompt(
             &environment,
             &offered,
             mode,
-            &conversation.system_prompt,
+            &user_prompt,
             agent.default_prompt,
             profile.as_ref(),
         );

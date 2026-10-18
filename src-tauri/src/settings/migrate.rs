@@ -7,7 +7,7 @@ use crate::error::AppResult;
 
 /// `STEPS[n]` upgrades a document from version `n` to `n + 1`.
 const STEPS: [fn(&mut Map<String, Value>); CURRENT_VERSION as usize] = [
-    v0_to_v1, v1_to_v2, v2_to_v3, v3_to_v4, v4_to_v5, v5_to_v6, v6_to_v7,
+    v0_to_v1, v1_to_v2, v2_to_v3, v3_to_v4, v4_to_v5, v5_to_v6, v6_to_v7, v7_to_v8,
 ];
 
 /// Migrates and deserializes a raw settings document. Missing fields get defaults,
@@ -80,6 +80,14 @@ fn v5_to_v6(doc: &mut Map<String, Value>) {
 fn v6_to_v7(doc: &mut Map<String, Value>) {
     doc.insert("version".into(), Value::from(7));
     doc.entry("agent")
+        .or_insert_with(|| Value::Object(Map::new()));
+}
+
+/// v8 adds workstreams, the attention glow and the Agent Stage (phase 9); defaults fill in
+/// on load. Workstreams themselves live in the layout, which the frontend migrates.
+fn v7_to_v8(doc: &mut Map<String, Value>) {
+    doc.insert("version".into(), Value::from(8));
+    doc.entry("workstreams")
         .or_insert_with(|| Value::Object(Map::new()));
 }
 
@@ -266,7 +274,7 @@ mod tests {
             "chat": { "autoCompact": true }
         });
         let settings = migrate(raw).expect("migrate");
-        assert_eq!(settings.version, 7);
+        assert_eq!(settings.version, CURRENT_VERSION);
         assert!(settings.usage.cli_subscription, "usage is kept");
         assert!(settings.chat.auto_compact, "chat is kept");
         assert_eq!(settings.agent, crate::settings::AgentSettings::default());
@@ -306,5 +314,30 @@ mod tests {
     #[test]
     fn wrong_field_type_is_an_error() {
         assert!(migrate(json!({ "version": 1, "language": 42 })).is_err());
+    }
+
+    #[test]
+    fn v7_document_gains_workstream_settings() {
+        let raw = json!({
+            "version": 7,
+            "agent": { "maxIterations": 40 },
+            "appearance": { "agentBold": { "color": "#FF8800", "glow": true } },
+            "layout": { "version": 2 }
+        });
+        let settings = migrate(raw).expect("migrate");
+        assert_eq!(settings.version, CURRENT_VERSION);
+        assert_eq!(settings.agent.max_iterations, 40, "agent options are kept");
+        let ws = &settings.workstreams;
+        assert!(ws.glow);
+        assert_eq!(ws.glow_color, None, "the glow follows the agent bold color");
+        assert!(!ws.notify, "OS notifications are opt-in");
+        assert_eq!(ws.default_mode, crate::settings::HandoffMode::SemiAuto);
+        assert_eq!(ws.max_rounds, 10);
+        assert_eq!(ws.report_cap_kb, 30);
+        assert_eq!(ws.stage_scale, 4);
+        assert!(ws.stage_animations);
+        assert!(settings.layout.is_some());
+        let again = migrate(serde_json::to_value(&settings).expect("json")).expect("migrate");
+        assert_eq!(again, settings);
     }
 }

@@ -4,8 +4,9 @@ import chatRs from '../../../src-tauri/src/settings/chat.rs?raw';
 import modelRs from '../../../src-tauri/src/settings/model.rs?raw';
 import providersRs from '../../../src-tauri/src/settings/providers.rs?raw';
 import usageRs from '../../../src-tauri/src/settings/usage.rs?raw';
+import workstreamsRs from '../../../src-tauri/src/settings/workstreams.rs?raw';
 import { PRESETS } from '../providers/presets';
-import { DEFAULT_SETTINGS } from './defaults';
+import { DEFAULT_SETTINGS, MAX_ROUNDS, REPORT_CAP_KB, STAGE_SCALES } from './defaults';
 
 // Rust owns settings.json and its migrations (src-tauri/src/settings/migrate.rs, tested
 // there). The frontend's defaults mirror `Settings::default()` and must stay in step.
@@ -15,6 +16,7 @@ const RUST = {
   'chat.rs': chatRs,
   'usage.rs': usageRs,
   'agent.rs': agentRs,
+  'workstreams.rs': workstreamsRs,
 };
 const rust = (file: keyof typeof RUST) => RUST[file];
 
@@ -75,6 +77,27 @@ describe('settings defaults mirror the Rust schema', () => {
     expect(agent).toContain('default_mode: PermissionMode::Ask');
     expect(expected.defaultMode).toBe('ask');
     expect(expected.toolModels).toEqual([]);
+  });
+
+  it('uses the Rust workstream defaults and ranges', () => {
+    const ws = defaultImpl('workstreams.rs', 'WorkstreamSettings');
+    const expected = DEFAULT_SETTINGS.workstreams;
+    const num = (field: string) => Number(new RegExp(`${field}: ([0-9_]+),`).exec(ws)?.[1]);
+    expect(ws).toContain(`glow: ${expected.glow}`);
+    expect(ws).toContain(`notify: ${expected.notify}`);
+    expect(ws).toContain(`stage_animations: ${expected.stageAnimations}`);
+    expect(ws).toContain('default_mode: HandoffMode::SemiAuto');
+    expect(expected.defaultMode).toBe('semiAuto');
+    expect(expected.glowColor).toBeNull();
+    expect(num('max_rounds')).toBe(expected.maxRounds);
+    expect(num('report_cap_kb')).toBe(expected.reportCapKb);
+    expect(num('stage_scale')).toBe(expected.stageScale);
+    const source = rust('workstreams.rs');
+    expect(source).toContain(`MAX_ROUNDS_RANGE: (u32, u32) = (${MAX_ROUNDS.min}, ${MAX_ROUNDS.max})`);
+    expect(source).toContain(
+      `REPORT_CAP_KB_RANGE: (u32, u32) = (${REPORT_CAP_KB.min}, ${REPORT_CAP_KB.max})`,
+    );
+    expect(source).toContain(`STAGE_SCALES: [u8; 5] = [${STAGE_SCALES.join(', ')}]`);
   });
 
   it('knows every sidebar view the backend accepts', () => {

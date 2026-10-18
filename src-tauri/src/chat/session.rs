@@ -29,6 +29,10 @@ pub struct ChatSendRequest {
     /// A token from `usage_allow_once`: lets this send through a hard budget stop.
     #[serde(default)]
     pub allow_once: Option<String>,
+    /// Appended to the system prompt for this turn (a workstream manager's instructions);
+    /// never stored with the conversation.
+    #[serde(default)]
+    pub extra_system: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -39,6 +43,9 @@ pub struct ChatStarted {
     /// The conversation's title (the first prompt names a new chat).
     pub title: String,
 }
+
+/// Longer extra system text is ignored (the manager instructions are ~2 KB).
+const MAX_EXTRA_SYSTEM: usize = 32 * 1024;
 
 /// Everything a turn needs from the app's managed state.
 pub struct ChatDeps {
@@ -97,6 +104,12 @@ where
     let qualified = format!("{}|{id}", workspace.as_deref().unwrap_or(""));
     let (request_id, cancel) = manager.register(qualified)?;
     let panel = request.panel.clone();
+    let extra_system = request
+        .extra_system
+        .as_deref()
+        .map(str::trim)
+        .filter(|text| !text.is_empty() && text.len() <= MAX_EXTRA_SYSTEM)
+        .map(str::to_owned);
     let stored = {
         let (store, workspace, id) = (store.clone(), workspace.clone(), id.clone());
         let ChatSendRequest {
@@ -137,6 +150,7 @@ where
         conversation_id: id,
         panel,
         turn_id,
+        extra_system,
         settings,
         store,
         tracker,
