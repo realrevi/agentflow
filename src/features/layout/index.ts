@@ -1,5 +1,6 @@
 export { focusedAgent } from './characters';
-export { closeChatPanels, openChat, reopenChat, startChat } from './chatPanels';
+export { closeChatPanels, openChat, openProfileChat, reopenChat, startChat } from './chatPanels';
+export { moveStage, openStage, openTimeline, panelCharacterName, stageIsLeft } from './stagePanels';
 export { openEditor, renameEditors } from './editorPanels';
 export { DockviewHost } from './DockviewHost';
 export {

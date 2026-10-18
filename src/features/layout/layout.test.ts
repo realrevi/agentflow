@@ -69,11 +69,29 @@ describe('saved layout', () => {
 
   it('round-trips the current version and drops unknown roles', () => {
     const dock = { grid: { root: {} }, panels: {} } as never;
-    const saved = serializeLayout(dock, { '1': 'agents', '2': 'files' });
+    const extras = {
+      workstreams: [{ id: 'ws-1', name: 'Feature', manager: 'chat-1', workers: ['terminal-2'] }],
+      stage: { positions: { w: { 'chat-1': { x: 10, y: 20 } } } },
+    };
+    const saved = serializeLayout(dock, { '1': 'agents', '2': 'files' }, extras);
     expect(saved['version']).toBe(LAYOUT_VERSION);
-    expect(parseSavedLayout(saved)).toEqual({ dock, roles: { '1': 'agents', '2': 'files' } });
+    expect(parseSavedLayout(saved)).toEqual({
+      dock,
+      roles: { '1': 'agents', '2': 'files' },
+      ...extras,
+    });
     const tampered = { ...saved, roles: { '1': 'agents', '2': 'kitchen' } };
     expect(parseSavedLayout(tampered)?.roles).toEqual({ '1': 'agents' });
+  });
+
+  it('upgrades a phase 3–8 layout (version 2) without workstreams', () => {
+    const dock = { grid: { root: {} }, panels: {} };
+    expect(parseSavedLayout({ version: 2, dock, roles: { '1': 'agents' } })).toEqual({
+      dock,
+      roles: { '1': 'agents' },
+      workstreams: [],
+      stage: {},
+    });
   });
 });
 

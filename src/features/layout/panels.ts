@@ -7,7 +7,15 @@ import { t } from '../i18n';
 import { baseName } from '../workspace';
 
 export type PanelKind =
-  'terminal' | 'chat' | 'editor' | 'files' | 'settings' | 'usage' | 'installer';
+  | 'terminal'
+  | 'chat'
+  | 'editor'
+  | 'files'
+  | 'settings'
+  | 'usage'
+  | 'installer'
+  | 'stage'
+  | 'timeline';
 
 export type PanelParams =
   | { kind: 'terminal'; index: number; config: TerminalConfig }
@@ -20,9 +28,13 @@ export type PanelParams =
   /** The token & cost dashboard. */
   | { kind: 'usage' }
   /** The agent installer ("Agents library"). */
-  | { kind: 'installer' };
+  | { kind: 'installer' }
+  /** The Agent Stage: every agent panel as its character, by workstream. */
+  | { kind: 'stage' }
+  /** A workstream's handoffs; `pair` filters to the handoffs between two panels. */
+  | { kind: 'timeline'; workstream: string | null; pair: [string, string] | null };
 
-export type SingletonKind = 'files' | 'settings' | 'usage' | 'installer';
+export type SingletonKind = 'files' | 'settings' | 'usage' | 'installer' | 'stage';
 
 function isIndex(value: unknown): value is number {
   return typeof value === 'number' && Number.isInteger(value) && value > 0;
@@ -35,8 +47,23 @@ function isText(value: unknown): value is string {
 export function parsePanelParams(raw: unknown): PanelParams | null {
   if (typeof raw !== 'object' || raw === null) return null;
   const { kind, index, config, root, path } = raw as Record<string, unknown>;
-  if (kind === 'files' || kind === 'settings' || kind === 'usage' || kind === 'installer') {
+  if (
+    kind === 'files' ||
+    kind === 'settings' ||
+    kind === 'usage' ||
+    kind === 'installer' ||
+    kind === 'stage'
+  ) {
     return { kind };
+  }
+  if (kind === 'timeline') {
+    const { workstream, pair } = raw as Record<string, unknown>;
+    const ids = Array.isArray(pair) && pair.length === 2 && pair.every(isText);
+    return {
+      kind,
+      workstream: isText(workstream) ? workstream : null,
+      pair: ids ? [String(pair[0]), String(pair[1])] : null,
+    };
   }
   if (kind === 'editor') {
     return isIndex(index) && isText(root) && isText(path) ? { kind, index, root, path } : null;
@@ -72,6 +99,10 @@ export function panelTitle(params: PanelParams): string {
       return t('panel.usage.title');
     case 'installer':
       return t('panel.installer.title');
+    case 'stage':
+      return t('panel.stage.title');
+    case 'timeline':
+      return t('panel.timeline.title');
   }
 }
 
