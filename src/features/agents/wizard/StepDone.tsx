@@ -2,7 +2,7 @@
 // each tool.
 import { For, Show } from 'solid-js';
 import { t } from '../../i18n';
-import { TARGETS } from './answers';
+import { hintFor, TARGETS } from './answers';
 import type { Wizard } from './wizardStore';
 
 export function StepDone(props: { wizard: Wizard; onOpenFile: (path: string) => void }) {
@@ -41,7 +41,7 @@ export function StepDone(props: { wizard: Wizard; onOpenFile: (path: string) => 
                 {(target) => (
                   <li>
                     <strong>{t(target.label)}:</strong>{' '}
-                    {t(target.hint, {
+                    {t(hintFor(result().installed.template, target), {
                       id: result().installed.id,
                       name: result().installed.template.name,
                     })}

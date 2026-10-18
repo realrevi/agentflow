@@ -1,7 +1,8 @@
 //! The agent template format (schema 1): one source describes an agent once; renderers
 //! turn it plus the user's answers into files for each tool. Documented in
 //! docs/agent-template.md; `schemas/agent-template.schema.json` is the JSON Schema of the same
-//! rules (a test keeps the two in step). Community templates (phase 9) use this format too.
+//! rules (a test keeps the two in step). The community library (phase 10) converts other
+//! formats into it: `kind` (agent, skill, rule), skill `files` and `source` come from there.
 
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -39,6 +40,66 @@ pub struct Template {
     pub questions: Vec<Question>,
     #[serde(default)]
     pub targets: TargetOptions,
+    /// What it is: an agent (the default), a skill folder or a rule.
+    #[serde(default, skip_serializing_if = "TemplateKind::is_agent")]
+    pub kind: TemplateKind,
+    /// A skill's other files, copied as they are (never run by AgentFlow).
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub files: Vec<TemplateFile>,
+    /// Where a library template came from (attribution and update checks).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub source: Option<TemplateSource>,
+}
+
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum TemplateKind {
+    #[default]
+    Agent,
+    /// A folder with SKILL.md (the instructions) and other files.
+    Skill,
+    /// Guidance for a tool's rules (Cursor rules and similar).
+    Rule,
+    /// A custom slash command (Gemini CLI `.toml`); the instructions are the prompt.
+    Command,
+}
+
+impl TemplateKind {
+    pub fn is_agent(&self) -> bool {
+        *self == Self::Agent
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct TemplateFile {
+    /// Relative to the skill folder, `/`-separated (checked: no `..`, no absolute paths).
+    pub path: String,
+    /// UTF-8 text, or base64 when `binary`.
+    pub content: String,
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub binary: bool,
+}
+
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct TemplateSource {
+    /// `owner/name` on GitHub.
+    pub repo: String,
+    /// The item's path in the repository.
+    pub path: String,
+    /// The commit it was read at.
+    pub commit: String,
+    /// Content hash of the item (its files' git blob shas): changes mean an update.
+    pub sha: String,
+    /// SPDX id of the repository's license.
+    pub license: String,
+    /// A curated source of the AgentFlow registry.
+    #[serde(default)]
+    pub verified: bool,
+    /// The original format (`claudeSubagent`, `claudeSkill`, `cursorRule`, ...).
+    #[serde(default)]
+    pub format: String,
 }
 
 fn english() -> String {
@@ -113,7 +174,16 @@ pub struct ClaudeOptions {
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
-pub struct CodexOptions {}
+pub struct CodexOptions {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub model: Option<String>,
+    /// `model_reasoning_effort` (`low`, `medium`, `high`, ...).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub reasoning_effort: Option<String>,
+    /// `sandbox_mode` (`read-only`, `workspace-write`, ...).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub sandbox_mode: Option<String>,
+}
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]

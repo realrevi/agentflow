@@ -1,0 +1,9 @@
+---
+description: React component rules
+globs: **/*.tsx, **/*.jsx
+alwaysApply: false
+---
+# React
+
+- Use function components and hooks.
+- Keep components under 200 lines.

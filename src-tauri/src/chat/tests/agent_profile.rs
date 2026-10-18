@@ -112,6 +112,7 @@ fn create_with_ai_retries_once_with_the_validation_errors() {
         model: "model-x".into(),
         description: "an agent that fixes lint errors".into(),
         language: "tr".into(),
+        base: None,
     };
     let result = tauri::async_runtime::block_on(generate(setup.deps(), request)).expect("draft");
     assert_eq!(result.attempts, 2);
@@ -146,6 +147,7 @@ fn create_with_ai_gives_up_after_the_retry() {
         model: "model-x".into(),
         description: "x".into(),
         language: "en".into(),
+        base: None,
     };
     let err = tauri::async_runtime::block_on(generate(setup.deps(), request)).unwrap_err();
     assert!(err.to_string().contains("no JSON object"), "{err}");
@@ -166,6 +168,7 @@ fn create_with_ai_handles_a_reply_cut_off_at_the_output_limit() {
         model: "model-x".into(),
         description: "accessibility checker".into(),
         language: "en".into(),
+        base: None,
     };
     let result = tauri::async_runtime::block_on(generate(setup.deps(), request)).expect("draft");
     assert_eq!(
@@ -188,5 +191,45 @@ fn create_with_ai_handles_a_reply_cut_off_at_the_output_limit() {
     assert!(
         last["content"].as_str().unwrap_or("").contains("cut off"),
         "{last}"
+    );
+}
+
+#[test]
+fn customize_with_ai_adds_questions_and_keeps_the_original() {
+    let reply = json!({
+        "questions": [{ "id": "testCmd", "label": "Test command", "type": "text",
+                        "default": "pnpm test", "detect": "testCommand" }],
+        "projectSpecifics": "Run `{{testCmd}}` before you report."
+    });
+    let server = MockServer::start(vec![text_reply(&reply.to_string())]);
+    let setup = setup(&server.base, "openai", "custom");
+    let base: crate::agents::Template =
+        serde_json::from_str(&template_json("lint-fixer")).expect("base");
+    let request = GenerateRequest {
+        workspace: WS.map(str::to_owned),
+        provider_id: "p1".into(),
+        model: "glm-5.3".into(),
+        description: String::new(),
+        language: "en".into(),
+        base: Some(base.clone()),
+    };
+    let result = tauri::async_runtime::block_on(generate(setup.deps(), request)).expect("draft");
+    let template = result.template;
+    assert!(template.instructions.starts_with(&base.instructions));
+    assert!(template.instructions.contains("## Project specifics"));
+    assert_eq!(template.questions.len(), 1);
+    let sent = server.requests()[0].json();
+    let user = sent["messages"][1]["content"]
+        .as_str()
+        .unwrap_or("")
+        .to_owned();
+    assert!(
+        user.contains("Fix lint in {{workspaceName}}."),
+        "the original goes to the model"
+    );
+    assert_eq!(
+        setup.tracker.summary(0).today.requests,
+        1,
+        "usage is in the ledger"
     );
 }

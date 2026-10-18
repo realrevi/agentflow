@@ -15,6 +15,8 @@ use crate::util::lock;
 /// Keychain "service"; matches the app identifier in tauri.conf.json.
 pub const KEYCHAIN_SERVICE: &str = "dev.agentflow.desktop";
 const MAX_KEY_LEN: usize = 4096;
+/// The library's GitHub token; provider accounts are `provider:<id>`, so no id clashes.
+const GITHUB_ACCOUNT: &str = "github:token";
 /// Shorter keys show no hint at all (4 characters would give away too much of them).
 const MIN_LEN_FOR_HINT: usize = 12;
 
@@ -140,12 +142,45 @@ impl KeyVault {
     }
 
     pub fn status(&self, provider_id: &str) -> AppResult<KeyStatus> {
-        Ok(KeyStatus::of(self.get(provider_id)?.as_ref()))
+        self.status_at(account(provider_id)?)
     }
 
     /// Stores a key (trimmed). Returns the new status, never the key.
     pub fn set(&self, provider_id: &str, key: &str) -> AppResult<KeyStatus> {
-        let account = account(provider_id)?;
+        self.set_at(account(provider_id)?, key)
+    }
+
+    pub fn delete(&self, provider_id: &str) -> AppResult<()> {
+        self.delete_at(account(provider_id)?)
+    }
+
+    /// The key itself, for building requests inside the backend only.
+    pub(crate) fn get(&self, provider_id: &str) -> AppResult<Option<ApiKey>> {
+        self.get_at(account(provider_id)?)
+    }
+
+    /// The community library's optional GitHub token (same rules as API keys).
+    pub fn github_status(&self) -> AppResult<KeyStatus> {
+        self.status_at(GITHUB_ACCOUNT.into())
+    }
+
+    pub fn set_github(&self, token: &str) -> AppResult<KeyStatus> {
+        self.set_at(GITHUB_ACCOUNT.into(), token)
+    }
+
+    pub fn delete_github(&self) -> AppResult<()> {
+        self.delete_at(GITHUB_ACCOUNT.into())
+    }
+
+    pub(crate) fn github(&self) -> AppResult<Option<ApiKey>> {
+        self.get_at(GITHUB_ACCOUNT.into())
+    }
+
+    fn status_at(&self, account: String) -> AppResult<KeyStatus> {
+        Ok(KeyStatus::of(self.get_at(account)?.as_ref()))
+    }
+
+    fn set_at(&self, account: String, key: &str) -> AppResult<KeyStatus> {
         let key = key.trim();
         if key.is_empty() || key.len() > MAX_KEY_LEN || key.chars().any(char::is_whitespace) {
             return Err(AppError::InvalidInput(
@@ -161,8 +196,7 @@ impl KeyVault {
         Ok(status)
     }
 
-    pub fn delete(&self, provider_id: &str) -> AppResult<()> {
-        let account = account(provider_id)?;
+    fn delete_at(&self, account: String) -> AppResult<()> {
         self.store
             .delete(&account)
             .map_err(|err| keychain_error("remove the key", &err))?;
@@ -170,9 +204,7 @@ impl KeyVault {
         Ok(())
     }
 
-    /// The key itself, for building requests inside the backend only.
-    pub(crate) fn get(&self, provider_id: &str) -> AppResult<Option<ApiKey>> {
-        let account = account(provider_id)?;
+    fn get_at(&self, account: String) -> AppResult<Option<ApiKey>> {
         if let Some(cached) = lock(&self.cache).get(&account) {
             return Ok(cached.clone());
         }
@@ -269,5 +301,22 @@ mod tests {
         let status = KeyStatus::of(Some(&key));
         let json = serde_json::to_string(&status).expect("json");
         assert!(!json.contains("secret-value"), "{json}");
+    }
+
+    #[test]
+    fn the_github_token_has_its_own_account() {
+        let (vault, store) = vault();
+        vault.set_github("ghp_0123456789abcdefWXYZ").expect("set");
+        assert_eq!(
+            vault.github_status().expect("status").last4.as_deref(),
+            Some("WXYZ")
+        );
+        assert!(store.get("github:token").expect("get").is_some());
+        assert!(
+            !vault.status("github").expect("status").has_key,
+            "not a provider key"
+        );
+        vault.delete_github().expect("delete");
+        assert!(vault.github().expect("get").is_none());
     }
 }

@@ -6,9 +6,7 @@
   "version": "1.0.0",
   "author": "AgentFlow",
   "license": "MIT",
-  "tags": [
-    "testing"
-  ],
+  "tags": ["testing"],
   "character": "robot",
   "language": "en",
   "instructions": "You write tests for {{workspaceName}} ({{languages}}), using {{testFramework}}.\n\nHow to work:\n1. Read the code under test and the existing tests next to it; copy their structure, naming and helpers.\n2. Write {{testKind}} tests: one behavior per test, a clear name saying what it proves, arrange/act/assert.\n3. Cover the normal case, edge cases (empty, limits, invalid input) and error paths. {{focus}}\n4. Run `{{testCommand}}` and make the new tests pass. Never change production code to make a test pass unless it is a real bug; then say so.\n\nRules: deterministic (no sleeps, no real network, fixed time and randomness), no snapshot dumps of large output, keep each test short. Finish with what you covered and anything you could not test.",
@@ -41,11 +39,7 @@
       "label": "Kind of tests",
       "type": "choice",
       "default": "unit",
-      "options": [
-        "unit",
-        "integration",
-        "unit and integration"
-      ],
+      "options": ["unit", "integration", "unit and integration"],
       "group": "Tests"
     },
     {
@@ -57,35 +51,16 @@
   ],
   "targets": {
     "claudeCode": {
-      "tools": [
-        "Read",
-        "Grep",
-        "Glob",
-        "Edit",
-        "Write",
-        "Bash"
-      ],
+      "tools": ["Read", "Grep", "Glob", "Edit", "Write", "Bash"],
       "model": "inherit"
     },
     "cursor": {
-      "globs": [
-        "**/*.test.*",
-        "**/*.spec.*",
-        "**/tests/**"
-      ],
+      "globs": ["**/*.test.*", "**/*.spec.*", "**/tests/**"],
       "alwaysApply": false
     },
     "agentflow": {
       "permissionMode": "ask",
-      "tools": [
-        "list_dir",
-        "read_file",
-        "glob",
-        "search",
-        "write_file",
-        "edit_file",
-        "run_command"
-      ]
+      "tools": ["list_dir", "read_file", "glob", "search", "write_file", "edit_file", "run_command"]
     }
   }
 }

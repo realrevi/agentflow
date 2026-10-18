@@ -327,6 +327,14 @@ export const ipc = {
     model: string,
   ) => call('agents_profile_chat', { workspacePath, profileId, providerId, model }),
   agentsGenerate: (request: GenerateRequest) => call('agents_generate', { request }),
+  /** The community library: cached catalog (offline), refreshes, one item in full. */
+  libraryCatalog: () => call('library_catalog', {}),
+  libraryRefresh: (force: boolean) => call('library_refresh', { force }),
+  libraryDetail: (id: string) => call('library_detail', { id }),
+  /** The optional GitHub token is write-only, like provider keys. */
+  libraryTokenStatus: () => call('library_token_status', {}),
+  librarySetToken: (token: string) => call('library_set_token', { token }),
+  libraryDeleteToken: () => call('library_delete_token', {}),
   /** Keys are write-only: the frontend only ever sees has-key + the last 4 characters. */
   providerKeyStatus: (providerId: string) => call('provider_key_status', { providerId }),
   providerSetKey: (providerId: string, key: string) =>

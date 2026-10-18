@@ -2,12 +2,14 @@
 import type { ChatSettings, ProviderEntry } from './chatTypes';
 import type { UsageSettings } from './usageTypes';
 import type { AgentSettings } from './agentTypes';
+import type { LibrarySettings } from './libraryTypes';
 import type { WorkstreamSettings } from './workstreamTypes';
 
 export type * from './agentTypes';
 export type * from './chatTypes';
 export type * from './workstreamTypes';
 export type * from './installerTypes';
+export type * from './libraryTypes';
 export type * from './usageTypes';
 
 export type Locale = 'en' | 'tr' | 'de' | 'zh' | 'ru';
@@ -87,6 +89,8 @@ export interface Settings {
   /** API agents: loop and tool limits, permissions, the default system prompt. */
   agent: AgentSettings;
   workstreams: WorkstreamSettings;
+  /** The community agent library: custom sources, daily refresh. */
+  library: LibrarySettings;
   layout: SerializedLayout | null;
 }
 

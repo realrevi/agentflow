@@ -173,4 +173,13 @@ fn the_json_schema_matches_the_rust_rules() {
         assert!(parsed.is_ok(), "{kind}");
     }
     assert_eq!(kinds.len(), 7);
+    assert_eq!(
+        props["instructions"]["maxLength"],
+        crate::agents::validate::MAX_INSTRUCTIONS
+    );
+    for kind in props["kind"]["enum"].as_array().expect("kinds") {
+        let parsed: Result<crate::agents::template::TemplateKind, _> =
+            serde_json::from_value(kind.clone());
+        assert!(parsed.is_ok(), "{kind}");
+    }
 }

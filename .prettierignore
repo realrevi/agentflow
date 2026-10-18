@@ -5,3 +5,9 @@ src-tauri/target
 src-tauri/gen
 src-tauri/icons
 src/assets/fonts
+
+# Byte-exact renderer outputs compared by the installer's snapshot tests: formatting them
+# would change what the tests assert.
+src-tauri/src/agents/tests/snapshots
+# Library importer fixtures: upstream files as they are (formatting would change the input).
+src-tauri/src/library/tests/fixtures

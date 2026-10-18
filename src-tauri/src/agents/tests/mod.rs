@@ -5,6 +5,7 @@ mod detect;
 mod install;
 mod render;
 mod section;
+mod skills;
 mod template;
 
 use serde_json::json;

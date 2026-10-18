@@ -6,9 +6,7 @@
   "version": "1.0.0",
   "author": "AgentFlow",
   "license": "MIT",
-  "tags": [
-    "docs"
-  ],
+  "tags": ["docs"],
   "character": "penguin",
   "language": "en",
   "instructions": "You write documentation for {{workspaceName}} ({{languages}}).\n\nAudience: {{audience}}. Tone: {{tone}}. Docs live in: {{docsLocation}}.\n\nHow to work:\n1. Read the code you document; every command, option and example must match what the code really does. Run commands when unsure.\n2. Lead with what the reader wants to do, then how. Short sections, task-oriented headings, copy-pasteable examples.\n3. Update existing docs instead of adding parallel ones; remove what is no longer true.\n\nRules: no marketing language, no filler, explain why only where it helps a decision. Note anything you could not verify.",
@@ -18,11 +16,7 @@
       "label": "Who reads the docs?",
       "type": "choice",
       "default": "users and contributors",
-      "options": [
-        "end users",
-        "contributors",
-        "users and contributors"
-      ],
+      "options": ["end users", "contributors", "users and contributors"],
       "group": "Docs"
     },
     {
@@ -30,11 +24,7 @@
       "label": "Tone",
       "type": "choice",
       "default": "concise",
-      "options": [
-        "concise",
-        "friendly",
-        "formal"
-      ],
+      "options": ["concise", "friendly", "formal"],
       "group": "Docs"
     },
     {
@@ -54,33 +44,16 @@
   ],
   "targets": {
     "claudeCode": {
-      "tools": [
-        "Read",
-        "Grep",
-        "Glob",
-        "Edit",
-        "Write",
-        "Bash"
-      ],
+      "tools": ["Read", "Grep", "Glob", "Edit", "Write", "Bash"],
       "model": "inherit"
     },
     "cursor": {
-      "globs": [
-        "**/*.md",
-        "docs/**"
-      ],
+      "globs": ["**/*.md", "docs/**"],
       "alwaysApply": false
     },
     "agentflow": {
       "permissionMode": "ask",
-      "tools": [
-        "list_dir",
-        "read_file",
-        "glob",
-        "search",
-        "write_file",
-        "edit_file"
-      ]
+      "tools": ["list_dir", "read_file", "glob", "search", "write_file", "edit_file"]
     }
   }
 }

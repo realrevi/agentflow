@@ -1,0 +1,7 @@
+description = "Writes a commit message for the staged changes"
+prompt = """
+Write a conventional commit message for:
+!{git diff --staged}
+
+Extra notes: {{args}}
+"""

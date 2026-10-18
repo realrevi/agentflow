@@ -10,7 +10,7 @@ Linux. Priorities: **low RAM, fast, clean code organization, fun look.**
   which, ignore + notify, trash, reqwest (rustls + ring, no default features), keyring (OS
   keychain); tauri plugins: dialog, clipboard-manager, opener, notification
 - **Frontend:** SolidJS + TypeScript (strict) + Vite, pnpm, xterm.js (+ fit, webgl, unicode11),
-  CodeMirror 6 (languages per file type), marked + DOMPurify (chat only); all three lazy
+  CodeMirror 6 (languages per file type), marked + DOMPurify (`shared/markdown`, chat + library); all lazy
 - **Layout/styling:** `dockview-core` behind a thin Solid wrapper (stylesheet from `dockview`,
   both pinned to the same version); plain CSS with `--af-*` variables, no React, Electron,
   Tailwind or UI kits; bundled fonts JetBrains Mono (code), Pixelify Sans (small accents only).
@@ -25,17 +25,14 @@ src-tauri/src/
   commands/           thin #[tauri::command] fns that delegate to modules
   pty/                PtyManager, sessions (reader/waiter/pump threads), shells, CLI detection
   fs/                 workspace: path checks, list/read/write/trash, quick open index, watcher
-  prompts/            prompt history per workspace (app data dir)
   providers/          Provider trait, Anthropic + OpenAI-compatible adapters, SSE, keys, errors
-  conversations/      API chats per workspace (app data dir, one JSON file per conversation)
-  chat/               ChatManager (one stream per chat, cancel), request building (blocks, cache
-                      breakpoints, attachment dedup), Compact, pre-send estimate, Channel events
+  prompts/, conversations/  prompt history; API chats (app data dir, one JSON per conversation)
+  chat/               ChatManager (one stream per chat), request building, Compact, estimate
   agent/              API agent loop, tools/, permissions, dangerous commands, checkpoints, prompt
-  agents/             installer: templates, renderers per tool, managed sections, plan/apply,
-                      registry, detectors, AgentFlow profiles, Create with AI, starters/
+  agents/             installer: templates, per-tool renderers, skills, sections, plan/apply, registry
+  library/            community library: registry, GitHub client, cache, importers, safety scan
   tokens/             UsageTracker: JSONL ledger, buckets, prices, budgets, CLI log readers
-  turns/              CLI turn ends, reports and tool activity from the session logs (phase 9)
-  workstreams/        the workstream log (handoffs per workspace, JSONL)
+  turns/, workstreams/  CLI turn ends + activity from session logs; handoff log (JSONL)
   util/               atomic_write, run_blocking, lock/Signal, workspace_key, hex color, test_dir
 src/
   main.tsx, App.tsx   entry: bootstrap (settings -> locale -> theme -> workspace fs), then render
@@ -53,7 +50,7 @@ src/
   features/i18n/      typed t(), lazy locale loading, reportError()
   features/settings/  settings store (debounced save) + lazy SettingsPanel and sections
   features/tokens/    usage store (one Channel), formats, badge, chart, Usage view + lazy panel
-  features/agents/    lazy Agents library panel (wizard/, installed list), profiles store
+  features/agents/    lazy Agents library panel (wizard/, library/ Browse tab, installed), profiles
   features/workstreams/ protocol, engine, store, runtime, cards, sidebar section, lazy Timeline
   features/stage/     lazy Agent Stage: layout, positions, scene, motion, canvas renderer
   shared/             ipc (+ ipcCommands), types (+ chat/usage/agentTypes), errors, toast, dialog, ui/
@@ -121,8 +118,7 @@ other. `workstreams` and `stage` import core features only (the Stage gets `Stag
 - **Permission answers** come only from a trusted click/keypress on that request's card
   (`liveTurn.answer`: `isTrusted`, pending id) and carry the conversation id; the gate rejects
   unknown, answered or foreign ids. A turn that ends (cancel, panel close, reload) never allows.
-- Events: `reasoning`, `status`, `toolStart`, `toolEnd`, `permission`, `notice`, `message`. UI:
-  `chat/agent/` (`timeline.ts` cards, `liveTurn.ts` in flight); the layout lends `ChatHooks`.
+- UI: `chat/agent/` (`timeline.ts` cards, `liveTurn.ts` in flight); the layout lends `ChatHooks`.
 
 ## Agent installer (phase 8)
 
@@ -135,44 +131,51 @@ other. `workstreams` and `stage` import core features only (the Stage gets `Stag
   CRLF kept, idempotent. Every install is planned and previewed first (`plan.rs`); files we did
   not create or that changed since (hash in `.agentflow/installed.json`) need a confirmation;
   user scope only into documented home folders, after its own confirmation (`roots.rs`).
-- Profiles narrow tools and never loosen the mode. New tool format = a target fn + snapshot test.
+  Profiles narrow tools, never loosen the mode. New tool format = a target fn + snapshot test.
+- Kinds: agent, rule, `skill` (folder `<tool skills dir>/<id>/` with SKILL.md + `files`, paths
+  via `relpath.rs`, binary as base64, scripts copied never run), `command` (Gemini only).
+  `\{{` is a literal `{{`. Library templates carry `source` (attribution line in each file).
+
+## Community library (phase 10)
+
+- `registry/sources.json` (docs/library-sources.md): newest from GitHub main (ETag), else the
+  cache, else bundled; user sources from settings are `unverified`. Per source and refresh:
+  repo + branch head (ETags), the recursive tree only on a new commit; files from
+  raw.githubusercontent by commit, cached by blob sha in `<app data>/library`. Rate limit read
+  from every answer; used up = no request until the reset. Auto refresh at most once a day.
+- Importers (`library/import/`) keep the original text, map frontmatter to target options and
+  list what they cannot convert (`Unsupported` + reason id). Per-skill LICENSE files decide
+  per-item licenses. Safety flags (warnings only): every pattern in `library/safety.rs` + tests.
+- The Browse tab hands templates to the wizard; updates = a different `source.sha` upstream.
 
 ## Workstreams & Agent Stage (phase 9)
 
-- **Turn detection** (docs/turn-signals.md): API chats end on `stop` (report = final message);
-  Claude Code / Codex from their session logs via `turns/` (phase 6 readers, cwd + time window;
-  `turns_subscribe` Channel: attached, activity, draft, turnEnded); Gemini and custom CLIs by the
-  idle heuristic (`terminal/turnFallback.ts`, marked approximate). No hooks; PTYs drop a parent
-  Claude session's markers (`pty/session_env.rs`). Prompts: text, then Enter 80 ms later.
-- **Protocol** (`workstreams/protocol.ts`): a manager ends each reply with one fenced
-  `agentflow-send to="<name>"` / `agentflow-ask` / `agentflow-done` (CommonMark fences; last block
-  wins, warning). No/bad block or unknown worker = pause, never a guess. Reports: "Report from
-  <worker> (turn N):", cut at `workstreams.reportCapKb`, whole in the log. API managers get the
-  instructions as `extraSystem` (never stored); CLI managers a setup message per CLI session.
-- **Engine** (`engine.ts`, pure): manual / semi-auto (preview cards) / auto. Auto stops on ask or
-  done, any permission (never answered), errors or bad replies, max rounds, a budget hit, the user
-  typing into a member, Stop. Deliveries go only to members (`canRoute`) through `agentui` ports
-  (the prompt bar path). Workstreams + Stage positions persist in layout v3.
-- **Glow** (`agentui/attention.ts`): turn ended, permission, question, error; clears on focus +
-  interaction (`interactionClears`); `--af-attention`; optional OS notification when unfocused.
-- **Stage**: one canvas on the shared animator, running only while something moves and never
-  hidden or unfocused; DOM bubbles; reduced motion = no travel or pulse.
+- **Turn ends** (docs/turn-signals.md): API on `stop`; Claude Code / Codex from session logs
+  (`turns/`, `turns_subscribe`); Gemini / custom by the idle heuristic (approximate). PTYs drop
+  a parent Claude session's markers (`pty/session_env.rs`); prompts: text, then Enter 80 ms later.
+- **Protocol** (`protocol.ts`): one fenced `agentflow-send to="<name>"` / `-ask` / `-done` per
+  manager reply (CommonMark fences, last wins); no/bad block or unknown worker = pause, never a
+  guess. Reports capped at `reportCapKb`, whole in the log. API managers get `extraSystem`
+  (never stored); CLI managers a setup message per CLI session.
+- **Engine** (`engine.ts`, pure): manual / semi-auto / auto; auto stops on ask/done, any
+  permission (never answered), errors, bad replies, max rounds, budgets, user typing, Stop.
+  Deliveries only to members (`canRoute`) via `agentui` ports. Persisted in layout v3.
+- **Glow** (`agentui/attention.ts`) clears on focus + interaction. **Stage**: one canvas on the
+  shared animator, idle = no frames, paused hidden/unfocused; reduced motion = no travel.
 
 ## Usage tracking (phase 6)
 
-- `tokens/tracker.rs`: monthly JSONL ledger in `<app data>/usage` (append-only, dedup by `id`),
-  15-minute buckets for 62 days, cost at query time (`pricing.json`, OpenRouter cache,
-  overrides; no price = "—"). Lock order: `cli` before `state`. CLI logs are tailed from saved
-  byte offsets and watched with notify; `pty_spawn(panel)` matches CLI usage to its panel.
-- ONE `usage_subscribe` Channel (`tokens/usageStore.ts`); hard stop = API chats only (kind
-  `budget`, "Allow once" token -> resend). Anthropic cache: max 4 breakpoints.
+- `tokens/tracker.rs`: monthly JSONL ledger (append-only, dedup by `id`), 15-minute buckets,
+  cost at query time (no price = "—"). Lock order: `cli` before `state`. CLI logs tailed from
+  saved offsets; `pty_spawn(panel)` matches CLI usage to its panel. ONE `usage_subscribe`
+  Channel; hard stop = API chats only ("Allow once" token). Anthropic cache: max 4 breakpoints.
 
 ## Layout, characters & prompt bar
 
 - Groups have a role (`layout/roles.ts`): `agents` (center), `files` (right, ~22%), `terminal`
   (~30% under the center). New panels open in the last focused group of their role
-  (`placement.ts`); a Stage moved left gets a `stage` group. Saved layout `{ version: 3, dock,
-roles, workstreams, stage }` (v2 upgrades as is); bump `LAYOUT_VERSION` on changes.
+  (`placement.ts`); a Stage moved left gets a `stage` group. Saved layout v3 (`dock`, `roles`,
+  `workstreams`, `stage`; v2 upgrades as is); bump `LAYOUT_VERSION` on changes.
 - Sprites: `characters/sprites/*.json`, 8 states (idle walk think work receive done error sleep)
   of 2-4 frames, `.` = transparent, else a base-36 palette index (`validate.ts`); names are
   never translated. ONE animation loop (`animator.ts`), only while visible; `reducedMotion()`.
@@ -185,8 +188,8 @@ roles, workstreams, stage }` (v2 upgrades as is); bump `LAYOUT_VERSION` on chang
   hard-code colors. Overrides (text, accent, agent bold `#F5C542`, `--af-glow`): `overrides.ts`.
 - Flat dotted keys in `src/locales/en.json`; `I18nKey = keyof typeof en`; every visible string
   uses `t('key', { param })`. New keys go into **all five** locales (typecheck + tests check).
-- Rust owns `settings.json` (v8: `workstreams`): bump `CURRENT_VERSION` + a `migrate.rs` step on shape
-  changes; `normalized()` repairs values; `defaults.test.ts` checks TS defaults against Rust.
+- Rust owns `settings.json` (v9): bump `CURRENT_VERSION` + a `migrate.rs` step on shape changes;
+  `normalized()` repairs values; `defaults.test.ts` checks TS defaults against Rust.
 
 ## Commands
 
@@ -199,17 +202,9 @@ cargo build    # in src-tauri: compile check, no bundling
 
 ## Roadmap (12 phases)
 
-1. [x] Skeleton, theme engine, i18n, dockable layout
-2. [x] PTY + multi terminal panels (xterm.js WebGL, portable-pty)
-3. [x] Workspace file tree (notify + ignore) + CodeMirror 6 viewer/editor
-4. [x] Pixel character system (15 characters, 16x16 JSON sprites scaled, typewriter speech bar)
-5. [x] AI provider APIs (Anthropic + OpenAI-compatible, keychain keys) + API chat panels
-6. [x] Token & cost tracking (ledger, CLI log readers, prices, budgets, dashboard, Compact)
-7. [x] API agent tools + default system prompt (tool cards, diffs, permissions, undo)
-8. [x] Agent installer wizard (per-AI formats/paths, templates, managed sections, detection)
-9. [x] Manager–worker workstreams + the Agent Stage (turn detection, handoffs, glow, Stage)
-10. [ ] Community agent library from GitHub
-11. [ ] UI polish
-12. [ ] Cross-platform builds + CI
+Done: 1 skeleton, themes, i18n, layout · 2 PTY terminals · 3 file tree + editor · 4 pixel
+characters · 5 provider APIs + chat · 6 usage tracking · 7 API agent tools · 8 agent installer ·
+9 workstreams + Agent Stage · 10 community agent library. Next: 11 UI polish · 12
+cross-platform builds + CI.
 
 Only build what the current phase lists; leave future modules as empty stubs.

@@ -6,10 +6,7 @@
   "version": "1.0.0",
   "author": "AgentFlow",
   "license": "MIT",
-  "tags": [
-    "security",
-    "review"
-  ],
+  "tags": ["security", "review"],
   "character": "dragon",
   "language": "en",
   "instructions": "You are an application security reviewer for {{workspaceName}} ({{languages}}; {{framework}}).\n\nLook for: {{focus}}.\nReport findings of severity {{minSeverity}} or higher.\n\nHow to work:\n1. Map the attack surface first: entry points (routes, commands, IPC, file and network input), trust boundaries, secrets.\n2. Follow untrusted data from input to sinks (queries, shells, file paths, HTML, deserialization). Check authorization on every sensitive action.\n3. Check dependencies only for known-vulnerable or abandoned packages you can name.\n\nFor each finding: severity, file:line, how it can be exploited (concrete), and the fix. No theoretical issues without a path to exploit. Do not edit code and never print real secrets you find; point to their location.",
@@ -33,12 +30,7 @@
       "id": "focus",
       "label": "Focus areas",
       "type": "multiChoice",
-      "default": [
-        "injection",
-        "authentication and authorization",
-        "secrets",
-        "input validation"
-      ],
+      "default": ["injection", "authentication and authorization", "secrets", "input validation"],
       "options": [
         "injection",
         "authentication and authorization",
@@ -55,33 +47,18 @@
       "label": "Lowest severity to report",
       "type": "choice",
       "default": "medium",
-      "options": [
-        "low",
-        "medium",
-        "high",
-        "critical"
-      ],
+      "options": ["low", "medium", "high", "critical"],
       "group": "Review"
     }
   ],
   "targets": {
     "claudeCode": {
-      "tools": [
-        "Read",
-        "Grep",
-        "Glob",
-        "Bash"
-      ],
+      "tools": ["Read", "Grep", "Glob", "Bash"],
       "model": "inherit"
     },
     "agentflow": {
       "permissionMode": "readOnly",
-      "tools": [
-        "list_dir",
-        "read_file",
-        "glob",
-        "search"
-      ]
+      "tools": ["list_dir", "read_file", "glob", "search"]
     }
   }
 }

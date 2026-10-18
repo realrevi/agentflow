@@ -4,7 +4,8 @@
 
 use serde::{Deserialize, Serialize};
 
-use super::template::Template;
+use super::skills::{self, attribution};
+use super::template::{Template, TemplateKind};
 use super::text::{toml_multiline, toml_string, yaml_list, yaml_scalar};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
@@ -43,6 +44,8 @@ pub enum Content {
     File { text: String },
     /// A managed section inside a shared file.
     Section { body: String },
+    /// A whole binary file (a skill's image or font), base64.
+    Binary { base64: String },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -82,10 +85,27 @@ fn pointer(template: &Template, how: &str) -> String {
     )
 }
 
+/// The tools a template can be installed for (skills only where skill folders exist,
+/// commands only for Gemini CLI).
+pub fn supports(template: &Template, target: Target) -> bool {
+    match template.kind {
+        TemplateKind::Skill => skills::skill_folder(target).is_some(),
+        TemplateKind::Command => target == Target::Gemini,
+        TemplateKind::Agent | TemplateKind::Rule => true,
+    }
+}
+
 pub fn render(rendered: &Rendered, target: Target, scope: Scope) -> Vec<Output> {
     let t = rendered.template;
+    match t.kind {
+        TemplateKind::Skill => return skills::render(rendered, target),
+        TemplateKind::Command => return skills::render_command(rendered, target),
+        TemplateKind::Agent | TemplateKind::Rule => {}
+    }
     let id = &t.id;
     let body = rendered.instructions.trim();
+    // Library templates keep their source and license (frontmatter, or a TOML comment).
+    let source = attribution(t).map(|s| yaml_scalar(&s));
     let user = scope == Scope::User;
     let out = |path: String, content: Content| Output {
         target,
@@ -101,6 +121,7 @@ pub fn render(rendered: &Rendered, target: Target, scope: Scope) -> Vec<Output> 
                     ("description", Some(yaml_scalar(&t.description))),
                     ("tools", options.tools.map(|tools| tools.join(", "))),
                     ("model", options.model.map(|m| yaml_scalar(&m))),
+                    ("source", source.clone()),
                 ],
                 body,
             );
@@ -124,10 +145,14 @@ pub fn render(rendered: &Rendered, target: Target, scope: Scope) -> Vec<Output> 
             ]
         }
         Target::Codex => {
+            let comment = attribution(t)
+                .map(|s| format!("# Source: {}\n", s.replace('\n', " ")))
+                .unwrap_or_default();
             let file = format!(
-                "name = {}\ndescription = {}\ndeveloper_instructions = {}\n",
+                "{comment}name = {}\ndescription = {}\n{}developer_instructions = {}\n",
                 toml_string(id),
                 toml_string(t.description.trim()),
+                codex_options(t),
                 toml_multiline(body)
             );
             let how =
@@ -155,6 +180,7 @@ pub fn render(rendered: &Rendered, target: Target, scope: Scope) -> Vec<Output> 
                 &[
                     ("name", Some(id.clone())),
                     ("description", Some(yaml_scalar(&t.description))),
+                    ("source", source.clone()),
                 ],
                 body,
             );
@@ -185,6 +211,7 @@ pub fn render(rendered: &Rendered, target: Target, scope: Scope) -> Vec<Output> 
                     ("description", Some(yaml_scalar(&t.description))),
                     ("globs", globs),
                     ("alwaysApply", Some(options.always_apply.to_string())),
+                    ("source", source.clone()),
                 ],
                 body,
             );
@@ -214,6 +241,7 @@ pub fn render(rendered: &Rendered, target: Target, scope: Scope) -> Vec<Output> 
                         "template",
                         Some(yaml_scalar(&format!("{id}@{}", t.version))),
                     ),
+                    ("source", source.clone()),
                 ],
                 body,
             );
@@ -223,4 +251,23 @@ pub fn render(rendered: &Rendered, target: Target, scope: Scope) -> Vec<Output> 
             )]
         }
     }
+}
+
+/// Codex agent options as TOML lines (`model`, `model_reasoning_effort`, `sandbox_mode`).
+fn codex_options(template: &Template) -> String {
+    let Some(options) = &template.targets.codex else {
+        return String::new();
+    };
+    [
+        ("model", &options.model),
+        ("model_reasoning_effort", &options.reasoning_effort),
+        ("sandbox_mode", &options.sandbox_mode),
+    ]
+    .into_iter()
+    .filter_map(|(key, value)| {
+        value
+            .as_ref()
+            .map(|v| format!("{key} = {}\n", toml_string(v)))
+    })
+    .collect()
 }

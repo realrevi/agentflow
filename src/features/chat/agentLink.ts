@@ -22,6 +22,7 @@ export interface ChatLinkOptions {
   ready: () => boolean;
   deliver: (text: string) => boolean;
   label: () => string;
+  role: () => string | null;
 }
 
 /** The text of the turn's last assistant message: what the agent finally said. */
@@ -64,6 +65,7 @@ export function linkChat(options: ChatLinkOptions, session: ChatSession): void {
       ready: () => options.ready() && !session.streaming() && !session.compacting(),
       deliver: options.deliver,
       label: options.label,
+      role: options.role,
     }),
   );
   createEffect(() => {

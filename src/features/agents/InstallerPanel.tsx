@@ -1,13 +1,15 @@
 // Lazy-loaded "Agents library" panel (see layout/renderers.tsx): the install wizard
-// (template -> targets -> questions -> preview -> done) and the installed agents. The
-// layout lends it the editor's diff view and "open file".
+// (template -> targets -> questions -> preview -> done), the community library (Browse)
+// that feeds it, and the installed agents. The layout lends it the editor's diff view and
+// "open file".
 import './installer.css';
 import { createResource, createSignal, Match, Show, Switch, type Component } from 'solid-js';
 import { ipc } from '../../shared/ipc';
-import type { AgentTemplate } from '../../shared/types';
+import type { AgentTemplate, LibraryItem } from '../../shared/types';
 import { t, type I18nKey } from '../i18n';
 import { currentWorkspace } from '../workspace';
 import { InstalledList } from './InstalledList';
+import { BrowseTab } from './library/BrowseTab';
 import { refreshProfiles } from './profilesStore';
 import { StepDone } from './wizard/StepDone';
 import { StepPreview, type DiffProps } from './wizard/StepPreview';
@@ -30,7 +32,7 @@ const STEPS: readonly { id: Step; label: I18nKey }[] = [
 ];
 
 export default function InstallerPanel(props: { hooks: InstallerHooks }) {
-  const [tab, setTab] = createSignal<'install' | 'installed'>('install');
+  const [tab, setTab] = createSignal<'install' | 'browse' | 'installed'>('install');
   const [version, setVersion] = createSignal(0);
   const changed = () => {
     setVersion((v) => v + 1);
@@ -39,6 +41,10 @@ export default function InstallerPanel(props: { hooks: InstallerHooks }) {
   const wizard = createWizard(currentWorkspace, changed);
   const [starters] = createResource(() => ipc.agentsStarters().catch(() => [] as AgentTemplate[]));
   const current = () => STEPS.findIndex((s) => s.id === wizard.step());
+  const installFromLibrary = async (template: AgentTemplate, item: LibraryItem) => {
+    await wizard.start(template, { targets: item.native });
+    setTab('install');
+  };
 
   return (
     <div class="af-installer">
@@ -53,6 +59,15 @@ export default function InstallerPanel(props: { hooks: InstallerHooks }) {
             onClick={() => setTab('install')}
           >
             {t('installer.tab.install')}
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={tab() === 'browse'}
+            classList={{ active: tab() === 'browse' }}
+            onClick={() => setTab('browse')}
+          >
+            {t('installer.tab.browse')}
           </button>
           <button
             type="button"
@@ -94,6 +109,12 @@ export default function InstallerPanel(props: { hooks: InstallerHooks }) {
               <StepDone wizard={wizard} onOpenFile={props.hooks.openFile} />
             </Match>
           </Switch>
+        </Show>
+        <Show when={tab() === 'browse'}>
+          <BrowseTab
+            workspace={currentWorkspace()}
+            onInstall={(template, item) => void installFromLibrary(template, item)}
+          />
         </Show>
         <Show when={tab() === 'installed'}>
           <InstalledList

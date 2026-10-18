@@ -7,6 +7,7 @@ use std::collections::BTreeSet;
 
 use serde::{Deserialize, Serialize};
 
+use super::binary;
 use super::placeholders::{render, values};
 use super::registry::{hash, FileKind, InstalledFile, Registry};
 use super::roots::Roots;
@@ -67,6 +68,9 @@ pub struct PlannedFile {
     pub remove: bool,
     /// The installer created this shared file (it may go once our section is out).
     pub created: bool,
+    /// A binary file's content (base64); `before`/`after` only describe it.
+    #[serde(skip)]
+    pub data: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -125,6 +129,11 @@ pub fn plan(roots: &Roots, registry: &Registry, request: &InstallRequest) -> App
     let mut files = Vec::new();
     let mut produced = BTreeSet::new();
     for &target in &request.targets {
+        if !targets::supports(template, target) {
+            return Err(AppError::InvalidInput(format!(
+                "{target:?} has no skill folders; pick a tool that supports skills"
+            )));
+        }
         if request.scope == Scope::User && !target.has_user_scope() {
             return Err(AppError::InvalidInput(format!(
                 "{target:?} has no documented user folder; install it in the project"
@@ -132,19 +141,31 @@ pub fn plan(roots: &Roots, registry: &Registry, request: &InstallRequest) -> App
         }
         for output in targets::render(&rendered, target, request.scope) {
             let scope = request.scope;
+            let recorded_at = |kind: FileKind| {
+                previous.and_then(|p| {
+                    p.files
+                        .iter()
+                        .find(|f| f.scope == scope && f.path == output.path && f.kind == kind)
+                })
+            };
+            if let Content::Binary { base64 } = &output.content {
+                let recorded = recorded_at(FileKind::File);
+                let file = binary::planned(roots, scope, target, &output.path, base64, recorded)?;
+                produced.insert((scope, output.path.clone(), FileKind::File));
+                files.push(file);
+                continue;
+            }
             let before = read_existing(roots, scope, &output.path)?;
             let (kind, after) = match &output.content {
-                Content::File { text } => (FileKind::File, text.clone()),
                 Content::Section { body } => (
                     FileKind::Section,
                     section::upsert(before.as_deref().unwrap_or(""), &template.id, body)?,
                 ),
+                Content::File { text } | Content::Binary { base64: text } => {
+                    (FileKind::File, text.clone())
+                }
             };
-            let recorded = previous.and_then(|p| {
-                p.files
-                    .iter()
-                    .find(|f| f.scope == scope && f.path == output.path && f.kind == kind)
-            });
+            let recorded = recorded_at(kind);
             let (status, conflict) =
                 status(kind, before.as_deref(), &after, recorded, &template.id)?;
             produced.insert((scope, output.path.clone(), kind));
@@ -160,6 +181,7 @@ pub fn plan(roots: &Roots, registry: &Registry, request: &InstallRequest) -> App
                 after,
                 remove: false,
                 created: false,
+                data: None,
             });
         }
     }
@@ -205,17 +227,20 @@ fn status(
 
 /// A file of the previous install that the new one does not write.
 pub(super) fn removal(roots: &Roots, old: &InstalledFile, id: &str) -> AppResult<PlannedFile> {
-    let before = read_existing(roots, old.scope, &old.path)?;
-    let (after, edited) = match (&before, old.kind) {
-        (None, _) => (String::new(), false),
-        (Some(text), FileKind::File) => (String::new(), hash(text) != old.hash),
-        (Some(text), FileKind::Section) => {
-            let current = section::content(text, id)?;
-            (
-                section::remove(text, id)?,
-                current.is_some_and(|c| hash(&c) != old.hash),
-            )
-        }
+    let (before, after, edited) = match old.kind {
+        FileKind::File => match binary::read_whole(roots, old.scope, &old.path)? {
+            None => (None, String::new(), false),
+            Some((shown, digest)) => (Some(shown), String::new(), digest != old.hash),
+        },
+        FileKind::Section => match read_existing(roots, old.scope, &old.path)? {
+            None => (None, String::new(), false),
+            Some(text) => {
+                let current = section::content(&text, id)?;
+                let after = section::remove(&text, id)?;
+                let edited = current.is_some_and(|c| hash(&c) != old.hash);
+                (Some(text), after, edited)
+            }
+        },
     };
     Ok(PlannedFile {
         target: old.target,
@@ -235,6 +260,7 @@ pub(super) fn removal(roots: &Roots, old: &InstalledFile, id: &str) -> AppResult
         after,
         remove: true,
         created: old.created,
+        data: None,
     })
 }
 

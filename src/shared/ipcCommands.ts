@@ -37,6 +37,8 @@ import type {
   FsEntry,
   HandoffEntry,
   KeyStatus,
+  LibraryCatalog,
+  LibraryDetail,
   ModelInfo,
   PriceList,
   PriceOverride,
@@ -142,6 +144,12 @@ export interface Commands {
     result: Conversation;
   };
   agents_generate: { args: { request: GenerateRequest }; result: GenerateResult };
+  library_catalog: { args: Record<string, never>; result: LibraryCatalog };
+  library_refresh: { args: { force: boolean }; result: LibraryCatalog };
+  library_detail: { args: { id: string }; result: LibraryDetail };
+  library_token_status: { args: Record<string, never>; result: KeyStatus };
+  library_set_token: { args: { token: string }; result: KeyStatus };
+  library_delete_token: { args: Record<string, never>; result: void };
   provider_key_status: { args: ProviderId; result: KeyStatus };
   provider_set_key: { args: ProviderId & { key: string }; result: KeyStatus };
   provider_delete_key: { args: ProviderId; result: null };

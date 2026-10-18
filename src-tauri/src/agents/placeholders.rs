@@ -14,14 +14,31 @@ use crate::error::{AppError, AppResult};
 
 pub const BUILT_INS: [&str; 3] = ["name", "description", "workspaceName"];
 
+/// `\{{` is a literal `{{` (imported text keeps its own braces this way).
+pub const ESCAPE: &str = "\\{{";
+
+/// Escapes every `{{` of `text`, so it renders back to exactly `text`.
+pub fn escape(text: &str) -> String {
+    text.replace("{{", ESCAPE)
+}
+
+fn unescape(text: &str) -> String {
+    text.replace(ESCAPE, "{{")
+}
+
 /// `{{ name }}` occurrences: (start byte, end byte, name). A name is a letter followed by
-/// letters, digits or `_`; anything else between braces is left as text.
+/// letters, digits or `_`; anything else between braces is left as text, and so is an
+/// escaped `\{{`.
 fn scan(text: &str) -> Vec<(usize, usize, &str)> {
     let mut found = Vec::new();
     let mut from = 0;
     while let Some(offset) = text[from..].find("{{") {
         let start = from + offset;
         let inner_start = start + 2;
+        if start > 0 && text.as_bytes()[start - 1] == b'\\' {
+            from = inner_start;
+            continue;
+        }
         let Some(close) = text[inner_start..].find("}}") else {
             break;
         };
@@ -113,11 +130,11 @@ pub fn render(text: &str, values: &BTreeMap<String, String>) -> AppResult<String
                 AppError::InvalidInput(format!("unknown placeholder {{{{{name}}}}}"))
             })?;
             all_empty &= value.is_empty();
-            out.push_str(&line[last..start]);
+            out.push_str(&unescape(&line[last..start]));
             out.push_str(value);
             last = end;
         }
-        out.push_str(&line[last..]);
+        out.push_str(&unescape(&line[last..]));
         if !all_empty {
             lines.push(out);
         }

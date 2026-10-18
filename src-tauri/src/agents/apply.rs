@@ -4,10 +4,12 @@
 
 use std::path::Path;
 
+use super::binary;
 use super::plan::{check, plan, removal, Confirmations, InstallRequest, Plan, PlannedFile, Status};
-use super::registry::{hash, FileKind, Installed, InstalledFile, Registry};
+use super::registry::{hash, hash_bytes, FileKind, Installed, InstalledFile, Registry};
 use super::roots::Roots;
 use super::section;
+use super::skills;
 use crate::error::{AppError, AppResult};
 use crate::util::{now_ms, write_atomic};
 
@@ -33,7 +35,10 @@ pub fn install(
             continue;
         }
         if file.status != Status::Unchanged {
-            write_atomic(&path, file.after.as_bytes())?;
+            match &file.data {
+                Some(data) => write_atomic(&path, &binary::decode(data, &file.path)?)?,
+                None => write_atomic(&path, file.after.as_bytes())?,
+            }
         }
         let created_before = previous
             .as_ref()
@@ -69,6 +74,9 @@ pub fn install(
 }
 
 fn recorded_hash(file: &PlannedFile, id: &str) -> AppResult<String> {
+    if let Some(data) = &file.data {
+        return Ok(hash_bytes(&binary::decode(data, &file.path)?));
+    }
     Ok(match file.kind {
         FileKind::File => hash(&file.after),
         FileKind::Section => hash(&section::content(&file.after, id)?.unwrap_or_default()),
@@ -112,6 +120,7 @@ pub fn uninstall(
         if file.before.is_some() {
             let path = roots.resolve(file.scope, &file.path)?;
             apply_removal(file, &path, &trash)?;
+            skills::prune_empty(roots, file.scope, &file.path);
         }
     }
     let root = roots.workspace.path();

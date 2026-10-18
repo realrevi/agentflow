@@ -15,7 +15,9 @@ describe('markdown rendering', () => {
   });
 
   it('renders GFM with the agent-bold style and copyable code blocks', () => {
-    const host = dom(renderMarkdown('**Done!**\n\n```ts\nconst a = 1 < 2;\n```\n\n- [x] task'));
+    const text = '**Done!**\n\n```ts\nconst a = 1 < 2;\n```\n\n- [x] task';
+    expect(dom(renderMarkdown(text)).querySelector('button')).toBeNull();
+    const host = dom(renderMarkdown(text, { copyLabel: 'Copy' }));
     expect(host.querySelector('strong.af-agent-bold')?.textContent).toBe('Done!');
     expect(host.querySelector('.af-code-lang')?.textContent).toBe('ts');
     expect(host.querySelector('pre code')?.textContent).toBe('const a = 1 < 2;');

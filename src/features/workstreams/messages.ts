@@ -6,11 +6,15 @@ export interface MemberInfo {
   name: string;
   /** "Claude Code", "API agent (glm-5.3)", ... */
   kind: string;
+  /** The AgentFlow agent it runs ("Code Reviewer"), e.g. one from the library. */
+  role?: string | null;
 }
 
 /** The built-in Workstream Manager instructions. */
 export function managerInstructions(workstream: string, workers: readonly MemberInfo[]): string {
-  const list = workers.map((worker) => `- ${worker.name} (${worker.kind})`).join('\n');
+  const list = workers
+    .map((w) => `- ${w.name} (${w.kind})${w.role ? `: runs the "${w.role}" agent` : ''}`)
+    .join('\n');
   return `## Workstream Manager
 
 You manage the workstream "${workstream}" in AgentFlow: you plan the work, hand focused tasks to your workers and decide the next step from their reports. Your workers:

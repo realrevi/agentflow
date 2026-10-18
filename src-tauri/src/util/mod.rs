@@ -1,6 +1,7 @@
 //! Small shared helpers used by several backend modules.
 
 mod atomic_write;
+pub mod base64;
 mod blocking;
 mod hex_color;
 mod sync;

@@ -66,6 +66,7 @@ fn starters_render_the_expected_files_per_target() {
                 let text = match &output.content {
                     Content::File { text } => text.clone(),
                     Content::Section { body } => format!("[managed section]\n{body}\n"),
+                    Content::Binary { base64 } => format!("[binary]\n{base64}\n"),
                 };
                 let file = snapshot_dir(id).join(output.path.replace('/', "__"));
                 match std::fs::read_to_string(&file) {

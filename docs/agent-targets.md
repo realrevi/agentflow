@@ -25,8 +25,8 @@ role does not apply to every session.
   `.claude/agents/`, user `~/.claude/agents/`; identity comes from `name`.
   Used automatically by description, by name in a prompt, or as `@agent-<name>`.
   <https://code.claude.com/docs/en/sub-agents>
-- Skills (`.claude/skills/<name>/SKILL.md`, user `~/.claude/skills/`) exist too; the installer
-  uses subagents, which carry a role. <https://code.claude.com/docs/en/skills>,
+- Skills: `.claude/skills/<name>/SKILL.md` plus the skill's files, user `~/.claude/skills/`;
+  the installer writes them for `skill` templates (agents stay subagents, which carry a role). <https://code.claude.com/docs/en/skills>,
   naming per the Agent Skills spec <https://agentskills.io/specification>
 - Instructions: `./CLAUDE.md` (or `./.claude/CLAUDE.md`), user `~/.claude/CLAUDE.md`, loaded
   from the working directory upward. <https://code.claude.com/docs/en/memory>
@@ -42,7 +42,7 @@ role does not apply to every session.
   <https://learn.chatgpt.com/docs/agent-configuration/subagents>
 - Custom prompts (`~/.codex/prompts/*.md`) are deprecated in favour of skills and have no
   project scope: not used. <https://learn.chatgpt.com/docs/custom-prompts>
-- Skills: `.agents/skills/` (repo) and `~/.agents/skills/`. <https://learn.chatgpt.com/docs/build-skills>
+- Skills: `.agents/skills/<name>/` (repo) and `~/.agents/skills/`; used for `skill` templates. <https://learn.chatgpt.com/docs/build-skills>
 
 ## Gemini CLI
 
@@ -54,8 +54,9 @@ role does not apply to every session.
   `description`; optional `tools`, `model` (default `inherit`), `temperature`, `max_turns`,
   `timeout_mins`. Used automatically or with `@name`; `/agents` manages them.
   <https://geminicli.com/docs/core/subagents/>
-- Custom commands (`.gemini/commands/*.toml`, `prompt` + `description`, `{{args}}`) and skills
-  exist too. <https://geminicli.com/docs/cli/custom-commands/>,
+- Custom commands (`.gemini/commands/<id>.toml`, user `~/.gemini/commands/`, `prompt` +
+  `description`, `{{args}}`) for `command` templates; skills in `.gemini/skills/<name>/`
+  (user `~/.gemini/skills/`) for `skill` templates. <https://geminicli.com/docs/cli/custom-commands/>,
   <https://geminicli.com/docs/cli/skills/>
 
 ## Cursor
@@ -64,6 +65,7 @@ role does not apply to every session.
   `description`, `globs` (comma-separated) and `alwaysApply`. Rule types: always
   (`alwaysApply: true`), by description (no globs), for matching files (globs), manual
   (`@rule-name`). Cursor also reads `AGENTS.md`. User rules live in the app only.
+  Skills: `.cursor/skills/<name>/SKILL.md` (project only). <https://cursor.com/docs/context/skills>
   <https://cursor.com/docs/context/rules>
 
 ## AgentFlow

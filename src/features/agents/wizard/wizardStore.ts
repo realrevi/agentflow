@@ -15,7 +15,7 @@ import type {
   InstallTarget,
 } from '../../../shared/types';
 import { reportError } from '../../i18n';
-import { prefill } from './answers';
+import { prefill, supportsTarget } from './answers';
 
 export type Step = 'template' | 'targets' | 'questions' | 'preview' | 'done';
 
@@ -59,11 +59,12 @@ export function createWizard(workspace: () => string | null, onInstalled: () => 
     const found = await detect();
     const filled = prefill(next, found, options.answers);
     const defaults: InstallTarget[] = ['claudeCode', 'agentflow'];
+    const wanted = (options.targets ?? defaults).filter((id) => supportsTarget(next, id));
     batch(() => {
       setTemplate(next);
       setAnswers(reconcile(filled.answers));
       setDetected(filled.detected);
-      setTargets(new Set(options.targets ?? defaults));
+      setTargets(new Set(wanted));
       setScope(options.scope ?? 'project');
       setPlan(null);
       setResult(null);

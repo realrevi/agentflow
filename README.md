@@ -122,9 +122,29 @@ Set up the same agent in every tool you use, from one template. Open the **Agent
 
 ![The Agent Stage: two workstreams and a packet on its way to a worker](docs/stage.png)
 
-Planned:
+### Agent library
 
-- A community agent library
+Browse about 1,300 agents, skills, rules and commands from curated open-source repositories
+(Anthropic and OpenAI skills, Superpowers, wshobson/agents, VoltAgent, Cursor rule
+collections, Gemini CLI) in the **Browse** tab of the Agents library:
+
+- Search and filter by source, verified or your own (unverified) sources, category, tool and
+  kind; sort by stars, recent updates, name or size. Cards show the license, the tools it
+  installs for and "≈ N tokens"
+- Claude Code subagents and skills, Cursor rules, Codex agents, Gemini commands and agents, and
+  `AGENTS.md` prompts are converted into installer templates with their original text, source
+  and license. What cannot be converted is listed with the reason
+- A safety scan warns about download-and-run commands, turned-off approvals, instructions to
+  ignore you, data sent to URLs, encoded blobs and scripts. Nothing from the library is ever
+  run; the installer preview always shows every file
+- **Install** opens the wizard with the right tools selected; **Customize with AI** adds
+  questions and a "Project specifics" section for your project and leaves the original as is.
+  The Installed tab offers updates when an item changed upstream
+- Works offline from its cache; GitHub is asked at most once a day (or when you press
+  Refresh), and an optional GitHub token raises the rate limit. Sources and why they were
+  chosen: [library sources](docs/library-sources.md)
+
+![The Browse tab of the Agents library](docs/library.png)
 
 ## Roadmap
 
@@ -139,7 +159,7 @@ Planned:
 | 7     | API agent tools + default system prompt                                | Done   |
 | 8     | Agent installer wizard (per-AI formats and paths)                      | Done   |
 | 9     | Manager–worker workstreams + the Agent Stage                           | Done   |
-| 10    | Community agent library from GitHub                                    |        |
+| 10    | Community agent library from GitHub                                    | Done   |
 | 11    | UI polish                                                              |        |
 | 12    | Cross-platform builds + CI                                             |        |
 

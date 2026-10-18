@@ -1,11 +1,13 @@
-// Installed agents of this workspace: change answers or update to a newer starter (both go
-// through the wizard's preview), or uninstall: a preview of what goes; files edited since
-// install stay unless ticked.
+// Installed agents of this workspace: change answers or update to a newer starter or a
+// changed library item (all through the wizard's preview, which shows the diff), or
+// uninstall: a preview of what goes; files edited since install stay unless ticked.
 import { createResource, createSignal, For, Show, type Component } from 'solid-js';
 import { ipc } from '../../shared/ipc';
 import { showToast } from '../../shared/toast';
 import type { AgentTemplate, InstallPlan, InstalledAgent } from '../../shared/types';
 import { reportError, t } from '../i18n';
+import { updateFor } from './library/filters';
+import { ensureCatalog } from './library/libraryStore';
 import { newer, TARGETS } from './wizard/answers';
 import { PlanList, type DiffProps } from './wizard/StepPreview';
 import type { Wizard } from './wizard/wizardStore';
@@ -23,6 +25,8 @@ export function InstalledList(props: {
     () => [props.workspace, props.version()] as const,
     ([workspace]) => ipc.agentsInstalled(workspace).catch(() => [] as InstalledAgent[]),
   );
+  // The cached library catalog (no network) tells which library items changed upstream.
+  const [library] = createResource(() => ensureCatalog());
   const [removing, setRemoving] = createSignal<{ id: string; plan: InstallPlan } | null>(null);
   const [removeAnyway, setRemoveAnyway] = createSignal<ReadonlySet<string>>(new Set());
   const [userOk, setUserOk] = createSignal(false);
@@ -37,6 +41,16 @@ export function InstalledList(props: {
   };
   const update = (agent: InstalledAgent) =>
     props.starters.find((s) => s.id === agent.id && newer(s.version, agent.template.version));
+  const libraryUpdate = (agent: InstalledAgent) => updateFor(agent, library()?.items ?? []);
+  const updateFromLibrary = async (agent: InstalledAgent, id: string) => {
+    try {
+      const detail = await ipc.libraryDetail(id);
+      if (detail.template) await edit(agent, detail.template);
+      else reportError('error.library', new Error(t('library.problem.notCached')));
+    } catch (err) {
+      reportError('error.library', err);
+    }
+  };
 
   const askRemove = async (id: string) => {
     try {
@@ -86,6 +100,11 @@ export function InstalledList(props: {
                 <Show when={agent.scope === 'user'}>
                   <span class="af-badge">{t('installer.scope.user')}</span>
                 </Show>
+                <Show when={agent.template.source}>
+                  {(source) => (
+                    <span class="af-badge">{t('library.from', { repo: source().repo })}</span>
+                  )}
+                </Show>
               </header>
               <p class="af-installer-hint">
                 {t('installer.updatedAt', { time: new Date(agent.updatedAt).toLocaleString() })}
@@ -99,6 +118,17 @@ export function InstalledList(props: {
                       onClick={() => void edit(agent, next())}
                     >
                       {t('installer.update', { version: next().version })}
+                    </button>
+                  )}
+                </Show>
+                <Show when={libraryUpdate(agent)}>
+                  {(item) => (
+                    <button
+                      type="button"
+                      class="af-button"
+                      onClick={() => void updateFromLibrary(agent, item().id)}
+                    >
+                      {t('library.updateAvailable')}
                     </button>
                   )}
                 </Show>

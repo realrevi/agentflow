@@ -10,11 +10,16 @@ use serde_json::Value;
 
 use super::detect::DETECTORS;
 use super::placeholders::{placeholders, BUILT_INS};
+use super::relpath::safe_relative;
 use super::section::MARKER_PREFIX;
-use super::template::{QuestionKind, Template, SCHEMA_VERSION};
+use super::template::{QuestionKind, Template, TemplateKind, SCHEMA_VERSION};
 use crate::agent::tools::TOOL_NAMES;
 
-pub const MAX_INSTRUCTIONS: usize = 20_000;
+/// Library items keep their original text, which can be long (a skill's SKILL.md).
+pub const MAX_INSTRUCTIONS: usize = 100_000;
+pub const MAX_FILES: usize = 200;
+/// All of a skill's files together (base64 counts as stored).
+pub const MAX_FILES_BYTES: usize = 6 * 1024 * 1024;
 pub const MAX_QUESTIONS: usize = 30;
 pub const MAX_TAGS: usize = 10;
 
@@ -138,6 +143,20 @@ pub fn validate(template: &Template) -> Vec<String> {
             );
         }
     }
+    if let Some(source) = &template.source {
+        check(
+            matches(r"^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$", &source.repo),
+            "source.repo: owner/name".into(),
+        );
+        check(
+            source.commit.is_empty() || matches(r"^[0-9a-f]{7,64}$", &source.commit),
+            "source.commit: a commit sha".into(),
+        );
+        check(
+            !source.license.trim().is_empty() && source.license.len() <= 64,
+            "source.license: the repository's license".into(),
+        );
+    }
     if let Some(cursor) = &template.targets.cursor {
         check(
             cursor
@@ -147,7 +166,42 @@ pub fn validate(template: &Template) -> Vec<String> {
             "targets.cursor.globs: non-empty, one line each".into(),
         );
     }
+    check_files(template, &mut errors);
     errors
+}
+
+/// Skill files: only skills have them; safe, unique paths; size caps.
+fn check_files(template: &Template, errors: &mut Vec<String>) {
+    if template.files.is_empty() {
+        return;
+    }
+    if template.kind != TemplateKind::Skill {
+        errors.push("files: only skills have extra files".into());
+        return;
+    }
+    if template.files.len() > MAX_FILES {
+        errors.push(format!("files: at most {MAX_FILES}"));
+    }
+    let total: usize = template.files.iter().map(|f| f.content.len()).sum();
+    if total > MAX_FILES_BYTES {
+        errors.push(format!(
+            "files: at most {} MB together",
+            MAX_FILES_BYTES / 1024 / 1024
+        ));
+    }
+    let mut seen = HashSet::new();
+    for file in &template.files {
+        match safe_relative(&file.path) {
+            Ok(path) if path.eq_ignore_ascii_case("SKILL.md") => {
+                errors.push("files: SKILL.md comes from the instructions".into());
+            }
+            Ok(path) if !seen.insert(path.to_ascii_lowercase()) => {
+                errors.push(format!("files: {path} twice"));
+            }
+            Ok(_) => {}
+            Err(err) => errors.push(format!("files: {err}")),
+        }
+    }
 }
 
 /// Whether `value` is an answer (or default) of the right shape.

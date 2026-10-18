@@ -2,10 +2,10 @@
 // (sanitized markdown + usage, cache and stop notes), the streaming reply (only its last
 // block re-renders) and the Compact divider.
 import { createMemo, For, Show } from 'solid-js';
+import { renderMarkdown } from '../../shared/markdown';
 import type { ChatMessage, Compaction } from '../../shared/types';
 import { t } from '../i18n';
 import { estimateTokens } from './attachments';
-import { renderMarkdown } from './markdown';
 import { cacheText, stopNote, usageText } from './messageText';
 import { splitStable } from './stableSplit';
 
@@ -52,7 +52,9 @@ export function UserMessage(props: { message: ChatMessage; latestCopy: Map<strin
 }
 
 export function ReplyMessage(props: { message: ChatMessage }) {
-  const html = createMemo(() => renderMarkdown(props.message.content));
+  const html = createMemo(() =>
+    renderMarkdown(props.message.content, { copyLabel: t('chat.copyCode') }),
+  );
   return (
     <article class="af-chat-message assistant">
       <Show when={props.message.content.trim()}>
@@ -79,8 +81,8 @@ export function ReplyMessage(props: { message: ChatMessage }) {
 /** Finished blocks are rendered once; only the block being written re-renders per frame. */
 export function StreamingReply(props: { text: string }) {
   const split = createMemo(() => splitStable(props.text));
-  const head = createMemo(() => renderMarkdown(split().head));
-  const tail = createMemo(() => renderMarkdown(split().tail));
+  const head = createMemo(() => renderMarkdown(split().head, { copyLabel: t('chat.copyCode') }));
+  const tail = createMemo(() => renderMarkdown(split().tail, { copyLabel: t('chat.copyCode') }));
   return (
     <article class="af-chat-message assistant streaming">
       <div class="af-md" innerHTML={head()} />

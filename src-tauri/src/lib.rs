@@ -7,6 +7,7 @@ mod commands;
 pub mod conversations;
 pub mod error;
 mod fs;
+mod library;
 pub mod prompts;
 pub mod providers;
 pub mod pty;
@@ -26,6 +27,7 @@ use crate::agent::{AgentServices, CheckpointStore, ModelCapabilities, Permission
 use crate::chat::ChatManager;
 use crate::conversations::ConversationStore;
 use crate::fs::FsState;
+use crate::library::Library;
 use crate::prompts::PromptHistory;
 use crate::providers::{KeyVault, OsKeychain};
 use crate::pty::{CliDetector, PtyManager};
@@ -43,6 +45,7 @@ const USAGE_DIR: &str = "usage";
 const CHECKPOINTS_DIR: &str = "checkpoints";
 const MODEL_TOOLS_FILE: &str = "model-tools.json";
 const WORKSTREAMS_DIR: &str = "workstreams";
+const LIBRARY_DIR: &str = "library";
 
 /// Starts the desktop app. Called from `main.rs`.
 pub fn run() {
@@ -121,6 +124,12 @@ pub fn run() {
             commands::installer::agents_profiles,
             commands::installer::agents_profile_chat,
             commands::installer::agents_generate,
+            commands::library::library_catalog,
+            commands::library::library_refresh,
+            commands::library::library_detail,
+            commands::library::library_token_status,
+            commands::library::library_set_token,
+            commands::library::library_delete_token,
             commands::providers::provider_key_status,
             commands::providers::provider_set_key,
             commands::providers::provider_delete_key,
@@ -184,6 +193,7 @@ fn manage_stores(app: &tauri::App, config_dir: &Path, data_dir: &Path) {
     app.manage(KeyVault::new(std::sync::Arc::new(OsKeychain)));
     app.manage(ChatManager::new());
     app.manage(WorkstreamLog::new(data_dir.join(WORKSTREAMS_DIR)));
+    app.manage(Library::new(data_dir.join(LIBRARY_DIR)));
     app.manage(AgentServices {
         gate: PermissionGate::new(),
         checkpoints: CheckpointStore::new(data_dir.join(CHECKPOINTS_DIR)),
