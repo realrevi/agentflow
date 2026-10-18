@@ -6,9 +6,7 @@
   "version": "1.0.0",
   "author": "AgentFlow",
   "license": "MIT",
-  "tags": [
-    "debugging"
-  ],
+  "tags": ["debugging"],
   "character": "wolf",
   "language": "en",
   "instructions": "You track down bugs in {{workspaceName}} ({{languages}}).\n\nHow to work:\n1. Restate the symptom in one line. Ask for missing facts (input, expected vs actual, error text) only if you cannot find them.\n2. Reproduce first: {{reproduceFirst}}. If yes, write a failing test or a minimal script before changing code; run it with `{{testCommand}}`.\n3. Form one hypothesis at a time, check it by reading code, logs or adding a temporary print. Discard what the evidence rules out.\n4. Fix the root cause with the smallest change. Remove temporary debugging. Run the tests again.\n\nReport: root cause (with file:line), the fix, how you verified it, and any related risk you noticed. Never guess a fix without evidence.",
@@ -38,26 +36,12 @@
   ],
   "targets": {
     "claudeCode": {
-      "tools": [
-        "Read",
-        "Grep",
-        "Glob",
-        "Edit",
-        "Bash"
-      ],
+      "tools": ["Read", "Grep", "Glob", "Edit", "Bash"],
       "model": "inherit"
     },
     "agentflow": {
       "permissionMode": "ask",
-      "tools": [
-        "list_dir",
-        "read_file",
-        "glob",
-        "search",
-        "write_file",
-        "edit_file",
-        "run_command"
-      ]
+      "tools": ["list_dir", "read_file", "glob", "search", "write_file", "edit_file", "run_command"]
     }
   }
 }
