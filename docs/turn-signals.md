@@ -7,13 +7,13 @@ readers are read-only and reuse the phase 6 log readers (`src-tauri/src/tokens/c
 the same roots, folder watcher and panel matching (same CLI, same working directory, inside
 the process time window).
 
-| Panel       | Turn end                                       | Report                       | Live activity           | Source     |
-| ----------- | ---------------------------------------------- | ---------------------------- | ----------------------- | ---------- |
-| API agent   | the chat stream's `stop` event                 | the final assistant message  | `status` / `toolStart`  | `stop`     |
-| Claude Code | `assistant` with `stop_reason:"end_turn"`      | that message's `text` blocks | `tool_use` blocks       | `log`      |
-| Codex CLI   | `event_msg` `task_complete`                    | `last_agent_message`         | `function_call`, ...    | `log`      |
-| Gemini CLI  | none in the log: terminal idle                 | the last `gemini` message    | `toolCalls`             | `idle` (≈) |
-| custom CLI  | terminal idle (2 s quiet after output)         | the terminal text since then | "Working…"              | `idle` (≈) |
+| Panel       | Turn end                                  | Report                       | Live activity          | Source     |
+| ----------- | ----------------------------------------- | ---------------------------- | ---------------------- | ---------- |
+| API agent   | the chat stream's `stop` event            | the final assistant message  | `status` / `toolStart` | `stop`     |
+| Claude Code | `assistant` with `stop_reason:"end_turn"` | that message's `text` blocks | `tool_use` blocks      | `log`      |
+| Codex CLI   | `event_msg` `task_complete`               | `last_agent_message`         | `function_call`, ...   | `log`      |
+| Gemini CLI  | none in the log: terminal idle            | the last `gemini` message    | `toolCalls`            | `idle` (≈) |
+| custom CLI  | terminal idle (2 s quiet after output)    | the terminal text since then | "Working…"             | `idle` (≈) |
 
 `idle` results are marked **approximate** in the UI. Hooks are not used (see below).
 
@@ -35,7 +35,7 @@ transcript format itself is not documented).
 - Skipped: `isSidechain:true` records and the subagent files (`<session>/subagents/`),
   `isMeta` user records, `attachment`, `system` other than the above.
 - Tool inputs used for activity: `Bash{command}`, `Read{file_path}`, `Edit|Write|
-  MultiEdit{file_path}`, `NotebookEdit{notebook_path}`, `Grep|Glob{pattern}`,
+MultiEdit{file_path}`, `NotebookEdit{notebook_path}`, `Grep|Glob{pattern}`,
   `WebFetch{url}`, `WebSearch{query}`, `Task|Agent{description}`.
 - A pending permission prompt is not logged. A `tool_use` without its result while the
   terminal shows no output for 1.5 s is shown as "waiting for your approval" (approximate;
@@ -57,7 +57,7 @@ Rollouts: `~/.codex/sessions/YYYY/MM/DD/rollout-*.jsonl` (`$CODEX_HOME`), lines
   `shell_command{command}`, `exec_command{cmd}`, `shell{command[]}`, `update_plan`),
   `custom_tool_call {name, input}` (`apply_patch` = the files in `*** Update File:` /
   `*** Add File:` lines; `exec` = code that orchestrates tools), `local_shell_call
-  {action.command}`: tool activity. `*_output` records: the call finished.
+{action.command}`: tool activity. `*_output` records: the call finished.
 - `event_msg` `exec_approval_request` / `apply_patch_approval_request`: waiting for
   approval (written only by some versions).
 - `ExecCommandBegin/End` are never persisted, so activity comes from the response items.

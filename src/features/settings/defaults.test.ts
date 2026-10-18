@@ -93,7 +93,9 @@ describe('settings defaults mirror the Rust schema', () => {
     expect(num('report_cap_kb')).toBe(expected.reportCapKb);
     expect(num('stage_scale')).toBe(expected.stageScale);
     const source = rust('workstreams.rs');
-    expect(source).toContain(`MAX_ROUNDS_RANGE: (u32, u32) = (${MAX_ROUNDS.min}, ${MAX_ROUNDS.max})`);
+    expect(source).toContain(
+      `MAX_ROUNDS_RANGE: (u32, u32) = (${MAX_ROUNDS.min}, ${MAX_ROUNDS.max})`,
+    );
     expect(source).toContain(
       `REPORT_CAP_KB_RANGE: (u32, u32) = (${REPORT_CAP_KB.min}, ${REPORT_CAP_KB.max})`,
     );

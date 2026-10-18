@@ -7,7 +7,7 @@ import { createEffect, createSignal, onCleanup, onMount, Show, untrack } from 's
 import { reducedMotion } from '../characters';
 import { settings } from '../settings/settingsStore';
 import { themeVars } from '../theme/themeStore';
-import { agentState, flashAgentState } from '../agentui';
+import { agentState, flashAgentState, noteUserInput } from '../agentui';
 import { budgetCovers, cliKeyOf, createPanelUsage, onBudgetAlert } from '../tokens';
 import {
   AgentOverlay,
@@ -19,6 +19,7 @@ import {
   type SentPrompt,
 } from '../agentui/components';
 import { AgentActivity } from './agentActivity';
+import { cliAdjust, linkTerminal } from './agentLink';
 import {
   agentName,
   avatarFor,
@@ -56,7 +57,7 @@ export default function TerminalPanel(props: TerminalPanelProps) {
   let bar: PromptBarHandle | undefined;
 
   const agentUi = hasAgentUi(props.config.kind);
-  const activity = new AgentActivity(props.panelId);
+  const activity = new AgentActivity(props.panelId, cliAdjust(props.panelId));
   // Agent CLIs: session usage on the badge; a budget alert for this CLI flashes "error"
   // (CLI agents can only be warned, never stopped).
   const cliKey = cliKeyOf(props.config.kind);
@@ -72,11 +73,24 @@ export default function TerminalPanel(props: TerminalPanelProps) {
     panelId: props.panelId,
     config: props.config,
     activity: {
-      start: () => activity.start(),
+      start: () => {
+        link?.started();
+        activity.start();
+      },
       output: () => activity.output(),
-      enter: () => activity.prompt(),
-      typed: () => activity.typed(),
-      exit: (code) => activity.exit(code),
+      enter: () => {
+        link?.prompt();
+        noteUserInput(props.panelId);
+        activity.prompt();
+      },
+      typed: () => {
+        noteUserInput(props.panelId);
+        activity.typed();
+      },
+      exit: (code) => {
+        activity.exit(code);
+        link?.exited(code);
+      },
     },
     defaultCwd: () => settings.currentWorkspace,
     settings: untrack(() => ({ ...settings.terminal })),
@@ -103,10 +117,22 @@ export default function TerminalPanel(props: TerminalPanelProps) {
     if (status() !== 'running') return false;
     activity.prompt(); // before the write, so its echo is not taken for work
     if (!controller.sendPrompt(text)) return false;
+    link?.prompt();
     history?.add(text);
     setLastPrompt({ text, at: Date.now() });
     return true;
   };
+  // Agent panels: workstream delivery, turn ends and activity (shells have none).
+  const link = agentUi
+    ? linkTerminal({
+        panelId: props.panelId,
+        logsTurns: props.config.kind === 'claude' || props.config.kind === 'codex',
+        running: () => status() === 'running',
+        deliver: (text) => bar?.deliver(text) ?? send(text),
+        label: () => agentName(config()),
+        screenText: (lines) => controller.textSincePrompt(lines),
+      })
+    : undefined;
   const flyPacket = (sent: SentPrompt) => {
     const target = overlay;
     if (!target || !character()) return;
@@ -187,6 +213,7 @@ export default function TerminalPanel(props: TerminalPanelProps) {
             enabled={() => status() === 'running'}
             onSend={send}
             onSent={flyPacket}
+            onTyped={() => noteUserInput(props.panelId)}
           />
         )}
       </Show>

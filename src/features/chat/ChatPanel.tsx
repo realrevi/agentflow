@@ -12,7 +12,7 @@ import type { DockviewPanelApi } from 'dockview-core';
 import { createEffect, createSignal, onCleanup, onMount, Show } from 'solid-js';
 import { FILE_PATH_MIME } from '../../shared/dnd';
 import type { Attachment } from '../../shared/types';
-import { agentState } from '../agentui';
+import { agentState, noteUserInput } from '../agentui';
 import {
   AgentOverlay,
   createPromptHistory,
@@ -27,6 +27,7 @@ import { reportError, t } from '../i18n';
 import { providerName } from '../providers';
 import { settings } from '../settings/settingsStore';
 import { createAgentView, type ChatHooks } from './agent/agentView';
+import { chatLinkHooks, linkChat } from './agentLink';
 import { AttachmentChips } from './AttachmentChips';
 import { BudgetNotice, ContextStrip, EstimateLine } from './ComposeNotices';
 import { readAttachment, withAttachment } from './attachments';
@@ -69,6 +70,11 @@ export default function ChatPanel(props: ChatPanelProps) {
     isVisible: () => props.api.isVisible,
     focus: () => props.api.setActive(),
     onFilesChanged: (paths) => props.hooks.filesChanged(paths),
+    ...chatLinkHooks(
+      props.panelId,
+      () => aiName(),
+      () => session.messages(),
+    ),
   });
   const history = createPromptHistory(
     props.config.workspace,
@@ -85,6 +91,15 @@ export default function ChatPanel(props: ChatPanelProps) {
     return session.conversation()?.model || (entry ? providerName(entry) : t('chat.untitled'));
   };
 
+  linkChat(
+    {
+      panelId: props.panelId,
+      ready,
+      deliver: (text) => bar?.deliver(text) ?? send(text),
+      label: aiName,
+    },
+    session,
+  );
   const agentView = createAgentView(session, props.config.workspace, props.hooks, ready);
 
   const { usage, estimate, nearLimit, sentBefore } = createChatUsage({
@@ -267,6 +282,7 @@ export default function ChatPanel(props: ChatPanelProps) {
               onSend={send}
               onSent={flyPacket}
               onDraft={setDraft}
+              onTyped={() => noteUserInput(props.panelId)}
             />
           </div>
           <Show when={session.streaming()}>

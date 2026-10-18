@@ -4,6 +4,11 @@ import { Channel, invoke } from '@tauri-apps/api/core';
 import { readText, writeText } from '@tauri-apps/plugin-clipboard-manager';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { open as openDialog, save as saveDialog } from '@tauri-apps/plugin-dialog';
+import {
+  isPermissionGranted,
+  requestPermission,
+  sendNotification,
+} from '@tauri-apps/plugin-notification';
 import { openUrl as openWithOs } from '@tauri-apps/plugin-opener';
 import { AppError, toAppError } from './errors';
 import type {
@@ -24,11 +29,13 @@ import type {
   ConversationPatch,
   EntryKind,
   FsChanges,
+  HandoffEntry,
   PtyMessage,
   PriceOverride,
   PtySpawnRequest,
   SessionInfo,
   Settings,
+  TurnEvent,
   UsageEvent,
 } from './types';
 
@@ -117,6 +124,37 @@ async function chatSend(
 /** The local UTC offset in minutes east of UTC, as the usage commands expect it. */
 function utcOffsetMinutes(): number {
   return -new Date().getTimezoneOffset();
+}
+
+/**
+ * Turn ends and live activity of agent CLI panels, read from their session logs. One
+ * subscriber at a time (a new subscribe replaces the old channel).
+ */
+async function turnsSubscribe(onEvent: (event: TurnEvent) => void): Promise<{ detach(): void }> {
+  const channel = new Channel<TurnEvent>(onEvent);
+  const detach = () => {
+    channel.onmessage = () => {};
+  };
+  try {
+    await call('turns_subscribe', { onEvent: channel });
+    return { detach };
+  } catch (err) {
+    detach();
+    throw err;
+  }
+}
+
+/** An OS notification (asks for permission once); false if it could not be shown. */
+async function notify(title: string, body: string): Promise<boolean> {
+  try {
+    let granted = await isPermissionGranted();
+    if (!granted) granted = (await requestPermission()) === 'granted';
+    if (granted) sendNotification({ title, body });
+    return granted;
+  } catch (err) {
+    console.debug('[agentflow] notification failed:', err);
+    return false;
+  }
 }
 
 /**
@@ -308,6 +346,13 @@ export const ipc = {
   /** Saves price overrides; use `setPriceOverrides()` from the settings store. */
   usageSetPrices: (prices: PriceOverride[]) => call('usage_set_prices', { prices }),
   usageCliStatus: () => call('usage_cli_status', {}),
+  // Workstreams (phase 9).
+  turnsSubscribe,
+  workstreamLogAppend: (workspace: string | null, entry: HandoffEntry) =>
+    call('workstream_log_append', { workspace, entry }),
+  workstreamLogRead: (workspace: string | null, workstream: string) =>
+    call('workstream_log_read', { workspace, workstream }),
+  notify,
   onWindowClose,
   pickFolder,
   pickJsonFile,

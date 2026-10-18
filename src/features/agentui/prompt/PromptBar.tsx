@@ -25,6 +25,8 @@ export interface SentPrompt {
 export interface PromptBarHandle {
   insert(text: string): void;
   focus(): void;
+  /** Sends `text` as if typed here (a workstream handoff); the user's draft stays. */
+  deliver(text: string): boolean;
 }
 
 interface PromptBarProps {
@@ -39,6 +41,8 @@ interface PromptBarProps {
   disabledPlaceholder?: string;
   /** The text changed (typing, recall, insert, cleared after a send). */
   onDraft?: (text: string) => void;
+  /** The user typed into the bar (not recall, insert or a delivery). */
+  onTyped?: () => void;
 }
 
 export function PromptBar(props: PromptBarProps) {
@@ -134,17 +138,17 @@ export function PromptBar(props: PromptBarProps) {
     props.onDraft?.(text);
   };
 
-  const send = () => {
-    if (!input) return;
-    const text = input.value;
-    if (!text.trim() || !props.enabled()) return;
+  /** Sends `text`; the packet starts at `origin` (bar coordinates). */
+  const sendText = (text: string, origin: { x: number; y: number }, clear: boolean) => {
+    if (!input || !text.trim() || !props.enabled()) return false;
     const style = getComputedStyle(input);
     const textBox = input.getBoundingClientRect();
-    const caret = caretPoint();
     const rootBox = root?.getBoundingClientRect();
-    if (!props.onSend(text)) return; // written to the pty before anything else happens
-    recall = FRESH;
-    setText('');
+    if (!props.onSend(text)) return false; // written to the pty before anything else happens
+    if (clear) {
+      recall = FRESH;
+      setText('');
+    }
     props.onSent({
       text,
       textBox,
@@ -156,8 +160,13 @@ export function PromptBar(props: PromptBarProps) {
         whiteSpace: 'pre-wrap',
         wordBreak: 'break-all',
       },
-      origin: { x: (rootBox?.left ?? 0) + caret.x, y: (rootBox?.top ?? 0) + caret.y },
+      origin: { x: (rootBox?.left ?? 0) + origin.x, y: (rootBox?.top ?? 0) + origin.y },
     });
+    return true;
+  };
+
+  const send = () => {
+    if (input) sendText(input.value, caretPoint(), true);
   };
 
   const onKeyDown = (event: KeyboardEvent) => {
@@ -190,6 +199,8 @@ export function PromptBar(props: PromptBarProps) {
       input?.focus();
     },
     focus: () => input?.focus(),
+    deliver: (text) =>
+      sendText(text, { x: input?.offsetLeft ?? 0, y: input?.offsetTop ?? 0 }, false),
   });
 
   onMount(() => {
@@ -241,6 +252,7 @@ export function PromptBar(props: PromptBarProps) {
           recall = recall.index === null ? recall : { ...recall, index: null };
           grow();
           typed();
+          props.onTyped?.();
           props.onDraft?.(input?.value ?? '');
         }}
         onKeyDown={onKeyDown}

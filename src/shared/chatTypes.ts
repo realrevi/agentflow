@@ -202,6 +202,8 @@ export interface ChatSendRequest {
   panel: string | null;
   /** A token from `usage_allow_once`: passes a hard budget stop once. */
   allowOnce: string | null;
+  /** Appended to the system prompt for this turn (workstream manager), never stored. */
+  extraSystem: string | null;
 }
 
 export interface ChatStarted {
