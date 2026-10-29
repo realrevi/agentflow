@@ -4,6 +4,7 @@ import chatRs from '../../../src-tauri/src/settings/chat.rs?raw';
 import libraryRs from '../../../src-tauri/src/settings/library.rs?raw';
 import modelRs from '../../../src-tauri/src/settings/model.rs?raw';
 import providersRs from '../../../src-tauri/src/settings/providers.rs?raw';
+import updatesRs from '../../../src-tauri/src/settings/updates.rs?raw';
 import usageRs from '../../../src-tauri/src/settings/usage.rs?raw';
 import workstreamsRs from '../../../src-tauri/src/settings/workstreams.rs?raw';
 import { PRESETS } from '../providers/presets';
@@ -19,6 +20,7 @@ const RUST = {
   'agent.rs': agentRs,
   'workstreams.rs': workstreamsRs,
   'library.rs': libraryRs,
+  'updates.rs': updatesRs,
 };
 const rust = (file: keyof typeof RUST) => RUST[file];
 
@@ -107,6 +109,12 @@ describe('settings defaults mirror the Rust schema', () => {
 
   it('starts with the first-run flow not done', () => {
     expect(DEFAULT_SETTINGS.onboarding).toEqual({ done: false, tipsDismissed: false });
+  });
+
+  it('checks for updates on startup by default, like Rust', () => {
+    const updates = defaultImpl('updates.rs', 'UpdateSettings');
+    expect(updates).toContain(`check_on_startup: ${DEFAULT_SETTINGS.updates.checkOnStartup}`);
+    expect(DEFAULT_SETTINGS.updates.checkOnStartup).toBe(true);
   });
 
   it('uses the Rust library defaults', () => {

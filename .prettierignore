@@ -11,3 +11,4 @@ src/assets/fonts
 src-tauri/src/agents/tests/snapshots
 # Library importer fixtures: upstream files as they are (formatting would change the input).
 src-tauri/src/library/tests/fixtures
+THIRD_PARTY_NOTICES.md

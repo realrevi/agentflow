@@ -241,6 +241,9 @@ mod tests {
         let dir = TestDir::new("cli-watch-late");
         let home = dir.path().join("home");
         std::fs::create_dir_all(&home).expect("home");
+        // macOS temp dirs live under the /var -> /private/var symlink; FSEvents reports
+        // the real path, so the test watches that one (home folders are real paths).
+        let home = home.canonicalize().expect("real path");
         let roots = CliRoots {
             claude: Some(home.join(".claude/projects")),
             ..CliRoots::default()

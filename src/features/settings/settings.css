@@ -351,3 +351,26 @@
   display: block;
   margin: 2px 0 0;
 }
+
+/* About: third-party licenses (a long plain-text document). */
+.af-dialog.af-licenses {
+  width: min(760px, calc(100vw - 32px));
+}
+
+.af-licenses-text {
+  margin: 0;
+  max-height: 60vh;
+  overflow: auto;
+  padding: var(--af-space-3);
+  border: 1px solid var(--af-border);
+  border-radius: var(--af-radius-sm);
+  background: var(--af-input-bg);
+  font-family: var(--af-font-mono);
+  font-size: var(--af-text-xs);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.af-about-version {
+  font-weight: var(--af-weight-semibold);
+}

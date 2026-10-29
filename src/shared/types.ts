@@ -93,8 +93,30 @@ export interface Settings {
   library: LibrarySettings;
   /** The first-run flow (finished or skipped) and its tips card. */
   onboarding: { done: boolean; tipsDismissed: boolean };
+  /** App updates from GitHub Releases: never installed without a click. */
+  updates: UpdateSettings;
   layout: SerializedLayout | null;
 }
+
+export interface UpdateSettings {
+  /** Look for a newer version shortly after launch. */
+  checkOnStartup: boolean;
+}
+
+/** A newer version found by `update_check` (mirrors `updates::UpdateInfo`). */
+export interface UpdateInfo {
+  version: string;
+  currentVersion: string;
+  /** Short release notes from latest.json, if any. */
+  notes: string | null;
+  date: string | null;
+}
+
+/** Download progress of `update_install`, then the app restarts. */
+export type UpdateProgress =
+  | { type: 'started'; total: number | null }
+  | { type: 'progress'; downloaded: number }
+  | { type: 'finished' };
 
 export interface ThemeSummary {
   id: string;

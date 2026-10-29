@@ -54,6 +54,8 @@ import type {
   TurnEvent,
   UsageEvent,
   UsageSummary,
+  UpdateInfo,
+  UpdateProgress,
 } from './types';
 
 type Workspace = { workspace: string | null };
@@ -167,4 +169,6 @@ export interface Commands {
   turns_subscribe: { args: { onEvent: Channel<TurnEvent> }; result: null };
   workstream_log_append: { args: Workspace & { entry: HandoffEntry }; result: null };
   workstream_log_read: { args: Workspace & { workstream: string }; result: HandoffEntry[] };
+  update_check: { args: Record<string, never>; result: UpdateInfo | null };
+  update_install: { args: { onEvent: Channel<UpdateProgress> }; result: null };
 }

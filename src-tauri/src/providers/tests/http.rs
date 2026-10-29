@@ -313,7 +313,13 @@ fn stalls_time_out_and_dead_servers_fail_fast() {
         true,
     );
     let (_, end) = run(&*dead, &http());
-    assert_eq!(end.expect_err("refused").kind, ErrorKind::Network);
+    // Refused at once on Windows and Linux; macOS may let the connect attempt time out
+    // instead. Either way it is an error, not a hang.
+    let kind = end.expect_err("refused").kind;
+    assert!(
+        matches!(kind, ErrorKind::Network | ErrorKind::Timeout),
+        "{kind:?}"
+    );
 }
 
 #[test]

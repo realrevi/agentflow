@@ -47,3 +47,27 @@ single runs jump around.
 - **Fixed during the check:** idle avatars only breathe at scale 2 and up (not in tabs and
   lists), and the breathing (a CSS animation, outside the shared loop, which stays stopped
   at idle) pauses while the window is hidden or unfocused.
+
+## Phase 12: font trim
+
+Same method and build flags, a fresh scene (new data folder, same three panels), the phase 11
+build ("base") against the trimmed one, interleaved, three runs each:
+
+| Metric                         | Base (phase 11) | Font trim    |
+| ------------------------------ | --------------- | ------------ |
+| Idle RAM, private bytes (tree) | 245–296 MB      | 242–313 MB   |
+| Idle RAM, working set (tree)   | 457–530 MB      | 459–531 MB   |
+| WebView2 GPU process (private) | 113–121 MB      | 116–118 MB   |
+| WebView2 renderer (private)    | 51.5–51.6 MB    | 51.3–51.9 MB |
+| Bundled Inter font files       | 152 KB          | 64 KB        |
+
+- Inter is now subset to the 400–700 weight range and the Latin Extended letters we need
+  (fontTools). That saves 88 KB on disk but does not move RAM: the difference is well inside
+  run-to-run noise, which is ±30 MB for the whole tree.
+- File and brand icons were already loaded on first use (file icons are `<img>` URLs; brand
+  icons come with the lazy markdown chunk), and all fonts load per `unicode-range` subset.
+- The ~25 MB phase 11 increase stays: it sits in WebView2's own GPU and renderer processes.
+  Lowering it would mean WebView2 browser flags (for example turning off GPU rasterization),
+  a trade against smoothness and battery that is out of scope for this release.
+- This round's cold-start numbers are not comparable: the status-bar probe reported ~7.5 s
+  for both builds, while screenshots showed the window ready within 2 s.

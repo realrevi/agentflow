@@ -150,6 +150,7 @@ mod tests {
             },
             library: crate::settings::LibrarySettings::default(),
             onboarding: crate::settings::OnboardingSettings::default(),
+            updates: crate::settings::UpdateSettings::default(),
             layout: Some(json!([1, 2, 3])),
         };
 
