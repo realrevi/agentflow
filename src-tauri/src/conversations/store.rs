@@ -163,7 +163,7 @@ impl ConversationStore {
         Ok((conversation, stored))
     }
 
-    /// For "Retry": drops failed replies at the end, which must leave a user message last.
+    /// For "Retry": drops failed replies at the end, leaving a user or tool message last.
     pub fn prepare_retry(&self, workspace: Option<&str>, id: &str) -> AppResult<Conversation> {
         self.modify(workspace, id, |conversation| {
             while conversation
@@ -174,7 +174,7 @@ impl ConversationStore {
                 conversation.messages.pop();
             }
             match conversation.messages.last() {
-                Some(last) if last.role == Role::User => Ok(()),
+                Some(last) if matches!(last.role, Role::User | Role::Tool) => Ok(()),
                 _ => Err(AppError::InvalidInput("nothing to retry".into())),
             }
         })

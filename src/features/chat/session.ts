@@ -261,10 +261,12 @@ export function createChatSession(options: ChatSessionOptions) {
     else ipc.chatCancel(requestId).catch((err: unknown) => reportError('error.chatSend', err));
   }
 
-  /** A failed reply, or a prompt that never got one, can be retried. */
+  /** A failed reply, or a prompt or tool step that never got one, can be retried. */
   function canRetry(): boolean {
     const last = messages().at(-1);
-    return !streaming() && (last?.role === 'user' || last?.status === 'error');
+    return (
+      !streaming() && (last?.role === 'user' || last?.role === 'tool' || last?.status === 'error')
+    );
   }
 
   function dispose(): void {
