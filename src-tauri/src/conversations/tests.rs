@@ -148,6 +148,18 @@ fn retry_drops_failed_replies_only() {
         .expect("assistant");
     let ready = store.prepare_retry(WS, &id).expect("retry");
     assert_eq!(ready.messages.len(), 1);
+    let mut tool_msg = reply("", MessageStatus::Complete);
+    tool_msg.role = Role::Tool;
+    store.append_message(WS, &id, tool_msg).expect("tool");
+    assert_eq!(
+        store
+            .prepare_retry(WS, &id)
+            .expect("retry after tool")
+            .messages
+            .len(),
+        2,
+        "an interrupted agent turn can retry from its last tool result"
+    );
     store
         .append_message(WS, &id, reply("done", MessageStatus::Complete))
         .expect("assistant");
